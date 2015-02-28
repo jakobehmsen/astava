@@ -1,0 +1,232 @@
+package astava.java;
+
+import astava.core.Atom;
+import astava.core.Node;
+import astava.core.Tuple;
+
+import java.util.List;
+
+public class Factory {
+    public static Tuple classDeclaration(int modifier, String name, String superName, List<Node> members) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.CLASS)),
+            Tuple.newProperty(Property.KEY_MODIFIER, new Atom(modifier)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
+            Tuple.newProperty(Property.KEY_SUPER_NAME, new Atom(superName)),
+            Tuple.newProperty(Property.KEY_MEMBERS, new Tuple(members))
+        );
+    }
+
+    public static Tuple methodDeclaration(int modifier, String name, List<String> parameterTypes, String returnType, Tuple body) {
+        String bodyReturnType = getReturnType(body); // May result in multiple return types
+
+        if(!areCompatible(returnType, bodyReturnType))
+            throw new IllegalArgumentException("Declared return type '" + returnType + "' is incompatible with actual return type '" + bodyReturnType + "'.");
+
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.METHOD)),
+            Tuple.newProperty(Property.KEY_MODIFIER, new Atom(modifier)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
+            Tuple.newProperty(Property.KEY_PARAMETER_TYPES, new Atom(parameterTypes)),
+            Tuple.newProperty(Property.KEY_RETURN_TYPE, new Atom(returnType)),
+            Tuple.newProperty(Property.KEY_BODY, body)
+        );
+    }
+
+    public static boolean areCompatible(String declared, String actual) {
+        switch(declared) {
+            case Descriptor.BOOLEAN:
+                switch(actual) {
+                    case Descriptor.BOOLEAN:
+                        return true;
+                }
+            case Descriptor.BYTE:
+            case Descriptor.SHORT:
+            case Descriptor.INT:
+                switch(actual) {
+                    case Descriptor.BYTE:
+                    case Descriptor.SHORT:
+                    case Descriptor.INT:
+                        return true;
+                }
+            case Descriptor.LONG:
+                switch(actual) {
+                    case Descriptor.LONG:
+                        return true;
+                }
+            case Descriptor.FLOAT:
+                switch(actual) {
+                    case Descriptor.FLOAT:
+                        return true;
+                }
+            case Descriptor.DOUBLE:
+                switch(actual) {
+                    case Descriptor.DOUBLE:
+                        return true;
+                }
+        }
+
+        return false;
+    }
+
+    public static String getReturnType(Tuple statement) {
+        switch(statement.getIntProperty(Property.KEY_TYPE)) {
+            case ASTType.RETURN_STATEMENT:
+                Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
+
+                return expression.getStringProperty(Property.KEY_RESULT_TYPE);
+        }
+
+        return null;
+    }
+
+    public static Tuple ret(Node expression) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.RETURN_STATEMENT)),
+            Tuple.newProperty(Property.KEY_EXPRESSION, expression)
+        );
+    }
+
+    public static Tuple literal(boolean value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.BOOLEAN_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BOOLEAN))
+        );
+    }
+
+    public static Tuple literal(byte value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.BYTE_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BYTE))
+        );
+    }
+
+    public static Tuple literal(short value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.SHORT_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.SHORT))
+        );
+    }
+
+    public static Tuple literal(int value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.INT_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.INT))
+        );
+    }
+
+    public static Tuple literal(long value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.LONG_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.LONG))
+        );
+    }
+
+    public static Tuple literal(float value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.FLOAT_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.FLOAT))
+        );
+    }
+
+    public static Tuple literal(double value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.DOUBLE_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.DOUBLE))
+        );
+    }
+
+    public static Tuple literal(char value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.CHAR_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.CHAR))
+        );
+    }
+
+    public static Tuple literal(String value) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.STRING_LITERAL)),
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom("java/lang/String"))
+        );
+    }
+
+    public static Tuple add(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.ADD);
+    }
+
+    public static Tuple sub(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.SUB);
+    }
+
+    public static Tuple mul(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.MUL);
+    }
+
+    public static Tuple div(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.DIV);
+    }
+
+    public static String resultType(String lhsType, String rhsType) {
+        switch(lhsType) {
+            case Descriptor.BYTE:
+                switch (rhsType) {
+                    case Descriptor.BYTE: return lhsType;
+                    case Descriptor.SHORT: return rhsType;
+                    case Descriptor.INT: return rhsType;
+                }
+            case Descriptor.SHORT:
+                switch (rhsType) {
+                    case Descriptor.BYTE: return lhsType;
+                    case Descriptor.SHORT: return lhsType;
+                    case Descriptor.INT: return rhsType;
+                }
+            case Descriptor.INT:
+                switch (rhsType) {
+                    case Descriptor.BYTE: return lhsType;
+                    case Descriptor.SHORT: return lhsType;
+                    case Descriptor.INT: return lhsType;
+                }
+            case Descriptor.LONG:
+                switch (rhsType) {
+                    case Descriptor.LONG: return lhsType;
+                }
+            case Descriptor.FLOAT:
+                switch (rhsType) {
+                    case Descriptor.FLOAT: return lhsType;
+                }
+            case Descriptor.DOUBLE:
+                switch (rhsType) {
+                    case Descriptor.DOUBLE: return rhsType;
+                }
+        }
+
+        return null;
+    }
+
+    public static Tuple reduce(Tuple lhs, Tuple rhs, int operator) {
+        String lhsResultType = lhs.getStringProperty(Property.KEY_RESULT_TYPE);
+        String rhsResultType = rhs.getStringProperty(Property.KEY_RESULT_TYPE);
+
+        String resultType = resultType(lhsResultType, rhsResultType);
+
+        if(resultType == null)
+            throw new IllegalArgumentException("Lhs resultType '" + lhsResultType + " is incompatible with lhs result type '" + rhsResultType + "'.");
+
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.REDUCE)),
+            Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
+            Tuple.newProperty(Property.KEY_LHS, lhs),
+            Tuple.newProperty(Property.KEY_RHS, rhs),
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(resultType))
+        );
+    }
+}
