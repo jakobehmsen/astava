@@ -2,9 +2,7 @@ package astava.java.gen;
 
 import astava.core.Node;
 import astava.core.Tuple;
-import astava.java.ASTType;
-import astava.java.ReduceOperator;
-import astava.java.Property;
+import astava.java.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -130,58 +128,58 @@ public class ClassGenerator {
         }
     }
 
-    public void populateMethodExpression(Tuple expression, GeneratorAdapter generator, boolean isRoot) {
+    public String populateMethodExpression(Tuple expression, GeneratorAdapter generator, boolean isRoot) {
         switch(getType(expression)) {
             case ASTType.BOOLEAN_LITERAL: {
                 boolean value = expression.getBooleanProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.BOOLEAN;
             } case ASTType.BYTE_LITERAL: {
                 byte value = expression.getByteProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.BYTE;
             } case ASTType.SHORT_LITERAL: {
                 short value = expression.getShortProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.SHORT;
             } case ASTType.INT_LITERAL: {
                 int value = expression.getIntProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.INT;
             } case ASTType.LONG_LITERAL: {
                 long value = expression.getLongProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.LONG;
             } case ASTType.FLOAT_LITERAL: {
                 float value = expression.getFloatProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.FLOAT;
             }  case ASTType.DOUBLE_LITERAL: {
                 double value = expression.getDoubleProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.DOUBLE;
             }  case ASTType.CHAR_LITERAL: {
                 char value = expression.getCharProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.CHAR;
             }  case ASTType.STRING_LITERAL: {
                 String value = expression.getStringProperty(Property.KEY_VALUE);
                 generator.push(value);
 
-                break;
+                return Descriptor.STRING;
             } case ASTType.REDUCE: {
                 Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
                 Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
-                String resultType = expression.getStringProperty(Property.KEY_RESULT_TYPE);
-                Type t = Type.getType(resultType);
+                //String resultType = expression.getStringProperty(Property.KEY_RESULT_TYPE);
+                //Type t = Type.getType(resultType);
                 int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 int op;
 
@@ -193,13 +191,17 @@ public class ClassGenerator {
                     default: op = -1;
                 }
 
-                populateMethodExpression(lhs, generator, false);
-                populateMethodExpression(rhs, generator, false);
+                String lhsResultType = populateMethodExpression(lhs, generator, false);
+                String rhsResultType = populateMethodExpression(rhs, generator, false);
+                String resultType = Factory.resultType(lhsResultType, rhsResultType);
+                Type t = Type.getType(resultType);
                 generator.math(op, t);
 
                 break;
             }
         }
+
+        return null;
     }
 
     public byte[] toBytes() {
@@ -210,7 +212,7 @@ public class ClassGenerator {
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         classNode.accept(classWriter);
 
-        org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, new PrintWriter(System.out));
+        //org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, new PrintWriter(System.out));
 
         return classWriter.toByteArray();
     }
