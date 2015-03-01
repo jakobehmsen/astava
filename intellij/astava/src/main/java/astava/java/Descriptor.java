@@ -9,5 +9,6 @@ public class Descriptor {
     public static final String FLOAT = "F";
     public static final String DOUBLE = "D";
     public static final String CHAR = "C";
+    public static final String VOID = "V";
     public static final String STRING = "java/lang/string";
 }
