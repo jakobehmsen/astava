@@ -165,6 +165,10 @@ public class Factory {
         return reduce(lhs, rhs, ReduceOperator.ADD);
     }
 
+    public static Tuple rem(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.REM);
+    }
+
     public static Tuple sub(Tuple lhs, Tuple rhs) {
         return reduce(lhs, rhs, ReduceOperator.SUB);
     }
