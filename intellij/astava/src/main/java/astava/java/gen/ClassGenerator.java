@@ -188,6 +188,7 @@ public class ClassGenerator {
                     case ReduceOperator.SUB: op = GeneratorAdapter.SUB; break;
                     case ReduceOperator.MUL: op = GeneratorAdapter.MUL; break;
                     case ReduceOperator.DIV: op = GeneratorAdapter.DIV; break;
+                    case ReduceOperator.REM: op = GeneratorAdapter.REM; break;
                     default: op = -1;
                 }
 
