@@ -1,7 +1,7 @@
 package astava.java;
 
 public class Property {
-    public static final String KEY_TYPE = "type";
+    public static final String KEY_AST_TYPE = "type";
     public static final String KEY_MEMBERS = "members";
     public static final String KEY_NAME = "name";
     public static final String KEY_MODIFIER = "modifier";
@@ -16,4 +16,5 @@ public class Property {
     public static final String KEY_RESULT_TYPE = "resultType";
     public static final String KEY_OPERATOR = "operator";
     public static final String KEY_STATEMENTS = "statements";
+    public static final String KEY_VAR_TYPE = "varType";
 }

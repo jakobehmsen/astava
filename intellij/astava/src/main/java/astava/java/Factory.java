@@ -9,7 +9,7 @@ import java.util.List;
 public class Factory {
     public static Tuple classDeclaration(int modifier, String name, String superName, List<Node> members) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.CLASS)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CLASS)),
             Tuple.newProperty(Property.KEY_MODIFIER, new Atom(modifier)),
             Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
             Tuple.newProperty(Property.KEY_SUPER_NAME, new Atom(superName)),
@@ -26,7 +26,7 @@ public class Factory {
         */
 
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.METHOD)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.METHOD)),
             Tuple.newProperty(Property.KEY_MODIFIER, new Atom(modifier)),
             Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
             Tuple.newProperty(Property.KEY_PARAMETER_TYPES, new Atom(parameterTypes)),
@@ -72,7 +72,7 @@ public class Factory {
     }
 
     public static String getReturnType(Tuple statement) {
-        switch(statement.getIntProperty(Property.KEY_TYPE)) {
+        switch(statement.getIntProperty(Property.KEY_AST_TYPE)) {
             case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
@@ -84,14 +84,14 @@ public class Factory {
 
     public static Tuple ret(Node expression) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.RETURN_STATEMENT)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.RETURN_STATEMENT)),
             Tuple.newProperty(Property.KEY_EXPRESSION, expression)
         );
     }
 
     public static Tuple literal(boolean value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.BOOLEAN_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BOOLEAN_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BOOLEAN))*/
         );
@@ -99,7 +99,7 @@ public class Factory {
 
     public static Tuple literal(byte value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.BYTE_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BYTE_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BYTE))*/
         );
@@ -107,7 +107,7 @@ public class Factory {
 
     public static Tuple literal(short value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.SHORT_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.SHORT_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.SHORT))*/
         );
@@ -115,7 +115,7 @@ public class Factory {
 
     public static Tuple literal(int value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.INT_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.INT_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.INT))*/
         );
@@ -123,7 +123,7 @@ public class Factory {
 
     public static Tuple literal(long value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.LONG_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LONG_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.LONG))*/
         );
@@ -131,7 +131,7 @@ public class Factory {
 
     public static Tuple literal(float value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.FLOAT_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.FLOAT_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.FLOAT))*/
         );
@@ -139,7 +139,7 @@ public class Factory {
 
     public static Tuple literal(double value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.DOUBLE_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.DOUBLE_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.DOUBLE))*/
         );
@@ -147,7 +147,7 @@ public class Factory {
 
     public static Tuple literal(char value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.CHAR_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CHAR_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.CHAR))*/
         );
@@ -155,7 +155,7 @@ public class Factory {
 
     public static Tuple literal(String value) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.STRING_LITERAL)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.STRING_LITERAL)),
             Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom("java/lang/String"))*/
         );
@@ -230,11 +230,41 @@ public class Factory {
         */
 
         return new Tuple(
-            Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.REDUCE)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.REDUCE)),
             Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
             Tuple.newProperty(Property.KEY_LHS, lhs),
             Tuple.newProperty(Property.KEY_RHS, rhs)/*,
             Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(resultType))*/
+        );
+    }
+
+    public static Tuple declareVar(String type, String name) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.VARIABLE_DECLARATION)),
+            Tuple.newProperty(Property.KEY_VAR_TYPE, new Atom(type)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
+
+    public static Tuple assignVar(String name, Tuple expression) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.VARIABLE_ASSIGNMENT)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
+            Tuple.newProperty(Property.KEY_EXPRESSION, expression)
+        );
+    }
+
+    public static Tuple accessVar(String name) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.VARIABLE_ACCESS)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
+
+    public static Tuple block(List<Node> statements) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BLOCK)),
+            Tuple.newProperty(Property.KEY_STATEMENTS, new Atom(statements))
         );
     }
 }

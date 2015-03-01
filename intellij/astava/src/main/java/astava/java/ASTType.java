@@ -15,4 +15,7 @@ public class ASTType {
     public static final int STRING_LITERAL = 11;
     public static final int REDUCE = 12;
     public static final int BLOCK = 13;
+    public static final int VARIABLE_DECLARATION = 14;
+    public static final int VARIABLE_ASSIGNMENT = 15;
+    public static final int VARIABLE_ACCESS = 16;
 }
