@@ -18,10 +18,12 @@ public class Factory {
     }
 
     public static Tuple methodDeclaration(int modifier, String name, List<String> parameterTypes, String returnType, Tuple body) {
-        String bodyReturnType = getReturnType(body); // May result in multiple return types
+        /*String bodyReturnType = getReturnType(body); // May result in multiple return types
+
 
         if(!areCompatible(returnType, bodyReturnType))
             throw new IllegalArgumentException("Declared return type '" + returnType + "' is incompatible with actual return type '" + bodyReturnType + "'.");
+        */
 
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.METHOD)),
@@ -90,72 +92,72 @@ public class Factory {
     public static Tuple literal(boolean value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.BOOLEAN_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BOOLEAN))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BOOLEAN))*/
         );
     }
 
     public static Tuple literal(byte value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.BYTE_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BYTE))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.BYTE))*/
         );
     }
 
     public static Tuple literal(short value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.SHORT_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.SHORT))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.SHORT))*/
         );
     }
 
     public static Tuple literal(int value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.INT_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.INT))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.INT))*/
         );
     }
 
     public static Tuple literal(long value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.LONG_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.LONG))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.LONG))*/
         );
     }
 
     public static Tuple literal(float value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.FLOAT_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.FLOAT))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.FLOAT))*/
         );
     }
 
     public static Tuple literal(double value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.DOUBLE_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.DOUBLE))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.DOUBLE))*/
         );
     }
 
     public static Tuple literal(char value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.CHAR_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.CHAR))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(Descriptor.CHAR))*/
         );
     }
 
     public static Tuple literal(String value) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.STRING_LITERAL)),
-            Tuple.newProperty(Property.KEY_VALUE, new Atom(value)),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom("java/lang/String"))
+            Tuple.newProperty(Property.KEY_VALUE, new Atom(value))/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom("java/lang/String"))*/
         );
     }
 
@@ -213,20 +215,22 @@ public class Factory {
     }
 
     public static Tuple reduce(Tuple lhs, Tuple rhs, int operator) {
-        String lhsResultType = lhs.getStringProperty(Property.KEY_RESULT_TYPE);
+        /*String lhsResultType = lhs.getStringProperty(Property.KEY_RESULT_TYPE);
         String rhsResultType = rhs.getStringProperty(Property.KEY_RESULT_TYPE);
 
         String resultType = resultType(lhsResultType, rhsResultType);
 
+
         if(resultType == null)
             throw new IllegalArgumentException("Lhs resultType '" + lhsResultType + " is incompatible with lhs result type '" + rhsResultType + "'.");
+        */
 
         return new Tuple(
             Tuple.newProperty(Property.KEY_TYPE, new Atom(ASTType.REDUCE)),
             Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
             Tuple.newProperty(Property.KEY_LHS, lhs),
-            Tuple.newProperty(Property.KEY_RHS, rhs),
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(resultType))
+            Tuple.newProperty(Property.KEY_RHS, rhs)/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(resultType))*/
         );
     }
 }
