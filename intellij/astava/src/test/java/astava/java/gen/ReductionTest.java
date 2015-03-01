@@ -80,7 +80,7 @@ public class ReductionTest {
             Tuple reduction = op.createAST(lhsAST, rhsAST);
 
             try {
-                CommonTest.testExpression(ret(reduction), reductionResultType, (Number actualValue) ->
+                CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
                         assertEquals(expectedValue, actualValue.longValue()));
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
@@ -100,11 +100,11 @@ public class ReductionTest {
                 Tuple rhsAST = t2.createAST(rhs);
                 Tuple reduction = op.createAST(lhsAST, rhsAST);
 
-                CommonTest.testExpression(ret(reduction), reductionResultType, (Number actualValue) ->
+                CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
                         assertEquals(expectedValue, actualValue.longValue()));
                 fail();
             } catch(Throwable e) {
-                // Verify error
+                //e.toString();
             }
         }
     }
