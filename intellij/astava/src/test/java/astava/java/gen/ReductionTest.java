@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.core.Node;
+import astava.CommonTest;
 import astava.core.Tuple;
 import astava.java.Descriptor;
 import org.junit.Test;
@@ -8,9 +8,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static astava.java.Factory.*;
 import static astava.java.Factory.literal;
@@ -82,8 +80,8 @@ public class ReductionTest {
             Tuple reduction = op.createAST(lhsAST, rhsAST);
 
             try {
-                test(ret(reduction), reductionResultType, (Number actualValue) ->
-                    assertEquals(expectedValue, actualValue.longValue()));
+                CommonTest.testExpression(ret(reduction), reductionResultType, (Number actualValue) ->
+                        assertEquals(expectedValue, actualValue.longValue()));
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             } catch (NoSuchMethodException e) {
@@ -94,19 +92,21 @@ public class ReductionTest {
                 e.printStackTrace();
             }
         } else {
-            // Expect error?
-        }
-    }
+            // Expect error? Which kind of error? Which message?
+            reductionResultType = t1.getDescriptor();
 
-    private <T> void test(Tuple methodBody, String returnType, Consumer<T> assertion)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        String methodName = "myMethod";
-        Node classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(
-            methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, methodName, Collections.emptyList(), returnType, methodBody)
-        ));
-        ClassGenerator generator = new ClassGenerator(classDeclaration);
-        Object actualValue = generator.newClass().getMethod(methodName).invoke(null, null);
-        assertion.accept((T)actualValue);
+            try {
+                Tuple lhsAST = t1.createAST(lhs);
+                Tuple rhsAST = t2.createAST(rhs);
+                Tuple reduction = op.createAST(lhsAST, rhsAST);
+
+                CommonTest.testExpression(ret(reduction), reductionResultType, (Number actualValue) ->
+                        assertEquals(expectedValue, actualValue.longValue()));
+                fail();
+            } catch(Throwable e) {
+                // Verify error
+            }
+        }
     }
 
     private interface PrimitiveTest {
