@@ -44,6 +44,17 @@ public class ReductionTest {
                 public long getRhs() {
                     return 5L;
                 }
+            },
+            new RemTest() {
+                @Override
+                public long getLhs() {
+                    return 10L;
+                }
+
+                @Override
+                public long getRhs() {
+                    return 9L;
+                }
             }
         );
 
@@ -308,6 +319,18 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return div(lhs, rhs);
+        }
+    }
+
+    private static class RemTest implements ReduceOperatorTest {
+        @Override
+        public long getExpectedValue(long lhs, long rhs) {
+            return lhs % rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return rem(lhs, rhs);
         }
     }
 }
