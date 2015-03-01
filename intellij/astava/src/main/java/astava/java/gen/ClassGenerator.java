@@ -103,7 +103,7 @@ public class ClassGenerator {
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
                 generator.visitCode();
-                populateMethodStatements(body, generator);
+                populateMethodStatements(generator, new Scope() , body);
                 generator.visitEnd();
                 generator.visitMaxs(0, 0);
 
@@ -115,20 +115,30 @@ public class ClassGenerator {
         }
     }
 
-    public void populateMethodStatements(Tuple statement, GeneratorAdapter generator) {
+    public void populateMethodStatements(GeneratorAdapter generator, Scope methodScope, Tuple statement) {
         switch(getType(statement)) {
             case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
-                populateMethodExpression(expression, generator, false);
+                populateMethodExpression(generator, methodScope, expression, false);
 
                 generator.returnValue();
 
                 break;
+            case ASTType.BLOCK:
+                List<Node> statements = (List<Node>)statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+
+                statements.forEach(s -> populateMethodStatements(generator, methodScope, (Tuple)s));
+
+                break;
+            default: {
+                // Assumed to be root expression
+                populateMethodExpression(generator, methodScope, statement, true);
+            }
         }
     }
 
-    public String populateMethodExpression(Tuple expression, GeneratorAdapter generator, boolean isRoot) {
+    public String populateMethodExpression(GeneratorAdapter generator, Scope methodScope, Tuple expression, boolean isRoot) {
         switch(getType(expression)) {
             case ASTType.BOOLEAN_LITERAL: {
                 boolean value = expression.getBooleanProperty(Property.KEY_VALUE);
@@ -160,17 +170,17 @@ public class ClassGenerator {
                 generator.push(value);
 
                 return Descriptor.FLOAT;
-            }  case ASTType.DOUBLE_LITERAL: {
+            } case ASTType.DOUBLE_LITERAL: {
                 double value = expression.getDoubleProperty(Property.KEY_VALUE);
                 generator.push(value);
 
                 return Descriptor.DOUBLE;
-            }  case ASTType.CHAR_LITERAL: {
+            } case ASTType.CHAR_LITERAL: {
                 char value = expression.getCharProperty(Property.KEY_VALUE);
                 generator.push(value);
 
                 return Descriptor.CHAR;
-            }  case ASTType.STRING_LITERAL: {
+            } case ASTType.STRING_LITERAL: {
                 String value = expression.getStringProperty(Property.KEY_VALUE);
                 generator.push(value);
 
@@ -192,13 +202,35 @@ public class ClassGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(lhs, generator, false);
-                String rhsResultType = populateMethodExpression(rhs, generator, false);
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
                 String resultType = Factory.resultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
 
                 break;
+            } case ASTType.VARIABLE_DECLARATION: {
+                String type = expression.getStringProperty(Property.KEY_VAR_TYPE);
+                String name = expression.getStringProperty(Property.KEY_NAME);
+                methodScope.declareVar(generator, type, name);
+
+                return Descriptor.STRING;
+            } case ASTType.VARIABLE_ASSIGNMENT: {
+                String name = expression.getStringProperty(Property.KEY_NAME);
+                Tuple value = expression.getTupleProperty(Property.KEY_EXPRESSION);
+                String valueType = populateMethodExpression(generator, methodScope, value, false);
+                int id = methodScope.getVarId(name);
+                generator.storeLocal(id, Type.getType(valueType));
+                if(!isRoot)
+                    generator.loadLocal(id, Type.getType(valueType));
+
+                return methodScope.getVarType(name);
+            } case ASTType.VARIABLE_ACCESS: {
+                String name = expression.getStringProperty(Property.KEY_NAME);
+                int id = methodScope.getVarId(name);
+                generator.loadLocal(id);
+
+                return methodScope.getVarType(name);
             }
         }
 
@@ -227,6 +259,6 @@ public class ClassGenerator {
     }
 
     private int getType(Tuple n) {
-        return n.getIntProperty(Property.KEY_TYPE);
+        return n.getIntProperty(Property.KEY_AST_TYPE);
     }
 }
