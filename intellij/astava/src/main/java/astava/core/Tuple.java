@@ -163,4 +163,21 @@ public class Tuple extends AbstractList<Node> implements Node {
     public static Tuple newProperty(Object key, Node value) {
         return new Tuple(Arrays.asList(new Atom(key), value));
     }
+
+    @Override
+    public boolean subsumes(Node other) {
+        if(other instanceof Tuple) {
+            Tuple otherTuple = (Tuple)other;
+            if (this.size() >= otherTuple.size()) {
+                for (int i = 0; i < otherTuple.size(); i++) {
+                    if(!this.get(i).subsumes(otherTuple.get(i)))
+                        return false;
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
