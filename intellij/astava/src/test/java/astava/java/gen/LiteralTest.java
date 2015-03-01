@@ -38,7 +38,7 @@ public class LiteralTest {
         );
     }
 
-    private static abstract class LiteralProvider {
+    public static abstract class LiteralProvider {
         private Object value;
         private String type;
 
