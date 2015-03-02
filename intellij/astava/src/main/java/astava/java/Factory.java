@@ -322,6 +322,14 @@ public class Factory {
         return compare(lhs, rhs, RelationalOperator.GE);
     }
 
+    public static Tuple eq(Tuple lhs, Tuple rhs) {
+        return compare(lhs, rhs, RelationalOperator.EQ);
+    }
+
+    public static Tuple ne(Tuple lhs, Tuple rhs) {
+        return compare(lhs, rhs, RelationalOperator.NE);
+    }
+
     public static Tuple compare(Tuple lhs, Tuple rhs, int operator) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.COMPARE)),
