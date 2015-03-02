@@ -200,16 +200,20 @@ public class ClassGenerator {
                     case ReduceOperator.MUL: op = GeneratorAdapter.MUL; break;
                     case ReduceOperator.DIV: op = GeneratorAdapter.DIV; break;
                     case ReduceOperator.REM: op = GeneratorAdapter.REM; break;
+                    case ReduceOperator.SHL: op = GeneratorAdapter.SHL; break;
+                    case ReduceOperator.SHR: op = GeneratorAdapter.SHR; break;
+                    case ReduceOperator.USHR: op = GeneratorAdapter.USHR; break;
                     default: op = -1;
                 }
 
                 String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
                 String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
-                String resultType = Factory.resultType(lhsResultType, rhsResultType);
+                //String operandType = Factory.operandsType(operator, lhsResultType, rhsResultType);
+                String resultType = Factory.resultType(operator, lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
 
-                break;
+                return resultType;
             } case ASTType.VARIABLE_DECLARATION: {
                 String type = expression.getStringProperty(Property.KEY_VAR_TYPE);
                 String name = expression.getStringProperty(Property.KEY_NAME);
@@ -256,6 +260,7 @@ public class ClassGenerator {
 
                 return Descriptor.BOOLEAN;
             }
+
         }
 
         return null;
