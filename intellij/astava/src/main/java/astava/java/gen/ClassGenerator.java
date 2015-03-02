@@ -270,6 +270,8 @@ public class ClassGenerator {
                     case RelationalOperator.LE: op = GeneratorAdapter.GT; break;
                     case RelationalOperator.GT: op = GeneratorAdapter.LE; break;
                     case RelationalOperator.GE: op = GeneratorAdapter.LT; break;
+                    case RelationalOperator.EQ: op = GeneratorAdapter.NE; break;
+                    case RelationalOperator.NE: op = GeneratorAdapter.EQ; break;
                     default: op = -1;
                 }
 
