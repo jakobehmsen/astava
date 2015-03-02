@@ -13,7 +13,7 @@ public class Property {
     public static final String KEY_VALUE = "value";
     public static final String KEY_LHS = "lhs";
     public static final String KEY_RHS = "rhs";
-    public static final String KEY_RESULT_TYPE = "resultType";
+    public static final String KEY_RESULT_TYPE = "arithmeticResultType";
     public static final String KEY_OPERATOR = "operator";
     public static final String KEY_STATEMENTS = "statements";
     public static final String KEY_VAR_TYPE = "varType";

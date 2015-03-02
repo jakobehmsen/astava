@@ -3,7 +3,6 @@ package astava.java;
 import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
-import sun.security.krb5.internal.crypto.Des;
 
 import java.util.List;
 
@@ -163,147 +162,122 @@ public class Factory {
     }
 
     public static Tuple add(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.ADD);
+        return arithmetic(lhs, rhs, ArithmeticOperator.ADD);
     }
 
     public static Tuple rem(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.REM);
+        return arithmetic(lhs, rhs, ArithmeticOperator.REM);
     }
 
     public static Tuple sub(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.SUB);
+        return arithmetic(lhs, rhs, ArithmeticOperator.SUB);
     }
 
     public static Tuple mul(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.MUL);
+        return arithmetic(lhs, rhs, ArithmeticOperator.MUL);
     }
 
     public static Tuple div(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.DIV);
+        return arithmetic(lhs, rhs, ArithmeticOperator.DIV);
     }
 
-    public static Tuple shl(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.SHL);
-    }
-
-    public static Tuple shr(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.SHR);
-    }
-
-    public static Tuple ushr(Tuple lhs, Tuple rhs) {
-        return reduce(lhs, rhs, ReduceOperator.USHR);
-    }
-
-    public static String operandsType(int op, String lhsType, String rhsType) {
-        switch(op) {
-            case ReduceOperator.ADD:
-            case ReduceOperator.SUB:
-            case ReduceOperator.MUL:
-            case ReduceOperator.DIV:
-            case ReduceOperator.REM:
-                return resultType(op, lhsType, rhsType);
-            case ReduceOperator.SHL:
-            case ReduceOperator.SHR:
-            case ReduceOperator.USHR:
-                if(rhsType.equals(Descriptor.INT)) {
-                    switch (lhsType) {
-                        case Descriptor.BYTE:
-                        case Descriptor.SHORT:
-                        case Descriptor.INT:
-                            return Descriptor.INT;
-                        case Descriptor.LONG:
-                            return Descriptor.LONG;
-                    }
-                }
-                break;
-        }
-
-        return null;
-    }
-
-    public static String resultType(int op, String lhsType, String rhsType) {
-        switch(op) {
-            case ReduceOperator.ADD:
-            case ReduceOperator.SUB:
-            case ReduceOperator.MUL:
-            case ReduceOperator.DIV:
-            case ReduceOperator.REM:
-                switch(lhsType) {
-                    case Descriptor.BYTE:
-                        switch (rhsType) {
-                            case Descriptor.BYTE: return lhsType;
-                            case Descriptor.SHORT: return rhsType;
-                            case Descriptor.INT: return rhsType;
-                        }
-                        break;
-                    case Descriptor.SHORT:
-                        switch (rhsType) {
-                            case Descriptor.BYTE: return lhsType;
-                            case Descriptor.SHORT: return lhsType;
-                            case Descriptor.INT: return rhsType;
-                        }
-                        break;
-                    case Descriptor.INT:
-                        switch (rhsType) {
-                            case Descriptor.BYTE: return lhsType;
-                            case Descriptor.SHORT: return lhsType;
-                            case Descriptor.INT: return lhsType;
-                        }
-                        break;
-                    case Descriptor.LONG:
-                        switch (rhsType) {
-                            case Descriptor.LONG: return lhsType;
-                        }
-                        break;
-                    case Descriptor.FLOAT:
-                        switch (rhsType) {
-                            case Descriptor.FLOAT: return lhsType;
-                        }
-                        break;
-                    case Descriptor.DOUBLE:
-                        switch (rhsType) {
-                            case Descriptor.DOUBLE: return rhsType;
-                        }
-                        break;
-                }
-                break;
-            case ReduceOperator.SHL:
-            case ReduceOperator.SHR:
-            case ReduceOperator.USHR:
-                if(rhsType.equals(Descriptor.INT)) {
-                    switch (lhsType) {
-                        case Descriptor.BYTE:
-                        case Descriptor.SHORT:
-                        case Descriptor.INT:
-                            return Descriptor.INT;
-                        case Descriptor.LONG:
-                            return Descriptor.LONG;
-                    }
-                }
-                break;
-        }
-
-        return null;
-    }
-
-    public static Tuple reduce(Tuple lhs, Tuple rhs, int operator) {
+    public static Tuple arithmetic(Tuple lhs, Tuple rhs, int operator) {
         /*String lhsResultType = lhs.getStringProperty(Property.KEY_RESULT_TYPE);
         String rhsResultType = rhs.getStringProperty(Property.KEY_RESULT_TYPE);
 
-        String resultType = resultType(lhsResultType, rhsResultType);
+        String arithmeticResultType = arithmeticResultType(lhsResultType, rhsResultType);
 
 
-        if(resultType == null)
-            throw new IllegalArgumentException("Lhs resultType '" + lhsResultType + " is incompatible with lhs result type '" + rhsResultType + "'.");
+        if(arithmeticResultType == null)
+            throw new IllegalArgumentException("Lhs arithmeticResultType '" + lhsResultType + " is incompatible with lhs result type '" + rhsResultType + "'.");
         */
 
         return new Tuple(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.REDUCE)),
+                Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.REDUCE)),
+                Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
+                Tuple.newProperty(Property.KEY_LHS, lhs),
+                Tuple.newProperty(Property.KEY_RHS, rhs)/*,
+            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(arithmeticResultType))*/
+        );
+    }
+
+    public static String arithmeticResultType(String lhsType, String rhsType) {
+        switch(lhsType) {
+            case Descriptor.BYTE:
+                switch (rhsType) {
+                    case Descriptor.BYTE: return lhsType;
+                    case Descriptor.SHORT: return rhsType;
+                    case Descriptor.INT: return rhsType;
+                }
+                break;
+            case Descriptor.SHORT:
+                switch (rhsType) {
+                    case Descriptor.BYTE: return lhsType;
+                    case Descriptor.SHORT: return lhsType;
+                    case Descriptor.INT: return rhsType;
+                }
+                break;
+            case Descriptor.INT:
+                switch (rhsType) {
+                    case Descriptor.BYTE: return lhsType;
+                    case Descriptor.SHORT: return lhsType;
+                    case Descriptor.INT: return lhsType;
+                }
+                break;
+            case Descriptor.LONG:
+                switch (rhsType) {
+                    case Descriptor.LONG: return lhsType;
+                }
+                break;
+            case Descriptor.FLOAT:
+                switch (rhsType) {
+                    case Descriptor.FLOAT: return lhsType;
+                }
+                break;
+            case Descriptor.DOUBLE:
+                switch (rhsType) {
+                    case Descriptor.DOUBLE: return rhsType;
+                }
+                break;
+        }
+
+        return null;
+    }
+
+    public static Tuple shl(Tuple lhs, Tuple rhs) {
+        return bitwise(lhs, rhs, BitwiseOperator.SHL);
+    }
+
+    public static Tuple shr(Tuple lhs, Tuple rhs) {
+        return bitwise(lhs, rhs, BitwiseOperator.SHR);
+    }
+
+    public static Tuple ushr(Tuple lhs, Tuple rhs) {
+        return bitwise(lhs, rhs, BitwiseOperator.USHR);
+    }
+
+    public static Tuple bitwise(Tuple lhs, Tuple rhs, int operator) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BITWISE)),
             Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
             Tuple.newProperty(Property.KEY_LHS, lhs),
-            Tuple.newProperty(Property.KEY_RHS, rhs)/*,
-            Tuple.newProperty(Property.KEY_RESULT_TYPE, new Atom(resultType))*/
+            Tuple.newProperty(Property.KEY_RHS, rhs)
         );
+    }
+
+    public static String bitwiseResultType(String lhsType, String rhsType) {
+        if(rhsType.equals(Descriptor.INT)) {
+            switch (lhsType) {
+                case Descriptor.BYTE:
+                case Descriptor.SHORT:
+                case Descriptor.INT:
+                    return Descriptor.INT;
+                case Descriptor.LONG:
+                    return Descriptor.LONG;
+            }
+        }
+
+        return null;
     }
 
     public static Tuple lt(Tuple lhs, Tuple rhs) {

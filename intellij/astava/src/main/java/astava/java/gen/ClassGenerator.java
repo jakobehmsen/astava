@@ -186,27 +186,44 @@ public class ClassGenerator {
             } case ASTType.REDUCE: {
                 Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
                 Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
-                //String resultType = expression.getStringProperty(Property.KEY_RESULT_TYPE);
-                //Type t = Type.getType(resultType);
+
                 int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 int op;
 
                 switch(operator) {
-                    case ReduceOperator.ADD: op = GeneratorAdapter.ADD; break;
-                    case ReduceOperator.SUB: op = GeneratorAdapter.SUB; break;
-                    case ReduceOperator.MUL: op = GeneratorAdapter.MUL; break;
-                    case ReduceOperator.DIV: op = GeneratorAdapter.DIV; break;
-                    case ReduceOperator.REM: op = GeneratorAdapter.REM; break;
-                    case ReduceOperator.SHL: op = GeneratorAdapter.SHL; break;
-                    case ReduceOperator.SHR: op = GeneratorAdapter.SHR; break;
-                    case ReduceOperator.USHR: op = GeneratorAdapter.USHR; break;
+                    case ArithmeticOperator.ADD: op = GeneratorAdapter.ADD; break;
+                    case ArithmeticOperator.SUB: op = GeneratorAdapter.SUB; break;
+                    case ArithmeticOperator.MUL: op = GeneratorAdapter.MUL; break;
+                    case ArithmeticOperator.DIV: op = GeneratorAdapter.DIV; break;
+                    case ArithmeticOperator.REM: op = GeneratorAdapter.REM; break;
                     default: op = -1;
                 }
 
                 String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
                 String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
-                //String operandType = Factory.operandsType(operator, lhsResultType, rhsResultType);
-                String resultType = Factory.resultType(operator, lhsResultType, rhsResultType);
+
+                String resultType = Factory.arithmeticResultType(lhsResultType, rhsResultType);
+                Type t = Type.getType(resultType);
+                generator.math(op, t);
+
+                return resultType;
+            } case ASTType.BITWISE: {
+                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
+                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+
+                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
+                int op;
+
+                switch(operator) {
+                    case BitwiseOperator.SHL: op = GeneratorAdapter.SHL; break;
+                    case BitwiseOperator.SHR: op = GeneratorAdapter.SHR; break;
+                    case BitwiseOperator.USHR: op = GeneratorAdapter.USHR; break;
+                    default: op = -1;
+                }
+
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+                String resultType = Factory.bitwiseResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
 
@@ -257,7 +274,7 @@ public class ClassGenerator {
                 generator.not();
 
                 return Descriptor.BOOLEAN;
-            }case ASTType.COMPARE:
+            } case ASTType.COMPARE:
                 // Should be sensitive to false-labels
                 Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
                 Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);

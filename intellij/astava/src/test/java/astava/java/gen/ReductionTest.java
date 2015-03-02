@@ -2,10 +2,7 @@ package astava.java.gen;
 
 import astava.CommonTest;
 import astava.core.Tuple;
-import astava.java.Descriptor;
-import astava.java.Factory;
-import astava.java.ReduceOperator;
-import astava.java.RelationalOperator;
+import astava.java.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -275,9 +272,10 @@ public class ReductionTest {
         Object getExpectedValue(long lhs, long rhs);
         Object normalizeValue(Object value);
         Tuple createAST(Tuple lhs, Tuple rhs);
-        default String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.resultType(getOperator(), lhsResultType, rhsResultType);
-        }
+        String resultType(String lhsResultType, String rhsResultType);
+        /*default String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.arithmeticResultType(getOperator(), lhsResultType, rhsResultType);
+        }*/
         int getOperator();
     }
 
@@ -288,7 +286,14 @@ public class ReductionTest {
         }
     }
 
-    private static class AddTest extends NumberResultTest {
+    private static abstract class ArithmeticResultTest extends NumberResultTest {
+        @Override
+        public String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.arithmeticResultType(lhsResultType, rhsResultType);
+        }
+    }
+
+    private static class AddTest extends ArithmeticResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs + rhs;
@@ -301,11 +306,11 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.ADD;
+            return ArithmeticOperator.ADD;
         }
     }
 
-    private static class SubTest extends NumberResultTest {
+    private static class SubTest extends ArithmeticResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs - rhs;
@@ -318,11 +323,11 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.SUB;
+            return ArithmeticOperator.SUB;
         }
     }
 
-    private static class MulTest extends NumberResultTest {
+    private static class MulTest extends ArithmeticResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs * rhs;
@@ -335,11 +340,11 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.MUL;
+            return ArithmeticOperator.MUL;
         }
     }
 
-    private static class DivTest extends NumberResultTest {
+    private static class DivTest extends ArithmeticResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs / rhs;
@@ -352,11 +357,11 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.DIV;
+            return ArithmeticOperator.DIV;
         }
     }
 
-    private static class RemTest extends NumberResultTest {
+    private static class RemTest extends ArithmeticResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs % rhs;
@@ -369,11 +374,18 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.REM;
+            return ArithmeticOperator.REM;
         }
     }
 
-    private static class ShlTest extends NumberResultTest {
+    private static abstract class BitwiseResultTest extends NumberResultTest {
+        @Override
+        public String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.bitwiseResultType(lhsResultType, rhsResultType);
+        }
+    }
+
+    private static class ShlTest extends BitwiseResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs << rhs;
@@ -386,11 +398,11 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.SHL;
+            return BitwiseOperator.SHL;
         }
     }
 
-    private static class ShrTest extends NumberResultTest {
+    private static class ShrTest extends BitwiseResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs >> rhs;
@@ -403,11 +415,11 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.SHR;
+            return BitwiseOperator.SHR;
         }
     }
 
-    private static class UshrTest extends NumberResultTest {
+    private static class UshrTest extends BitwiseResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs >>> rhs;
@@ -420,7 +432,7 @@ public class ReductionTest {
 
         @Override
         public int getOperator() {
-            return ReduceOperator.USHR;
+            return BitwiseOperator.USHR;
         }
     }
 
