@@ -4,10 +4,7 @@ import astava.core.Node;
 import astava.core.Tuple;
 import astava.debug.Debug;
 import astava.java.*;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
@@ -252,6 +249,7 @@ public class ClassGenerator {
 
                 return methodScope.getVarType(name);
             } case ASTType.NOT: {
+                // Should be sensitive to false-labels
                 Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
 
                 String resultType = populateMethodExpression(generator, methodScope, bExpression, false);
@@ -259,7 +257,52 @@ public class ClassGenerator {
                 generator.not();
 
                 return Descriptor.BOOLEAN;
-            }
+            }case ASTType.COMPARE:
+                // Should be sensitive to false-labels
+                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
+                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+
+                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
+                int op;
+
+                switch(operator) {
+                    case RelationalOperator.LT: op = GeneratorAdapter.GE; break;
+                    case RelationalOperator.LE: op = GeneratorAdapter.GT; break;
+                    case RelationalOperator.GT: op = GeneratorAdapter.LE; break;
+                    case RelationalOperator.GE: op = GeneratorAdapter.LT; break;
+                    default: op = -1;
+                }
+
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+
+                /*
+
+                ILOAD 0
+                ILOAD 1
+                IF_ICMPGE L1
+                ICONST_1
+                GOTO L2
+               L1
+                ICONST_0
+               L2
+
+                */
+
+                Type t = Type.getType(lhsResultType);
+
+                Label endLabel = generator.newLabel();
+                Label ifFalseLabel = generator.newLabel();
+                //generator.math(op, t);
+                generator.ifCmp(t, op, ifFalseLabel);
+
+                generator.push(true);
+                generator.goTo(endLabel);
+                generator.visitLabel(ifFalseLabel);
+                generator.push(false);
+                generator.visitLabel(endLabel);
+
+                return Descriptor.BOOLEAN;
 
         }
 

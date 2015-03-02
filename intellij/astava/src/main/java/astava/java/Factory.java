@@ -3,6 +3,7 @@ package astava.java;
 import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
+import sun.security.krb5.internal.crypto.Des;
 
 import java.util.List;
 
@@ -305,6 +306,31 @@ public class Factory {
         );
     }
 
+    public static Tuple lt(Tuple lhs, Tuple rhs) {
+        return compare(lhs, rhs, RelationalOperator.LT);
+    }
+
+    public static Tuple le(Tuple lhs, Tuple rhs) {
+        return compare(lhs, rhs, RelationalOperator.LE);
+    }
+
+    public static Tuple gt(Tuple lhs, Tuple rhs) {
+        return compare(lhs, rhs, RelationalOperator.GT);
+    }
+
+    public static Tuple ge(Tuple lhs, Tuple rhs) {
+        return compare(lhs, rhs, RelationalOperator.GE);
+    }
+
+    public static Tuple compare(Tuple lhs, Tuple rhs, int operator) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.COMPARE)),
+            Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
+            Tuple.newProperty(Property.KEY_LHS, lhs),
+            Tuple.newProperty(Property.KEY_RHS, rhs)
+        );
+    }
+
     public static Tuple declareVar(String type, String name) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.VARIABLE_DECLARATION)),
@@ -349,5 +375,21 @@ public class Factory {
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.NOT)),
             Tuple.newProperty(Property.KEY_EXPRESSION, expression)
         );
+    }
+
+    public static String compareResultType(String lhsType, String rhsType) {
+        switch(lhsType) {
+            case Descriptor.BYTE:
+            case Descriptor.SHORT:
+            case Descriptor.INT:
+                switch (rhsType) {
+                    case Descriptor.BYTE:
+                    case Descriptor.SHORT:
+                    case Descriptor.INT:
+                        return Descriptor.BOOLEAN;
+                }
+        }
+
+        return lhsType.equals(rhsType) ? Descriptor.BOOLEAN : null;
     }
 }

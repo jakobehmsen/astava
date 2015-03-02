@@ -5,6 +5,7 @@ import astava.core.Tuple;
 import astava.java.Descriptor;
 import astava.java.Factory;
 import astava.java.ReduceOperator;
+import astava.java.RelationalOperator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -60,7 +61,67 @@ public class ReductionTest {
             },
             new ShlTest(),
             new ShrTest(),
-            new UshrTest()
+            new UshrTest(),
+            new LTTest() { // => true
+                @Override
+                public long getLhs() { return 7L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new LTTest() { // => false
+                @Override
+                public long getLhs() { return 8L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new LETest() { // => true
+                @Override
+                public long getLhs() { return 7L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new LETest() { // => true
+                @Override
+                public long getLhs() { return 8L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new LETest() { // => false
+                @Override
+                public long getLhs() { return 9L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new GTTest() { // => true
+                @Override
+                public long getLhs() { return 9L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new GTTest() { // => false
+                @Override
+                public long getLhs() { return 8L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new GETest() { // => true
+                @Override
+                public long getLhs() { return 9L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new GETest() { // => true
+                @Override
+                public long getLhs() { return 8L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new GETest() { // => false
+                @Override
+                public long getLhs() { return 7L; }
+                @Override
+                public long getRhs() { return 8L; }
+            }
         );
 
         List<PrimitiveTest> tests = Arrays.asList(
@@ -70,10 +131,6 @@ public class ReductionTest {
         );
 
         operators.forEach(op -> {
-            long lhs = op.getLhs();
-            long rhs = op.getRhs();
-            long expectedValue = op.getExpectedValue(lhs, rhs);
-
             tests.forEach(t1 -> {
                 tests.forEach(t2 -> {
                     values.add(new Object[]{op, t1, t2});
@@ -88,32 +145,26 @@ public class ReductionTest {
     public void testReduction() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         long lhs = op.getLhs();
         long rhs = op.getRhs();
-        long expectedValue = op.getExpectedValue(lhs, rhs);
+        Object expectedValue = op.getExpectedValue(lhs, rhs);
 
         String reductionResultType = op.resultType(t1.getDescriptor(), t2.getDescriptor());
+        boolean expectSuccess = reductionResultType != null;
 
-        if(reductionResultType != null) {
+        try {
             Tuple lhsAST = t1.createAST(lhs);
             Tuple rhsAST = t2.createAST(rhs);
             Tuple reduction = op.createAST(lhsAST, rhsAST);
 
-            CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
-                    assertEquals(expectedValue, actualValue.longValue()));
-        } else {
-            // Expect error? Which kind of error? Which message?
-            reductionResultType = t1.getDescriptor();
+            CommonTest.testExpression(reduction, reductionResultType, (Object actualValue) ->
+                    assertEquals(expectedValue, op.normalizeValue(actualValue)));
 
-            try {
-                Tuple lhsAST = t1.createAST(lhs);
-                Tuple rhsAST = t2.createAST(rhs);
-                Tuple reduction = op.createAST(lhsAST, rhsAST);
-
-                CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
-                        assertEquals(expectedValue, actualValue.longValue()));
+            if(!expectSuccess)
                 fail();
-            } catch (Throwable e) {
-                //e.toString();
-            }
+        } catch (Throwable e) {
+            if(expectSuccess)
+                throw e;
+
+            // Expect error? Which kind of error? Which message?
         }
     }
 
@@ -196,8 +247,9 @@ public class ReductionTest {
 
     private interface ReduceOperatorTest {
         default long getLhs() {return 7;}
-        default long getRhs() {return 7;}
-        long getExpectedValue(long lhs, long rhs);
+        default long getRhs() {return 9;}
+        Object getExpectedValue(long lhs, long rhs);
+        Object normalizeValue(Object value);
         Tuple createAST(Tuple lhs, Tuple rhs);
         default String resultType(String lhsResultType, String rhsResultType) {
             return Factory.resultType(getOperator(), lhsResultType, rhsResultType);
@@ -205,9 +257,16 @@ public class ReductionTest {
         int getOperator();
     }
 
-    private static class AddTest implements ReduceOperatorTest {
+    private static abstract class NumberResultTest implements ReduceOperatorTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object normalizeValue(Object value) {
+            return ((Number)value).longValue();
+        }
+    }
+
+    private static class AddTest extends NumberResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs + rhs;
         }
 
@@ -222,9 +281,9 @@ public class ReductionTest {
         }
     }
 
-    private static class SubTest implements ReduceOperatorTest {
+    private static class SubTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs - rhs;
         }
 
@@ -239,9 +298,9 @@ public class ReductionTest {
         }
     }
 
-    private static class MulTest implements ReduceOperatorTest {
+    private static class MulTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs * rhs;
         }
 
@@ -256,9 +315,9 @@ public class ReductionTest {
         }
     }
 
-    private static class DivTest implements ReduceOperatorTest {
+    private static class DivTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs / rhs;
         }
 
@@ -273,9 +332,9 @@ public class ReductionTest {
         }
     }
 
-    private static class RemTest implements ReduceOperatorTest {
+    private static class RemTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs % rhs;
         }
 
@@ -290,9 +349,9 @@ public class ReductionTest {
         }
     }
 
-    private static class ShlTest implements ReduceOperatorTest {
+    private static class ShlTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs << rhs;
         }
 
@@ -307,9 +366,9 @@ public class ReductionTest {
         }
     }
 
-    private static class ShrTest implements ReduceOperatorTest {
+    private static class ShrTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs >> rhs;
         }
 
@@ -324,9 +383,9 @@ public class ReductionTest {
         }
     }
 
-    private static class UshrTest implements ReduceOperatorTest {
+    private static class UshrTest extends NumberResultTest {
         @Override
-        public long getExpectedValue(long lhs, long rhs) {
+        public Object getExpectedValue(long lhs, long rhs) {
             return lhs >>> rhs;
         }
 
@@ -338,6 +397,71 @@ public class ReductionTest {
         @Override
         public int getOperator() {
             return ReduceOperator.USHR;
+        }
+    }
+
+    private static abstract class BooleanResultTest implements ReduceOperatorTest {
+        @Override
+        public Object normalizeValue(Object value) {
+            return value;
+        }
+
+        @Override
+        public String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.compareResultType(lhsResultType, rhsResultType);
+        }
+
+        @Override
+        public int getOperator() {
+            return -1; // N/A
+        }
+    }
+
+    private static class LTTest extends BooleanResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs < rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return lt(lhs, rhs);
+        }
+    }
+
+    private static class LETest extends BooleanResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs <= rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return le(lhs, rhs);
+        }
+    }
+
+    private static class GTTest extends BooleanResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs > rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return gt(lhs, rhs);
+        }
+    }
+
+    private static class GETest extends BooleanResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs >= rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return ge(lhs, rhs);
         }
     }
 }
