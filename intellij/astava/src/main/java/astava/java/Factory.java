@@ -181,38 +181,105 @@ public class Factory {
         return reduce(lhs, rhs, ReduceOperator.DIV);
     }
 
-    public static String resultType(String lhsType, String rhsType) {
-        switch(lhsType) {
-            case Descriptor.BYTE:
-                switch (rhsType) {
-                    case Descriptor.BYTE: return lhsType;
-                    case Descriptor.SHORT: return rhsType;
-                    case Descriptor.INT: return rhsType;
+    public static Tuple shl(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.SHL);
+    }
+
+    public static Tuple shr(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.SHR);
+    }
+
+    public static Tuple ushr(Tuple lhs, Tuple rhs) {
+        return reduce(lhs, rhs, ReduceOperator.USHR);
+    }
+
+    public static String operandsType(int op, String lhsType, String rhsType) {
+        switch(op) {
+            case ReduceOperator.ADD:
+            case ReduceOperator.SUB:
+            case ReduceOperator.MUL:
+            case ReduceOperator.DIV:
+            case ReduceOperator.REM:
+                return resultType(op, lhsType, rhsType);
+            case ReduceOperator.SHL:
+            case ReduceOperator.SHR:
+            case ReduceOperator.USHR:
+                if(rhsType.equals(Descriptor.INT)) {
+                    switch (lhsType) {
+                        case Descriptor.BYTE:
+                        case Descriptor.SHORT:
+                        case Descriptor.INT:
+                            return Descriptor.INT;
+                        case Descriptor.LONG:
+                            return Descriptor.LONG;
+                    }
                 }
-            case Descriptor.SHORT:
-                switch (rhsType) {
-                    case Descriptor.BYTE: return lhsType;
-                    case Descriptor.SHORT: return lhsType;
-                    case Descriptor.INT: return rhsType;
+                break;
+        }
+
+        return null;
+    }
+
+    public static String resultType(int op, String lhsType, String rhsType) {
+        switch(op) {
+            case ReduceOperator.ADD:
+            case ReduceOperator.SUB:
+            case ReduceOperator.MUL:
+            case ReduceOperator.DIV:
+            case ReduceOperator.REM:
+                switch(lhsType) {
+                    case Descriptor.BYTE:
+                        switch (rhsType) {
+                            case Descriptor.BYTE: return lhsType;
+                            case Descriptor.SHORT: return rhsType;
+                            case Descriptor.INT: return rhsType;
+                        }
+                        break;
+                    case Descriptor.SHORT:
+                        switch (rhsType) {
+                            case Descriptor.BYTE: return lhsType;
+                            case Descriptor.SHORT: return lhsType;
+                            case Descriptor.INT: return rhsType;
+                        }
+                        break;
+                    case Descriptor.INT:
+                        switch (rhsType) {
+                            case Descriptor.BYTE: return lhsType;
+                            case Descriptor.SHORT: return lhsType;
+                            case Descriptor.INT: return lhsType;
+                        }
+                        break;
+                    case Descriptor.LONG:
+                        switch (rhsType) {
+                            case Descriptor.LONG: return lhsType;
+                        }
+                        break;
+                    case Descriptor.FLOAT:
+                        switch (rhsType) {
+                            case Descriptor.FLOAT: return lhsType;
+                        }
+                        break;
+                    case Descriptor.DOUBLE:
+                        switch (rhsType) {
+                            case Descriptor.DOUBLE: return rhsType;
+                        }
+                        break;
                 }
-            case Descriptor.INT:
-                switch (rhsType) {
-                    case Descriptor.BYTE: return lhsType;
-                    case Descriptor.SHORT: return lhsType;
-                    case Descriptor.INT: return lhsType;
+                break;
+            case ReduceOperator.SHL:
+            case ReduceOperator.SHR:
+            case ReduceOperator.USHR:
+                if(rhsType.equals(Descriptor.INT)) {
+                    switch (lhsType) {
+                        case Descriptor.BYTE:
+                        case Descriptor.SHORT:
+                        case Descriptor.INT:
+                            return Descriptor.INT;
+                        case Descriptor.LONG:
+                            return Descriptor.LONG;
+                    }
                 }
-            case Descriptor.LONG:
-                switch (rhsType) {
-                    case Descriptor.LONG: return lhsType;
-                }
-            case Descriptor.FLOAT:
-                switch (rhsType) {
-                    case Descriptor.FLOAT: return lhsType;
-                }
-            case Descriptor.DOUBLE:
-                switch (rhsType) {
-                    case Descriptor.DOUBLE: return rhsType;
-                }
+                break;
         }
 
         return null;
