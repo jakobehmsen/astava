@@ -245,15 +245,51 @@ public class Factory {
     }
 
     public static Tuple shl(Tuple lhs, Tuple rhs) {
-        return bitwise(lhs, rhs, BitwiseOperator.SHL);
+        return shift(lhs, rhs, ShiftOperator.SHL);
     }
 
     public static Tuple shr(Tuple lhs, Tuple rhs) {
-        return bitwise(lhs, rhs, BitwiseOperator.SHR);
+        return shift(lhs, rhs, ShiftOperator.SHR);
     }
 
     public static Tuple ushr(Tuple lhs, Tuple rhs) {
-        return bitwise(lhs, rhs, BitwiseOperator.USHR);
+        return shift(lhs, rhs, ShiftOperator.USHR);
+    }
+
+    public static Tuple shift(Tuple lhs, Tuple rhs, int operator) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.SHIFT)),
+            Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
+            Tuple.newProperty(Property.KEY_LHS, lhs),
+            Tuple.newProperty(Property.KEY_RHS, rhs)
+        );
+    }
+
+    public static String shiftResultType(String lhsType, String rhsType) {
+        if(rhsType.equals(Descriptor.INT)) {
+            switch (lhsType) {
+                case Descriptor.BYTE:
+                case Descriptor.SHORT:
+                case Descriptor.INT:
+                    return Descriptor.INT;
+                case Descriptor.LONG:
+                    return Descriptor.LONG;
+            }
+        }
+
+        return null;
+    }
+
+    public static Tuple band(Tuple lhs, Tuple rhs) {
+        return bitwise(lhs, rhs, BitwiseOperator.AND);
+    }
+
+    public static Tuple bor(Tuple lhs, Tuple rhs) {
+        return bitwise(lhs, rhs, BitwiseOperator.OR);
+    }
+
+    public static Tuple bxor(Tuple lhs, Tuple rhs) {
+        return bitwise(lhs, rhs, BitwiseOperator.XOR);
     }
 
     public static Tuple bitwise(Tuple lhs, Tuple rhs, int operator) {
@@ -266,15 +302,23 @@ public class Factory {
     }
 
     public static String bitwiseResultType(String lhsType, String rhsType) {
-        if(rhsType.equals(Descriptor.INT)) {
-            switch (lhsType) {
-                case Descriptor.BYTE:
-                case Descriptor.SHORT:
-                case Descriptor.INT:
-                    return Descriptor.INT;
-                case Descriptor.LONG:
-                    return Descriptor.LONG;
-            }
+        switch (lhsType) {
+            case Descriptor.BYTE:
+            case Descriptor.SHORT:
+            case Descriptor.INT:
+                switch (rhsType) {
+                    case Descriptor.BYTE:
+                    case Descriptor.SHORT:
+                    case Descriptor.INT:
+                        return Descriptor.INT;
+                }
+                break;
+            case Descriptor.LONG:
+                switch (rhsType) {
+                    case Descriptor.LONG:
+                        return Descriptor.LONG;
+                }
+                break;
         }
 
         return null;

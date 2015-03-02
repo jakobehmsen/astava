@@ -207,6 +207,27 @@ public class ClassGenerator {
                 generator.math(op, t);
 
                 return resultType;
+            } case ASTType.SHIFT: {
+                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
+                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+
+                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
+                int op;
+
+                switch(operator) {
+                    case ShiftOperator.SHL: op = GeneratorAdapter.SHL; break;
+                    case ShiftOperator.SHR: op = GeneratorAdapter.SHR; break;
+                    case ShiftOperator.USHR: op = GeneratorAdapter.USHR; break;
+                    default: op = -1;
+                }
+
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+                String resultType = Factory.shiftResultType(lhsResultType, rhsResultType);
+                Type t = Type.getType(resultType);
+                generator.math(op, t);
+
+                return resultType;
             } case ASTType.BITWISE: {
                 Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
                 Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
@@ -215,9 +236,9 @@ public class ClassGenerator {
                 int op;
 
                 switch(operator) {
-                    case BitwiseOperator.SHL: op = GeneratorAdapter.SHL; break;
-                    case BitwiseOperator.SHR: op = GeneratorAdapter.SHR; break;
-                    case BitwiseOperator.USHR: op = GeneratorAdapter.USHR; break;
+                    case BitwiseOperator.AND: op = GeneratorAdapter.AND; break;
+                    case BitwiseOperator.OR: op = GeneratorAdapter.OR; break;
+                    case BitwiseOperator.XOR: op = GeneratorAdapter.XOR; break;
                     default: op = -1;
                 }
 

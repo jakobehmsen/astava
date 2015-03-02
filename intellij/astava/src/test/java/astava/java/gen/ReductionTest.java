@@ -59,6 +59,9 @@ public class ReductionTest {
             new ShlTest(),
             new ShrTest(),
             new UshrTest(),
+            new BAndTest(),
+            new BOrTest(),
+            new BXorTest(),
             new LTTest() { // => true
                 @Override
                 public long getLhs() { return 7L; }
@@ -177,7 +180,7 @@ public class ReductionTest {
             Tuple reduction = op.createAST(lhsAST, rhsAST);
 
             CommonTest.testExpression(reduction, reductionResultType, (Object actualValue) ->
-                    assertEquals(expectedValue, op.normalizeValue(actualValue)));
+                assertEquals(expectedValue, op.normalizeValue(actualValue)));
 
             if(!expectSuccess)
                 fail();
@@ -273,10 +276,6 @@ public class ReductionTest {
         Object normalizeValue(Object value);
         Tuple createAST(Tuple lhs, Tuple rhs);
         String resultType(String lhsResultType, String rhsResultType);
-        /*default String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.arithmeticResultType(getOperator(), lhsResultType, rhsResultType);
-        }*/
-        int getOperator();
     }
 
     private static abstract class NumberResultTest implements ReduceOperatorTest {
@@ -303,11 +302,6 @@ public class ReductionTest {
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return add(lhs, rhs);
         }
-
-        @Override
-        public int getOperator() {
-            return ArithmeticOperator.ADD;
-        }
     }
 
     private static class SubTest extends ArithmeticResultTest {
@@ -319,11 +313,6 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return sub(lhs, rhs);
-        }
-
-        @Override
-        public int getOperator() {
-            return ArithmeticOperator.SUB;
         }
     }
 
@@ -337,11 +326,6 @@ public class ReductionTest {
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return mul(lhs, rhs);
         }
-
-        @Override
-        public int getOperator() {
-            return ArithmeticOperator.MUL;
-        }
     }
 
     private static class DivTest extends ArithmeticResultTest {
@@ -353,11 +337,6 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return div(lhs, rhs);
-        }
-
-        @Override
-        public int getOperator() {
-            return ArithmeticOperator.DIV;
         }
     }
 
@@ -371,10 +350,48 @@ public class ReductionTest {
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return rem(lhs, rhs);
         }
+    }
+
+    private static abstract class ShiftResultTest extends NumberResultTest {
+        @Override
+        public String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.shiftResultType(lhsResultType, rhsResultType);
+        }
+    }
+
+    private static class ShlTest extends ShiftResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs << rhs;
+        }
 
         @Override
-        public int getOperator() {
-            return ArithmeticOperator.REM;
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return shl(lhs, rhs);
+        }
+    }
+
+    private static class ShrTest extends ShiftResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs >> rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return shr(lhs, rhs);
+        }
+    }
+
+    private static class UshrTest extends ShiftResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs >>> rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return ushr(lhs, rhs);
         }
     }
 
@@ -385,54 +402,39 @@ public class ReductionTest {
         }
     }
 
-    private static class ShlTest extends BitwiseResultTest {
+    private static class BAndTest extends BitwiseResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
-            return lhs << rhs;
+            return lhs & rhs;
         }
 
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
-            return shl(lhs, rhs);
-        }
-
-        @Override
-        public int getOperator() {
-            return BitwiseOperator.SHL;
+            return band(lhs, rhs);
         }
     }
 
-    private static class ShrTest extends BitwiseResultTest {
+    private static class BOrTest extends BitwiseResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
-            return lhs >> rhs;
+            return lhs | rhs;
         }
 
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
-            return shr(lhs, rhs);
-        }
-
-        @Override
-        public int getOperator() {
-            return BitwiseOperator.SHR;
+            return bor(lhs, rhs);
         }
     }
 
-    private static class UshrTest extends BitwiseResultTest {
+    private static class BXorTest extends BitwiseResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
-            return lhs >>> rhs;
+            return lhs ^ rhs;
         }
 
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
-            return ushr(lhs, rhs);
-        }
-
-        @Override
-        public int getOperator() {
-            return BitwiseOperator.USHR;
+            return bxor(lhs, rhs);
         }
     }
 
@@ -445,11 +447,6 @@ public class ReductionTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
             return Factory.compareResultType(lhsResultType, rhsResultType);
-        }
-
-        @Override
-        public int getOperator() {
-            return -1; // N/A
         }
     }
 
