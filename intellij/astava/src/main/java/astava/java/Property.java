@@ -17,4 +17,7 @@ public class Property {
     public static final String KEY_OPERATOR = "operator";
     public static final String KEY_STATEMENTS = "statements";
     public static final String KEY_VAR_TYPE = "varType";
+    public static final String KEY_TIMING = "timing";
+    public static final String KEY_AMOUNT = "amount";
+    public static final String KEY_AS_EXPRESSION = "asExpression";
 }

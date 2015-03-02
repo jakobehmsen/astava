@@ -18,4 +18,6 @@ public class ASTType {
     public static final int VARIABLE_DECLARATION = 14;
     public static final int VARIABLE_ASSIGNMENT = 15;
     public static final int VARIABLE_ACCESS = 16;
+    public static final int INCREMENT = 17;
+    public static final int NOT = 18;
 }
