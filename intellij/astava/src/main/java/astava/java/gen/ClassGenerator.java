@@ -126,9 +126,9 @@ public class ClassGenerator {
 
                 break;
             case ASTType.BLOCK:
-                List<Node> statements = (List<Node>)statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+                List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
-                statements.forEach(s -> populateMethodStatements(generator, methodScope, (Tuple)s));
+                statements.forEach(s -> populateMethodStatements(generator, methodScope, (Tuple) s));
 
                 break;
             default: {
@@ -231,6 +231,29 @@ public class ClassGenerator {
                 generator.loadLocal(id);
 
                 return methodScope.getVarType(name);
+            } case ASTType.INCREMENT: {
+                String name = expression.getStringProperty(Property.KEY_NAME);
+                int timing = expression.getIntProperty(Property.KEY_TIMING);
+                int amount = expression.getIntProperty(Property.KEY_AMOUNT);
+                int id = methodScope.getVarId(name);
+
+                if(timing == IncDec.TIMING_PRE)
+                    generator.iinc(id, amount);
+
+                generator.loadLocal(id);
+
+                if(timing == IncDec.TIMING_POST)
+                    generator.iinc(id, amount);
+
+                return methodScope.getVarType(name);
+            } case ASTType.NOT: {
+                Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
+
+                String resultType = populateMethodExpression(generator, methodScope, bExpression, false);
+
+                generator.not();
+
+                return Descriptor.BOOLEAN;
             }
         }
 
