@@ -2,6 +2,7 @@ package astava.java.gen;
 
 import astava.core.Node;
 import astava.core.Tuple;
+import astava.debug.Debug;
 import astava.java.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -268,7 +269,7 @@ public class ClassGenerator {
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         classNode.accept(classWriter);
 
-        //org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, new PrintWriter(System.out));
+        org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, new PrintWriter(Debug.getPrintStream(Debug.LEVEL_HIGH)));
 
         return classWriter.toByteArray();
     }
