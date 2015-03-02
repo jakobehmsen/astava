@@ -3,6 +3,8 @@ package astava.java.gen;
 import astava.CommonTest;
 import astava.core.Tuple;
 import astava.java.Descriptor;
+import astava.java.Factory;
+import astava.java.ReduceOperator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,11 +57,15 @@ public class ReductionTest {
                 public long getRhs() {
                     return 9L;
                 }
-            }
+            },
+            new ShlTest(),
+            new ShrTest(),
+            new UshrTest()
         );
 
         List<PrimitiveTest> tests = Arrays.asList(
-            new ByteTest(), new ShortTest(), new IntTest(), new LongTest(),
+            new ByteTest(), new ShortTest(),
+            new IntTest(), new LongTest(),
             new FloatTest(), new DoubleTest()
         );
 
@@ -79,29 +85,20 @@ public class ReductionTest {
     }
 
     @Test
-    public void testReduction() {
+    public void testReduction() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         long lhs = op.getLhs();
         long rhs = op.getRhs();
         long expectedValue = op.getExpectedValue(lhs, rhs);
 
-        String reductionResultType = t1.canReduceWith(t2.getDescriptor());
-        if (reductionResultType != null) {
+        String reductionResultType = op.resultType(t1.getDescriptor(), t2.getDescriptor());
+
+        if(reductionResultType != null) {
             Tuple lhsAST = t1.createAST(lhs);
             Tuple rhsAST = t2.createAST(rhs);
             Tuple reduction = op.createAST(lhsAST, rhsAST);
 
-            try {
-                CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
-                        assertEquals(expectedValue, actualValue.longValue()));
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
+            CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
+                    assertEquals(expectedValue, actualValue.longValue()));
         } else {
             // Expect error? Which kind of error? Which message?
             reductionResultType = t1.getDescriptor();
@@ -114,7 +111,7 @@ public class ReductionTest {
                 CommonTest.testExpression(reduction, reductionResultType, (Number actualValue) ->
                         assertEquals(expectedValue, actualValue.longValue()));
                 fail();
-            } catch(Throwable e) {
+            } catch (Throwable e) {
                 //e.toString();
             }
         }
@@ -123,7 +120,6 @@ public class ReductionTest {
     private interface PrimitiveTest {
         String getDescriptor();
         Tuple createAST(Number number);
-        String canReduceWith(String descriptor);
     }
 
     private static class ByteTest implements PrimitiveTest {
@@ -135,20 +131,6 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Number number) {
             return literal(number.byteValue());
-        }
-
-        @Override
-        public String canReduceWith(String descriptor) {
-            switch(descriptor) {
-                case Descriptor.BYTE:
-                    return Descriptor.BYTE;
-                case Descriptor.SHORT:
-                    return Descriptor.SHORT;
-                case Descriptor.INT:
-                    return Descriptor.INT;
-            }
-
-            return null;
         }
     }
 
@@ -162,19 +144,6 @@ public class ReductionTest {
         public Tuple createAST(Number number) {
             return literal(number.shortValue());
         }
-
-        @Override
-        public String canReduceWith(String descriptor) {
-            switch(descriptor) {
-                case Descriptor.BYTE:
-                case Descriptor.SHORT:
-                    return Descriptor.SHORT;
-                case Descriptor.INT:
-                    return Descriptor.INT;
-            }
-
-            return null;
-        }
     }
 
     private static class IntTest implements PrimitiveTest {
@@ -186,18 +155,6 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Number number) {
             return literal(number.intValue());
-        }
-
-        @Override
-        public String canReduceWith(String descriptor) {
-            switch(descriptor) {
-                case Descriptor.BYTE:
-                case Descriptor.SHORT:
-                case Descriptor.INT:
-                    return Descriptor.INT;
-            }
-
-            return null;
         }
     }
 
@@ -211,16 +168,6 @@ public class ReductionTest {
         public Tuple createAST(Number number) {
             return literal(number.longValue());
         }
-
-        @Override
-        public String canReduceWith(String descriptor) {
-            switch(descriptor) {
-                case Descriptor.LONG:
-                    return Descriptor.LONG;
-            }
-
-            return null;
-        }
     }
 
     private static class FloatTest implements PrimitiveTest {
@@ -232,16 +179,6 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Number number) {
             return literal(number.floatValue());
-        }
-
-        @Override
-        public String canReduceWith(String descriptor) {
-            switch(descriptor) {
-                case Descriptor.FLOAT:
-                    return Descriptor.FLOAT;
-            }
-
-            return null;
         }
     }
 
@@ -255,16 +192,6 @@ public class ReductionTest {
         public Tuple createAST(Number number) {
             return literal(number.doubleValue());
         }
-
-        @Override
-        public String canReduceWith(String descriptor) {
-            switch(descriptor) {
-                case Descriptor.DOUBLE:
-                    return Descriptor.DOUBLE;
-            }
-
-            return null;
-        }
     }
 
     private interface ReduceOperatorTest {
@@ -272,6 +199,10 @@ public class ReductionTest {
         default long getRhs() {return 7;}
         long getExpectedValue(long lhs, long rhs);
         Tuple createAST(Tuple lhs, Tuple rhs);
+        default String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.resultType(getOperator(), lhsResultType, rhsResultType);
+        }
+        int getOperator();
     }
 
     private static class AddTest implements ReduceOperatorTest {
@@ -283,6 +214,11 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return add(lhs, rhs);
+        }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.ADD;
         }
     }
 
@@ -296,6 +232,11 @@ public class ReductionTest {
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return sub(lhs, rhs);
         }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.SUB;
+        }
     }
 
     private static class MulTest implements ReduceOperatorTest {
@@ -307,6 +248,11 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return mul(lhs, rhs);
+        }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.MUL;
         }
     }
 
@@ -320,6 +266,11 @@ public class ReductionTest {
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return div(lhs, rhs);
         }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.DIV;
+        }
     }
 
     private static class RemTest implements ReduceOperatorTest {
@@ -331,6 +282,62 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return rem(lhs, rhs);
+        }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.REM;
+        }
+    }
+
+    private static class ShlTest implements ReduceOperatorTest {
+        @Override
+        public long getExpectedValue(long lhs, long rhs) {
+            return lhs << rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return shl(lhs, rhs);
+        }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.SHL;
+        }
+    }
+
+    private static class ShrTest implements ReduceOperatorTest {
+        @Override
+        public long getExpectedValue(long lhs, long rhs) {
+            return lhs >> rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return shr(lhs, rhs);
+        }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.SHR;
+        }
+    }
+
+    private static class UshrTest implements ReduceOperatorTest {
+        @Override
+        public long getExpectedValue(long lhs, long rhs) {
+            return lhs >>> rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return ushr(lhs, rhs);
+        }
+
+        @Override
+        public int getOperator() {
+            return ReduceOperator.USHR;
         }
     }
 }
