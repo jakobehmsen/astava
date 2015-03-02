@@ -121,6 +121,30 @@ public class ReductionTest {
                 public long getLhs() { return 7L; }
                 @Override
                 public long getRhs() { return 8L; }
+            },
+            new EQTest() { // => true
+                @Override
+                public long getLhs() { return 8L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new EQTest() { // => false
+                @Override
+                public long getLhs() { return 7L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new NETest() { // => true
+                @Override
+                public long getLhs() { return 7L; }
+                @Override
+                public long getRhs() { return 8L; }
+            },
+            new NETest() { // => false
+                @Override
+                public long getLhs() { return 8L; }
+                @Override
+                public long getRhs() { return 8L; }
             }
         );
 
@@ -462,6 +486,30 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return ge(lhs, rhs);
+        }
+    }
+
+    private static class EQTest extends BooleanResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs == rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return eq(lhs, rhs);
+        }
+    }
+
+    private static class NETest extends BooleanResultTest {
+        @Override
+        public Object getExpectedValue(long lhs, long rhs) {
+            return lhs != rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return ne(lhs, rhs);
         }
     }
 }
