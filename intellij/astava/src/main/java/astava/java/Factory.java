@@ -439,4 +439,13 @@ public class Factory {
 
         return lhsType.equals(rhsType) ? Descriptor.BOOLEAN : null;
     }
+
+    public static Tuple ifElse(Tuple condition, Tuple ifTrue, Tuple ifFalse) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.IF_ELSE)),
+            Tuple.newProperty(Property.KEY_CONDITION, condition),
+            Tuple.newProperty(Property.KEY_IF_TRUE, ifTrue),
+            Tuple.newProperty(Property.KEY_IF_FALSE, ifFalse)
+        );
+    }
 }

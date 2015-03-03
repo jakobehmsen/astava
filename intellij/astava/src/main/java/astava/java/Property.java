@@ -19,5 +19,7 @@ public class Property {
     public static final String KEY_VAR_TYPE = "varType";
     public static final String KEY_TIMING = "timing";
     public static final String KEY_AMOUNT = "amount";
-    public static final String KEY_AS_EXPRESSION = "asExpression";
+    public static final String KEY_CONDITION = "condition";
+    public static final String KEY_IF_TRUE = "ifTrue";
+    public static final String KEY_IF_FALSE = "ifFalse";
 }
