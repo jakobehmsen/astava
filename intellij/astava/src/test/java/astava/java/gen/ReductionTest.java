@@ -36,23 +36,23 @@ public class ReductionTest {
             new MulTest(),
             new DivTest() {
                 @Override
-                public long getLhs() {
+                public Object getLhs() {
                     return 20L;
                 }
 
                 @Override
-                public long getRhs() {
+                public Object getRhs() {
                     return 5L;
                 }
             },
             new RemTest() {
                 @Override
-                public long getLhs() {
+                public Object getLhs() {
                     return 10L;
                 }
 
                 @Override
-                public long getRhs() {
+                public Object getRhs() {
                     return 9L;
                 }
             },
@@ -64,91 +64,142 @@ public class ReductionTest {
             new BXorTest(),
             new LTTest() { // => true
                 @Override
-                public long getLhs() { return 7L; }
+                public Object getLhs() { return 7L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new LTTest() { // => false
                 @Override
-                public long getLhs() { return 8L; }
+                public Object getLhs() { return 8L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new LETest() { // => true
                 @Override
-                public long getLhs() { return 7L; }
+                public Object getLhs() { return 7L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new LETest() { // => true
                 @Override
-                public long getLhs() { return 8L; }
+                public Object getLhs() { return 8L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new LETest() { // => false
                 @Override
-                public long getLhs() { return 9L; }
+                public Object getLhs() { return 9L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new GTTest() { // => true
                 @Override
-                public long getLhs() { return 9L; }
+                public Object getLhs() { return 9L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new GTTest() { // => false
                 @Override
-                public long getLhs() { return 8L; }
+                public Object getLhs() { return 8L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new GETest() { // => true
                 @Override
-                public long getLhs() { return 9L; }
+                public Object getLhs() { return 9L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new GETest() { // => true
                 @Override
-                public long getLhs() { return 8L; }
+                public Object getLhs() { return 8L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new GETest() { // => false
                 @Override
-                public long getLhs() { return 7L; }
+                public Object getLhs() { return 7L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new EQTest() { // => true
                 @Override
-                public long getLhs() { return 8L; }
+                public Object getLhs() { return 8L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new EQTest() { // => false
                 @Override
-                public long getLhs() { return 7L; }
+                public Object getLhs() { return 7L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new NETest() { // => true
                 @Override
-                public long getLhs() { return 7L; }
+                public Object getLhs() { return 7L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
             },
             new NETest() { // => false
                 @Override
-                public long getLhs() { return 8L; }
+                public Object getLhs() { return 8L; }
                 @Override
-                public long getRhs() { return 8L; }
+                public Object getRhs() { return 8L; }
+            },
+
+
+            new AndTest() { // => true
+                @Override
+                public Object getLhs() { return true; }
+                @Override
+                public Object getRhs() { return true; }
+            },
+            new AndTest() { // => false
+                @Override
+                public Object getLhs() { return true; }
+                @Override
+                public Object getRhs() { return false; }
+            },
+            new AndTest() { // => false
+                @Override
+                public Object getLhs() { return false; }
+                @Override
+                public Object getRhs() { return false; }
+            },
+            new AndTest() { // => false
+                @Override
+                public Object getLhs() { return false; }
+                @Override
+                public Object getRhs() { return true; }
+            },
+            new OrTest() { // => true
+                @Override
+                public Object getLhs() { return true; }
+                @Override
+                public Object getRhs() { return true; }
+            },
+            new OrTest() { // => true
+                @Override
+                public Object getLhs() { return true; }
+                @Override
+                public Object getRhs() { return false; }
+            },
+            new OrTest() { // => false
+                @Override
+                public Object getLhs() { return false; }
+                @Override
+                public Object getRhs() { return false; }
+            },
+            new OrTest() { // => true
+                @Override
+                public Object getLhs() { return false; }
+                @Override
+                public Object getRhs() { return true; }
             }
         );
 
         List<PrimitiveTest> tests = Arrays.asList(
+            new BooleanTest(),
             new ByteTest(), new ShortTest(),
             new IntTest(), new LongTest(),
             new FloatTest(), new DoubleTest()
@@ -167,12 +218,13 @@ public class ReductionTest {
 
     @Test
     public void testReduction() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        long lhs = op.getLhs();
-        long rhs = op.getRhs();
+        Object lhs = op.getLhs();
+        Object rhs = op.getRhs();
         Object expectedValue = op.getExpectedValue(lhs, rhs);
 
         String reductionResultType = op.resultType(t1.getDescriptor(), t2.getDescriptor());
-        boolean expectSuccess = reductionResultType != null;
+        boolean canCreateOperands = t1.canCreateAST(lhs) && t2.canCreateAST(rhs);
+        boolean expectSuccess = reductionResultType != null && canCreateOperands;
 
         try {
             Tuple lhsAST = t1.createAST(lhs);
@@ -194,85 +246,110 @@ public class ReductionTest {
 
     private interface PrimitiveTest {
         String getDescriptor();
-        Tuple createAST(Number number);
+        Tuple createAST(Object value);
+        boolean canCreateAST(Object lhs);
     }
 
-    private static class ByteTest implements PrimitiveTest {
+    private static abstract class NumberTest implements PrimitiveTest {
+        @Override
+        public boolean canCreateAST(Object lhs) {
+            return lhs instanceof Number;
+        }
+    }
+
+    private static class BooleanTest implements PrimitiveTest {
+        @Override
+        public String getDescriptor() {
+            return Descriptor.BOOLEAN;
+        }
+
+        @Override
+        public boolean canCreateAST(Object lhs) {
+            return lhs instanceof Boolean;
+        }
+
+        @Override
+        public Tuple createAST(Object b) {
+            return literal(((Boolean)b).booleanValue());
+        }
+    }
+
+    private static class ByteTest extends NumberTest {
         @Override
         public String getDescriptor() {
             return Descriptor.BYTE;
         }
 
         @Override
-        public Tuple createAST(Number number) {
-            return literal(number.byteValue());
+        public Tuple createAST(Object number) {
+            return literal(((Number)number).byteValue());
         }
     }
 
-    private static class ShortTest implements PrimitiveTest {
+    private static class ShortTest extends NumberTest {
         @Override
         public String getDescriptor() {
             return Descriptor.SHORT;
         }
 
         @Override
-        public Tuple createAST(Number number) {
-            return literal(number.shortValue());
+        public Tuple createAST(Object number) {
+            return literal(((Number)number).shortValue());
         }
     }
 
-    private static class IntTest implements PrimitiveTest {
+    private static class IntTest extends NumberTest {
         @Override
         public String getDescriptor() {
             return Descriptor.INT;
         }
 
         @Override
-        public Tuple createAST(Number number) {
-            return literal(number.intValue());
+        public Tuple createAST(Object number) {
+            return literal(((Number)number).intValue());
         }
     }
 
-    private static class LongTest implements PrimitiveTest {
+    private static class LongTest extends NumberTest {
         @Override
         public String getDescriptor() {
             return Descriptor.LONG;
         }
 
         @Override
-        public Tuple createAST(Number number) {
-            return literal(number.longValue());
+        public Tuple createAST(Object number) {
+            return literal(((Number)number).longValue());
         }
     }
 
-    private static class FloatTest implements PrimitiveTest {
+    private static class FloatTest extends NumberTest {
         @Override
         public String getDescriptor() {
             return Descriptor.FLOAT;
         }
 
         @Override
-        public Tuple createAST(Number number) {
-            return literal(number.floatValue());
+        public Tuple createAST(Object number) {
+            return literal(((Number)number).floatValue());
         }
     }
 
-    private static class DoubleTest implements PrimitiveTest {
+    private static class DoubleTest extends NumberTest {
         @Override
         public String getDescriptor() {
             return Descriptor.DOUBLE;
         }
 
         @Override
-        public Tuple createAST(Number number) {
-            return literal(number.doubleValue());
+        public Tuple createAST(Object number) {
+            return literal(((Number)number).doubleValue());
         }
     }
 
     private interface ReduceOperatorTest {
-        default long getLhs() {return 7;}
-        default long getRhs() {return 9;}
-        Object getExpectedValue(long lhs, long rhs);
+        default Object getLhs() {return 7;}
+        default Object getRhs() {return 9;}
+        Object getExpectedValue(Object lhs, Object rhs);
         Object normalizeValue(Object value);
         Tuple createAST(Tuple lhs, Tuple rhs);
         String resultType(String lhsResultType, String rhsResultType);
@@ -283,6 +360,13 @@ public class ReductionTest {
         public Object normalizeValue(Object value) {
             return ((Number)value).longValue();
         }
+
+        @Override
+        public Object getExpectedValue(Object lhs, Object rhs) {
+            return getExpectedValue(((Number)lhs).longValue(), ((Number)rhs).longValue());
+        }
+
+        abstract Object getExpectedValue(long lhs, long rhs);
     }
 
     private static abstract class ArithmeticResultTest extends NumberResultTest {
@@ -443,14 +527,23 @@ public class ReductionTest {
         public Object normalizeValue(Object value) {
             return value;
         }
+    }
 
+    private static abstract class CompareResultTest extends BooleanResultTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
             return Factory.compareResultType(lhsResultType, rhsResultType);
         }
+
+        @Override
+        public Object getExpectedValue(Object lhs, Object rhs) {
+            return getExpectedValue((long)lhs, (long)rhs);
+        }
+
+        abstract Object getExpectedValue(long lhs, long rhs);
     }
 
-    private static class LTTest extends BooleanResultTest {
+    private static class LTTest extends CompareResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs < rhs;
@@ -462,7 +555,7 @@ public class ReductionTest {
         }
     }
 
-    private static class LETest extends BooleanResultTest {
+    private static class LETest extends CompareResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs <= rhs;
@@ -474,7 +567,7 @@ public class ReductionTest {
         }
     }
 
-    private static class GTTest extends BooleanResultTest {
+    private static class GTTest extends CompareResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs > rhs;
@@ -486,7 +579,7 @@ public class ReductionTest {
         }
     }
 
-    private static class GETest extends BooleanResultTest {
+    private static class GETest extends CompareResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs >= rhs;
@@ -498,7 +591,7 @@ public class ReductionTest {
         }
     }
 
-    private static class EQTest extends BooleanResultTest {
+    private static class EQTest extends CompareResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs == rhs;
@@ -510,7 +603,7 @@ public class ReductionTest {
         }
     }
 
-    private static class NETest extends BooleanResultTest {
+    private static class NETest extends CompareResultTest {
         @Override
         public Object getExpectedValue(long lhs, long rhs) {
             return lhs != rhs;
@@ -519,6 +612,44 @@ public class ReductionTest {
         @Override
         public Tuple createAST(Tuple lhs, Tuple rhs) {
             return ne(lhs, rhs);
+        }
+    }
+
+    private static abstract class LogicalResultTest extends BooleanResultTest {
+        @Override
+        public String resultType(String lhsResultType, String rhsResultType) {
+            return Factory.logicalResultType(lhsResultType, rhsResultType);
+        }
+
+        @Override
+        public Object getExpectedValue(Object lhs, Object rhs) {
+            return getExpectedValue((boolean)lhs, (boolean)rhs);
+        }
+
+        abstract Object getExpectedValue(boolean lhs, boolean rhs);
+    }
+
+    private static class AndTest extends LogicalResultTest {
+        @Override
+        public Object getExpectedValue(boolean lhs, boolean rhs) {
+            return lhs && rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return and(lhs, rhs);
+        }
+    }
+
+    private static class OrTest extends LogicalResultTest {
+        @Override
+        public Object getExpectedValue(boolean lhs, boolean rhs) {
+            return lhs || rhs;
+        }
+
+        @Override
+        public Tuple createAST(Tuple lhs, Tuple rhs) {
+            return or(lhs, rhs);
         }
     }
 }
