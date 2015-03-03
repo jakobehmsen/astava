@@ -118,7 +118,7 @@ public class ClassGenerator {
             case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
-                populateMethodExpression(generator, methodScope, expression, false);
+                populateMethodExpression(generator, methodScope, expression, false, null, true);
 
                 generator.returnValue();
 
@@ -131,16 +131,25 @@ public class ClassGenerator {
                 break;
             default: {
                 // Assumed to be root expression
-                populateMethodExpression(generator, methodScope, statement, true);
+                populateMethodExpression(generator, methodScope, statement, true, null, false);
             }
         }
     }
 
-    public String populateMethodExpression(GeneratorAdapter generator, Scope methodScope, Tuple expression, boolean isRoot) {
+    public String populateMethodExpression(GeneratorAdapter generator, Scope methodScope, Tuple expression, boolean isRoot, Label ifFalseLabel, boolean reifyCondition) {
         switch(getType(expression)) {
             case ASTType.BOOLEAN_LITERAL: {
                 boolean value = expression.getBooleanProperty(Property.KEY_VALUE);
-                generator.push(value);
+
+                if(!value) {
+                    if(reifyCondition)
+                        generator.push(value);
+                    if(ifFalseLabel != null)
+                        generator.goTo(ifFalseLabel);
+                } else {
+                    if(reifyCondition)
+                        generator.push(value);
+                }
 
                 return Descriptor.BOOLEAN;
             } case ASTType.BYTE_LITERAL: {
@@ -199,8 +208,8 @@ public class ClassGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
-                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, ifFalseLabel, false);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
 
                 String resultType = Factory.arithmeticResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
@@ -221,8 +230,8 @@ public class ClassGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
-                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
                 String resultType = Factory.shiftResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
@@ -242,11 +251,48 @@ public class ClassGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
-                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
                 String resultType = Factory.bitwiseResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
+
+                return resultType;
+            } case ASTType.LOGICAL: {
+                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
+                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+
+                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
+                String resultType = null;
+
+                switch(operator) {
+                    case LogicalOperator.AND: {
+                        Label lhsIfFalseLabel = ifFalseLabel != null ? ifFalseLabel : generator.newLabel();
+                        boolean lhsReify = ifFalseLabel != null ? false : true;
+                        String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, lhsIfFalseLabel, lhsReify);
+                        String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
+
+                        if(ifFalseLabel == null) {
+                            generator.visitLabel(lhsIfFalseLabel);
+                        }
+
+                        resultType = Factory.logicalResultType(lhsResultType, rhsResultType);
+
+                        break;
+                    }
+                    case LogicalOperator.OR: {
+                        Label endLabel = generator.newLabel();
+                        Label nextTestLabel = generator.newLabel();
+                        String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, nextTestLabel, reifyCondition);
+                        generator.goTo(endLabel);
+                        generator.visitLabel(nextTestLabel);
+                        String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
+                        generator.visitLabel(endLabel);
+                        resultType = Factory.logicalResultType(lhsResultType, rhsResultType);
+
+                        break;
+                    }
+                }
 
                 return resultType;
             } case ASTType.VARIABLE_DECLARATION: {
@@ -258,7 +304,7 @@ public class ClassGenerator {
             } case ASTType.VARIABLE_ASSIGNMENT: {
                 String name = expression.getStringProperty(Property.KEY_NAME);
                 Tuple value = expression.getTupleProperty(Property.KEY_EXPRESSION);
-                String valueType = populateMethodExpression(generator, methodScope, value, false);
+                String valueType = populateMethodExpression(generator, methodScope, value, false, null, true);
                 int id = methodScope.getVarId(name);
                 generator.storeLocal(id, Type.getType(valueType));
                 if(!isRoot)
@@ -287,12 +333,14 @@ public class ClassGenerator {
 
                 return methodScope.getVarType(name);
             } case ASTType.NOT: {
-                // Should be sensitive to false-labels
                 Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
 
-                String resultType = populateMethodExpression(generator, methodScope, bExpression, false);
+                String resultType = populateMethodExpression(generator, methodScope, bExpression, false, null, reifyCondition);
 
-                generator.not();
+                if(reifyCondition)
+                    generator.not();
+                if(ifFalseLabel != null)
+                    generator.ifZCmp(GeneratorAdapter.NE, ifFalseLabel);
 
                 return Descriptor.BOOLEAN;
             } case ASTType.COMPARE:
@@ -313,8 +361,8 @@ public class ClassGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false);
-                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false);
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
 
                 /*
 
@@ -331,16 +379,20 @@ public class ClassGenerator {
 
                 Type t = Type.getType(lhsResultType);
 
-                Label endLabel = generator.newLabel();
-                Label ifFalseLabel = generator.newLabel();
-                //generator.math(op, t);
-                generator.ifCmp(t, op, ifFalseLabel);
+                if(reifyCondition) {
+                    Label endLabel = generator.newLabel();
+                    Label innerIfFalseLabel = generator.newLabel();
 
-                generator.push(true);
-                generator.goTo(endLabel);
-                generator.visitLabel(ifFalseLabel);
-                generator.push(false);
-                generator.visitLabel(endLabel);
+                    generator.ifCmp(t, op, innerIfFalseLabel);
+
+                    generator.push(true);
+                    generator.goTo(endLabel);
+                    generator.visitLabel(innerIfFalseLabel);
+                    generator.push(false);
+                    generator.visitLabel(endLabel);
+                } else {
+                    generator.ifCmp(t, op, ifFalseLabel);
+                }
 
                 return Descriptor.BOOLEAN;
 
