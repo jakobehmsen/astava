@@ -324,6 +324,27 @@ public class Factory {
         return null;
     }
 
+    public static Tuple and(Tuple lhs, Tuple rhs) {
+        return logical(lhs, rhs, LogicalOperator.AND);
+    }
+
+    public static Tuple or(Tuple lhs, Tuple rhs) {
+        return logical(lhs, rhs, LogicalOperator.OR);
+    }
+
+    public static Tuple logical(Tuple lhs, Tuple rhs, int operator) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LOGICAL)),
+            Tuple.newProperty(Property.KEY_OPERATOR, new Atom(operator)),
+            Tuple.newProperty(Property.KEY_LHS, lhs),
+            Tuple.newProperty(Property.KEY_RHS, rhs)
+        );
+    }
+
+    public static String logicalResultType(String lhsType, String rhsType) {
+        return lhsType.equals(Descriptor.BOOLEAN) && rhsType.equals(Descriptor.BOOLEAN) ? Descriptor.BOOLEAN : null;
+    }
+
     public static Tuple lt(Tuple lhs, Tuple rhs) {
         return compare(lhs, rhs, RelationalOperator.LT);
     }

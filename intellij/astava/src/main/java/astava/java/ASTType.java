@@ -23,4 +23,5 @@ public class ASTType {
     public static final int COMPARE = 19;
     public static final int SHIFT = 20;
     public static final int BITWISE = 21;
+    public static final int LOGICAL = 22;
 }
