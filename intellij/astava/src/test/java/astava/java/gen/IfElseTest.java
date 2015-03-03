@@ -2,12 +2,12 @@ package astava.java.gen;
 
 import astava.core.Tuple;
 import astava.java.Descriptor;
+import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import javax.management.relation.Relation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,32 +27,63 @@ public class IfElseTest {
 
     @Parameterized.Parameters
     public static Collection values() {
-        ArrayList<ExpressionProvider> values = new ArrayList<>();
+        ArrayList<ExpressionProvider> conditionProviders = new ArrayList<>();
 
-        values.add(new BooleanProvider(true));
-        values.add(new BooleanProvider(false));
+        ArrayList<ExpressionProvider> conditionProviders1 = new ArrayList<>();
 
-        values.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.LT));
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.LT));
+        conditionProviders1.add(new BooleanProvider(true));
+        conditionProviders1.add(new BooleanProvider(false));
 
-        values.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.LE));
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.LE));
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(8), RelationalOperator.LE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.LT));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.LT));
 
-        values.add(new CompareProvider(new IntProvider(8), new IntProvider(7), RelationalOperator.GT));
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.GT));
+        conditionProviders1.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.LE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.LE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(8), RelationalOperator.LE));
 
-        values.add(new CompareProvider(new IntProvider(8), new IntProvider(7), RelationalOperator.GE));
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.GE));
-        values.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.GE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(8), new IntProvider(7), RelationalOperator.GT));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.GT));
 
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.EQ));
-        values.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.EQ));
+        conditionProviders1.add(new CompareProvider(new IntProvider(8), new IntProvider(7), RelationalOperator.GE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.GE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.GE));
 
-        values.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.NE));
-        values.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.NE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.EQ));
+        conditionProviders1.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.EQ));
 
-        return values.stream().map(x -> new Object[]{x}).collect(Collectors.toList());
+        conditionProviders1.add(new CompareProvider(new IntProvider(6), new IntProvider(7), RelationalOperator.NE));
+        conditionProviders1.add(new CompareProvider(new IntProvider(7), new IntProvider(7), RelationalOperator.NE));
+
+        conditionProviders.addAll(conditionProviders1);
+
+        ArrayList<ExpressionProvider> conditionProviders2 = new ArrayList<>();
+
+        conditionProviders1.forEach(lhsProvider ->
+            conditionProviders1.forEach(rhsProvider -> {
+                conditionProviders2.add(new LogicalProvider(lhsProvider, rhsProvider, LogicalOperator.AND));
+                conditionProviders2.add(new LogicalProvider(lhsProvider, rhsProvider, LogicalOperator.OR));
+            })
+        );
+
+        conditionProviders.addAll(conditionProviders2);
+
+        ArrayList<ExpressionProvider> conditionProviders3 = new ArrayList<>();
+
+        // Complex lhs
+        conditionProviders2.forEach(lhsProvider -> {
+            conditionProviders3.add(new LogicalProvider(lhsProvider, conditionProviders2.get(0), LogicalOperator.AND));
+            conditionProviders3.add(new LogicalProvider(lhsProvider, conditionProviders2.get(0), LogicalOperator.OR));
+        });
+
+        // Complex rhs
+        conditionProviders2.forEach(rhsProvider -> {
+            conditionProviders3.add(new LogicalProvider(conditionProviders2.get(0), rhsProvider, LogicalOperator.AND));
+            conditionProviders3.add(new LogicalProvider(conditionProviders2.get(0), rhsProvider, LogicalOperator.OR));
+        });
+
+        conditionProviders.addAll(conditionProviders3);
+
+        return conditionProviders.stream().map(x -> new Object[]{x}).collect(Collectors.toList());
     }
 
     @Test
@@ -162,6 +193,41 @@ public class IfElseTest {
             Tuple rhs = rhsProvider.createExpression();
 
             return compare(lhs, rhs, operator);
+        }
+    }
+
+    private static class LogicalProvider implements ExpressionProvider {
+        private ExpressionProvider lhsProvider;
+        private ExpressionProvider rhsProvider;
+        private int operator;
+
+        private LogicalProvider(ExpressionProvider lhsProvider, ExpressionProvider rhsProvider, int operator) {
+            this.lhsProvider = lhsProvider;
+            this.rhsProvider = rhsProvider;
+            this.operator = operator;
+        }
+
+        @Override
+        public Object value() {
+            boolean lhs = lhsProvider.valueBoolean();
+            boolean rhs = rhsProvider.valueBoolean();
+
+            switch (operator) {
+                case LogicalOperator.AND:
+                    return lhs && rhs;
+                case LogicalOperator.OR:
+                    return lhs || rhs;
+            }
+
+            return null;
+        }
+
+        @Override
+        public Tuple createExpression() {
+            Tuple lhs = lhsProvider.createExpression();
+            Tuple rhs = rhsProvider.createExpression();
+
+            return logical(lhs, rhs, operator);
         }
     }
 }
