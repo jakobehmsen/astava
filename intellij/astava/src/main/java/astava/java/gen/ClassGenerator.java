@@ -101,7 +101,7 @@ public class ClassGenerator {
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
                 generator.visitCode();
-                populateMethodStatements(generator, new Scope() , body);
+                populateMethodStatement(generator, new Scope(), body);
                 generator.visitEnd();
                 generator.visitMaxs(0, 0);
 
@@ -113,7 +113,7 @@ public class ClassGenerator {
         }
     }
 
-    public void populateMethodStatements(GeneratorAdapter generator, Scope methodScope, Tuple statement) {
+    public void populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement) {
         switch(getType(statement)) {
             case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
@@ -126,9 +126,25 @@ public class ClassGenerator {
             case ASTType.BLOCK:
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
-                statements.forEach(s -> populateMethodStatements(generator, methodScope, (Tuple) s));
+                statements.forEach(s -> populateMethodStatement(generator, methodScope, (Tuple) s));
 
                 break;
+            case ASTType.IF_ELSE: {
+                Tuple condition = statement.getTupleProperty(Property.KEY_CONDITION);
+                Tuple ifTrue = statement.getTupleProperty(Property.KEY_IF_TRUE);
+                Tuple ifFalse = statement.getTupleProperty(Property.KEY_IF_FALSE);
+
+                Label endLabel = generator.newLabel();
+                Label ifFalseLabel = generator.newLabel();
+
+                String resultType = populateMethodExpression(generator, methodScope, condition, false, ifFalseLabel, false);
+                populateMethodStatement(generator, methodScope, ifTrue);
+                generator.goTo(endLabel);
+                generator.visitLabel(ifFalseLabel);
+                populateMethodStatement(generator, methodScope, ifFalse);
+                generator.visitLabel(endLabel);
+                break;
+            }
             default: {
                 // Assumed to be root expression
                 populateMethodExpression(generator, methodScope, statement, true, null, false);
@@ -258,6 +274,43 @@ public class ClassGenerator {
                 generator.math(op, t);
 
                 return resultType;
+            } case ASTType.COMPARE: {
+                Tuple lhs = (Tuple) expression.getPropertyValue(Property.KEY_LHS);
+                Tuple rhs = (Tuple) expression.getPropertyValue(Property.KEY_RHS);
+
+                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
+                int op;
+
+                switch (operator) {
+                    case RelationalOperator.LT: op = GeneratorAdapter.GE; break;
+                    case RelationalOperator.LE: op = GeneratorAdapter.GT; break;
+                    case RelationalOperator.GT: op = GeneratorAdapter.LE; break;
+                    case RelationalOperator.GE: op = GeneratorAdapter.LT; break;
+                    case RelationalOperator.EQ: op = GeneratorAdapter.NE; break;
+                    case RelationalOperator.NE: op = GeneratorAdapter.EQ; break;
+                    default: op = -1;
+                }
+
+                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
+
+                Type t = Type.getType(lhsResultType);
+
+                if (reifyCondition) {
+                    Label endLabel = generator.newLabel();
+                    Label innerIfFalseLabel = generator.newLabel();
+
+                    generator.ifCmp(t, op, innerIfFalseLabel);
+                    generator.push(true);
+                    generator.goTo(endLabel);
+                    generator.visitLabel(innerIfFalseLabel);
+                    generator.push(false);
+                    generator.visitLabel(endLabel);
+                } else {
+                    generator.ifCmp(t, op, ifFalseLabel);
+                }
+
+                return Descriptor.BOOLEAN;
             } case ASTType.LOGICAL: {
                 Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
                 Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
@@ -335,7 +388,7 @@ public class ClassGenerator {
             } case ASTType.NOT: {
                 Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
 
-                String resultType = populateMethodExpression(generator, methodScope, bExpression, false, null, reifyCondition);
+                String resultType = populateMethodExpression(generator, methodScope, bExpression, false, null, true);
 
                 if(reifyCondition)
                     generator.not();
@@ -343,59 +396,7 @@ public class ClassGenerator {
                     generator.ifZCmp(GeneratorAdapter.NE, ifFalseLabel);
 
                 return Descriptor.BOOLEAN;
-            } case ASTType.COMPARE:
-                // Should be sensitive to false-labels
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
-
-                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
-                int op;
-
-                switch(operator) {
-                    case RelationalOperator.LT: op = GeneratorAdapter.GE; break;
-                    case RelationalOperator.LE: op = GeneratorAdapter.GT; break;
-                    case RelationalOperator.GT: op = GeneratorAdapter.LE; break;
-                    case RelationalOperator.GE: op = GeneratorAdapter.LT; break;
-                    case RelationalOperator.EQ: op = GeneratorAdapter.NE; break;
-                    case RelationalOperator.NE: op = GeneratorAdapter.EQ; break;
-                    default: op = -1;
-                }
-
-                String lhsResultType = populateMethodExpression(generator, methodScope, lhs, false, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(generator, methodScope, rhs, false, ifFalseLabel, reifyCondition);
-
-                /*
-
-                ILOAD 0
-                ILOAD 1
-                IF_ICMPGE L1
-                ICONST_1
-                GOTO L2
-               L1
-                ICONST_0
-               L2
-
-                */
-
-                Type t = Type.getType(lhsResultType);
-
-                if(reifyCondition) {
-                    Label endLabel = generator.newLabel();
-                    Label innerIfFalseLabel = generator.newLabel();
-
-                    generator.ifCmp(t, op, innerIfFalseLabel);
-
-                    generator.push(true);
-                    generator.goTo(endLabel);
-                    generator.visitLabel(innerIfFalseLabel);
-                    generator.push(false);
-                    generator.visitLabel(endLabel);
-                } else {
-                    generator.ifCmp(t, op, ifFalseLabel);
-                }
-
-                return Descriptor.BOOLEAN;
-
+            }
         }
 
         return null;
