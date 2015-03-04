@@ -460,7 +460,7 @@ public class Factory {
 
     public static Tuple brk() {
         return new Tuple(Arrays.asList(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BREAK))
+                Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BREAK))
         ));
     }
 
@@ -468,5 +468,13 @@ public class Factory {
         return new Tuple(Arrays.asList(
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CONTINUE))
         ));
+    }
+
+    public static Tuple instanceOf(Tuple expression, String type) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.INSTANCE_OF)),
+            Tuple.newProperty(Property.KEY_EXPRESSION, expression),
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(type))
+        );
     }
 }
