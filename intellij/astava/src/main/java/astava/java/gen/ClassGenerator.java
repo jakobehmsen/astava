@@ -417,6 +417,16 @@ public class ClassGenerator {
                     generator.ifZCmp(GeneratorAdapter.NE, ifFalseLabel);
 
                 return Descriptor.BOOLEAN;
+            } case ASTType.INSTANCE_OF: {
+                Tuple oExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
+                String type = expression.getStringProperty(Property.KEY_TYPE);
+
+                String resultType = populateMethodExpression(generator, methodScope, oExpression, false, null, true);
+                Type t = Type.getType(type);
+
+                generator.instanceOf(t);
+
+                return Descriptor.BOOLEAN;
             }
         }
 
