@@ -3,7 +3,7 @@ package astava.java.gen;
 import astava.CommonTest;
 import astava.core.Tuple;
 import astava.java.Descriptor;
-import astava.java.IncDec;
+import astava.java.IncTiming;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -73,7 +73,7 @@ public class IncDecTest {
                 public int result(int var) { return var + 1; }
 
                 @Override
-                public Tuple createAST(String varName) { return intIncVar(varName, IncDec.TIMING_PRE, 1); }
+                public Tuple createAST(String varName) { return intIncVar(varName, IncTiming.PRE, 1); }
             },
             new IncDecProvider() { // inc 1, post
                 @Override
@@ -83,7 +83,7 @@ public class IncDecTest {
                 public int result(int var) { return var; }
 
                 @Override
-                public Tuple createAST(String varName) { return intIncVar(varName, IncDec.TIMING_POST, 1); }
+                public Tuple createAST(String varName) { return intIncVar(varName, IncTiming.POST, 1); }
             },
             new IncDecProvider() { // dec 1, pre
                 @Override
@@ -93,7 +93,7 @@ public class IncDecTest {
                 public int result(int var) { return var - 1; }
 
                 @Override
-                public Tuple createAST(String varName) { return intIncVar(varName, IncDec.TIMING_PRE, -1); }
+                public Tuple createAST(String varName) { return intIncVar(varName, IncTiming.PRE, -1); }
             },
             new IncDecProvider() { // dec 1, post
                 @Override
@@ -103,7 +103,7 @@ public class IncDecTest {
                 public int result(int var) { return var; }
 
                 @Override
-                public Tuple createAST(String varName) { return intIncVar(varName, IncDec.TIMING_POST, -1); }
+                public Tuple createAST(String varName) { return intIncVar(varName, IncTiming.POST, -1); }
             }
         };
 

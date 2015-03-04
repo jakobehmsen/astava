@@ -2,7 +2,7 @@ package astava.java.gen;
 
 import astava.core.Tuple;
 import astava.java.Descriptor;
-import astava.java.IncDec;
+import astava.java.IncTiming;
 import astava.java.RelationalOperator;
 import org.junit.Test;
 
@@ -23,7 +23,7 @@ public class LoopTest {
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             loop(compare(accessVar("i"), literal(repeat), RelationalOperator.LT),
-                intIncVar("i", IncDec.TIMING_POST, 1)
+                intIncVar("i", IncTiming.POST, 1)
             ),
             ret(accessVar("i"))
         ));

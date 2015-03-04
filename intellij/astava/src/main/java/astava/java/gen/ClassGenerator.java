@@ -390,13 +390,13 @@ public class ClassGenerator {
                 int amount = expression.getIntProperty(Property.KEY_AMOUNT);
                 int id = methodScope.getVarId(name);
 
-                if(timing == IncDec.TIMING_PRE)
+                if(timing == IncTiming.PRE)
                     generator.iinc(id, amount);
 
                 if(!isRoot)
                     generator.loadLocal(id);
 
-                if(timing == IncDec.TIMING_POST)
+                if(timing == IncTiming.POST)
                     generator.iinc(id, amount);
 
                 return methodScope.getVarType(name);
