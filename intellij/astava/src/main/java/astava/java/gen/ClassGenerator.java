@@ -9,6 +9,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -144,8 +145,7 @@ public class ClassGenerator {
                 populateMethodStatement(generator, methodScope, ifFalse);
                 generator.visitLabel(endLabel);
                 break;
-            }
-            default: {
+            } default: {
                 // Assumed to be root expression
                 populateMethodExpression(generator, methodScope, statement, true, null, false);
             }
@@ -379,7 +379,8 @@ public class ClassGenerator {
                 if(timing == IncDec.TIMING_PRE)
                     generator.iinc(id, amount);
 
-                generator.loadLocal(id);
+                if(!isRoot)
+                    generator.loadLocal(id);
 
                 if(timing == IncDec.TIMING_POST)
                     generator.iinc(id, amount);
@@ -406,6 +407,8 @@ public class ClassGenerator {
         ClassNode classNode = new ClassNode(Opcodes.ASM5);
 
         populate(classNode);
+
+        classNode.accept(new TraceClassVisitor(new PrintWriter(Debug.getPrintStream(Debug.LEVEL_HIGH))));
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         classNode.accept(classWriter);
