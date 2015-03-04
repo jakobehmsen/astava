@@ -4,6 +4,7 @@ import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Factory {
@@ -455,5 +456,11 @@ public class Factory {
             Tuple.newProperty(Property.KEY_CONDITION, condition),
             Tuple.newProperty(Property.KEY_BODY, body)
         );
+    }
+
+    public static Tuple brk() {
+        return new Tuple(Arrays.asList(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BREAK))
+        ));
     }
 }
