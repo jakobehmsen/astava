@@ -25,4 +25,5 @@ public class ASTType {
     public static final int BITWISE = 21;
     public static final int LOGICAL = 22;
     public static final int IF_ELSE = 23;
+    public static final int LOOP = 24;
 }

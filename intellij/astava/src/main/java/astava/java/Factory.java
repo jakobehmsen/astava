@@ -448,4 +448,12 @@ public class Factory {
             Tuple.newProperty(Property.KEY_IF_FALSE, ifFalse)
         );
     }
+
+    public static Tuple loop(Tuple condition, Tuple body) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LOOP)),
+            Tuple.newProperty(Property.KEY_CONDITION, condition),
+            Tuple.newProperty(Property.KEY_BODY, body)
+        );
+    }
 }
