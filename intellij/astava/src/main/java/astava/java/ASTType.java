@@ -27,4 +27,5 @@ public class ASTType {
     public static final int IF_ELSE = 23;
     public static final int LOOP = 24;
     public static final int BREAK = 25;
+    public static final int CONTINUE = 26;
 }

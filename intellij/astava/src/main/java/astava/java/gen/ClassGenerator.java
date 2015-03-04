@@ -102,7 +102,7 @@ public class ClassGenerator {
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
                 generator.visitCode();
-                populateMethodStatement(generator, new Scope(), body, null);
+                populateMethodStatement(generator, new Scope(), body, null, null);
                 generator.visitEnd();
                 generator.visitMaxs(0, 0);
 
@@ -114,7 +114,7 @@ public class ClassGenerator {
         }
     }
 
-    public void populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel) {
+    public void populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
         switch(getType(statement)) {
             case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
@@ -127,7 +127,7 @@ public class ClassGenerator {
             case ASTType.BLOCK:
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
-                statements.forEach(s -> populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel));
+                statements.forEach(s -> populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
 
                 break;
             case ASTType.IF_ELSE: {
@@ -139,10 +139,10 @@ public class ClassGenerator {
                 Label ifFalseLabel = generator.newLabel();
 
                 String resultType = populateMethodExpression(generator, methodScope, condition, false, ifFalseLabel, false);
-                populateMethodStatement(generator, methodScope, ifTrue, breakLabel);
+                populateMethodStatement(generator, methodScope, ifTrue, breakLabel, continueLabel);
                 generator.goTo(endLabel);
                 generator.visitLabel(ifFalseLabel);
-                populateMethodStatement(generator, methodScope, ifFalse, breakLabel);
+                populateMethodStatement(generator, methodScope, ifFalse, breakLabel, continueLabel);
                 generator.visitLabel(endLabel);
                 break;
             } case ASTType.LOOP: {
@@ -154,13 +154,16 @@ public class ClassGenerator {
 
                 generator.visitLabel(startLabel);
                 String resultType = populateMethodExpression(generator, methodScope, condition, false, endLabel, false);
-                populateMethodStatement(generator, methodScope, body, endLabel);
+                populateMethodStatement(generator, methodScope, body, endLabel, startLabel);
                 generator.goTo(startLabel);
                 generator.visitLabel(endLabel);
 
                 break;
             } case ASTType.BREAK: {
                 generator.goTo(breakLabel);
+                break;
+            } case ASTType.CONTINUE: {
+                generator.goTo(continueLabel);
                 break;
             } default: {
                 // Assumed to be root expression

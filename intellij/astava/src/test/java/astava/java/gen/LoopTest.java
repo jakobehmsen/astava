@@ -57,4 +57,30 @@ public class LoopTest {
         testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(expectedValue, actualValue));
     }
+
+    @Test
+    public void testLoopWithContinue() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        int repeat = 10;
+        Object expectedValue = repeat;
+
+        Tuple b = brk();
+
+        Tuple ast = block(Arrays.asList(
+            declareVar(Descriptor.INT, "i"),
+            assignVar("i", literal(0)),
+            loop(literal(true),
+                block(Arrays.asList(
+                    intIncVar("i", IncTiming.POST, 1),
+                    ifElse(lt(accessVar("i"), literal(repeat)),
+                        cnt(),
+                        block(Collections.emptyList())),
+                    brk()
+                ))
+            ),
+            ret(accessVar("i"))
+        ));
+
+        testMethodBody(ast, Descriptor.INT, actualValue ->
+            assertEquals(expectedValue, actualValue));
+    }
 }

@@ -463,4 +463,10 @@ public class Factory {
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BREAK))
         ));
     }
+
+    public static Tuple cnt() {
+        return new Tuple(Arrays.asList(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CONTINUE))
+        ));
+    }
 }
