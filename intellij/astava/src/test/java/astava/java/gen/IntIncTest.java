@@ -32,7 +32,7 @@ public class IntIncTest {
     }
 
     @Test
-    public void testIncPre() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void testIntInc() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         int varInit = 10;
         int varMod = varInit + amount;
         int incDecExpectedValue = varMod;
