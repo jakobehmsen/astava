@@ -185,4 +185,14 @@ public class Tuple extends AbstractList<Node> implements Node {
     public String toString() {
         return children.toString();
     }
+
+    @Override
+    public int hashCode() {
+        return children.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Tuple && this.children.equals(((Tuple)o).children);
+    }
 }
