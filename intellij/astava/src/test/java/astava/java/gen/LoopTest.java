@@ -14,6 +14,12 @@ import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 
 public class LoopTest {
+    private Tuple whileLoop(Tuple condition, Tuple body) {
+        return loop(
+            ifElse(condition, body, brk())
+        );
+    }
+
     @Test
     public void testLoop() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         int repeat = 10;
@@ -22,7 +28,7 @@ public class LoopTest {
         Tuple ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(lt(accessVar("i"), literal(repeat)),
+            whileLoop(lt(accessVar("i"), literal(repeat)),
                 intIncVar("i", 1)
             ),
             ret(accessVar("i"))
@@ -42,7 +48,7 @@ public class LoopTest {
         Tuple ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(literal(true),
+            whileLoop(literal(true),
                 block(Arrays.asList(
                     ifElse(ge(accessVar("i"), literal(repeat)),
                         brk(),
@@ -67,7 +73,7 @@ public class LoopTest {
         Tuple ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(literal(true),
+            whileLoop(literal(true),
                 block(Arrays.asList(
                     intIncVar("i", 1),
                     ifElse(lt(accessVar("i"), literal(repeat)),

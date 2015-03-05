@@ -171,14 +171,12 @@ public class ClassGenerator {
 
                 break;
             } case ASTType.LOOP: {
-                Tuple condition = statement.getTupleProperty(Property.KEY_CONDITION);
                 Tuple body = statement.getTupleProperty(Property.KEY_BODY);
 
                 Label startLabel = generator.newLabel();
                 Label endLabel = generator.newLabel();
 
                 generator.visitLabel(startLabel);
-                String resultType = populateMethodExpression(generator, methodScope, condition, false, endLabel, false);
                 populateMethodStatement(generator, methodScope, body, endLabel, startLabel);
                 generator.goTo(startLabel);
                 generator.visitLabel(endLabel);
