@@ -27,23 +27,8 @@ public class VariableTest {
     }
 
     @Test
-    public void testDeclareAssign() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Object expectedValue = literal.getValue();
-        Tuple valueAST = literal.createAST(expectedValue);
-        String type = literal.getType();
-        String name = "myVar";
-
-        Tuple ast = block(Arrays.asList(
-            declareVar(type, name),
-            ret(assignVar(name, valueAST))
-        ));
-
-        CommonTest.testMethodBody(ast, type, actualValue ->
-                assertEquals(expectedValue, actualValue));
-    }
-
-    @Test
-    public void testDeclareAssignAccess() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void testDeclareAssignAccess()
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Object expectedValue = literal.getValue();
         Tuple valueAST = literal.createAST(expectedValue);
         String type = literal.getType();
@@ -56,6 +41,6 @@ public class VariableTest {
         ));
 
         CommonTest.testMethodBody(ast, type, actualValue ->
-                assertEquals(expectedValue, actualValue));
+            assertEquals(expectedValue, actualValue));
     }
 }

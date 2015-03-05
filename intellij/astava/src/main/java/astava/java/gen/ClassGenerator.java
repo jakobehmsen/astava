@@ -116,7 +116,14 @@ public class ClassGenerator {
 
     public void populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
         switch(getType(statement)) {
-            case ASTType.RETURN_STATEMENT:
+            case ASTType.VARIABLE_ASSIGNMENT: {
+                String name = statement.getStringProperty(Property.KEY_NAME);
+                Tuple value = statement.getTupleProperty(Property.KEY_EXPRESSION);
+                String valueType = populateMethodExpression(generator, methodScope, value, false, null, true);
+                int id = methodScope.getVarId(name);
+                generator.storeLocal(id, Type.getType(valueType));
+                break;
+            } case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
                 populateMethodExpression(generator, methodScope, expression, false, null, true);
@@ -127,7 +134,8 @@ public class ClassGenerator {
             case ASTType.BLOCK:
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
-                statements.forEach(s -> populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
+                statements.forEach(s ->
+                    populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
 
                 break;
             case ASTType.IF_ELSE: {
@@ -374,16 +382,6 @@ public class ClassGenerator {
                 methodScope.declareVar(generator, type, name);
 
                 return Descriptor.STRING;
-            } case ASTType.VARIABLE_ASSIGNMENT: {
-                String name = expression.getStringProperty(Property.KEY_NAME);
-                Tuple value = expression.getTupleProperty(Property.KEY_EXPRESSION);
-                String valueType = populateMethodExpression(generator, methodScope, value, false, null, true);
-                int id = methodScope.getVarId(name);
-                generator.storeLocal(id, Type.getType(valueType));
-                if(!isRoot)
-                    generator.loadLocal(id, Type.getType(valueType));
-
-                return methodScope.getVarType(name);
             } case ASTType.VARIABLE_ACCESS: {
                 String name = expression.getStringProperty(Property.KEY_NAME);
                 int id = methodScope.getVarId(name);
