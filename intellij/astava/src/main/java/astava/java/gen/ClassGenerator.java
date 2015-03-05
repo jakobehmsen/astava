@@ -421,22 +421,6 @@ public class ClassGenerator {
                 generator.instanceOf(t);
 
                 return Descriptor.BOOLEAN;
-            } case ASTType.TERNARY: {
-                Tuple condition = expression.getTupleProperty(Property.KEY_CONDITION);
-                Tuple ifTrue = expression.getTupleProperty(Property.KEY_IF_TRUE);
-                Tuple ifFalse = expression.getTupleProperty(Property.KEY_IF_FALSE);
-
-                Label endLabel = generator.newLabel();
-                Label ternaryIfFalseLabel = generator.newLabel();
-
-                String resultType = populateMethodExpression(generator, methodScope, condition, false, ternaryIfFalseLabel, false);
-                String ifTrueResultType = populateMethodExpression(generator, methodScope, ifTrue, false, null, true);
-                generator.goTo(endLabel);
-                generator.visitLabel(ternaryIfFalseLabel);
-                String ifFalseResultType = populateMethodExpression(generator, methodScope, ifFalse, false, null, true);
-                generator.visitLabel(endLabel);
-
-                return ifTrueResultType;
             } case ASTType.BLOCK: {
                 // Exactly one expression should be contained with statements
                 List<Node> statements = (List<Node>) expression.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);

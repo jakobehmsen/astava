@@ -476,13 +476,4 @@ public class Factory {
             Tuple.newProperty(Property.KEY_TYPE, new Atom(type))
         );
     }
-
-    public static Tuple ternary(Tuple condition, Tuple ifTrue, Tuple ifFalse) {
-        return new Tuple(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.TERNARY)),
-            Tuple.newProperty(Property.KEY_CONDITION, condition),
-            Tuple.newProperty(Property.KEY_IF_TRUE, ifTrue),
-            Tuple.newProperty(Property.KEY_IF_FALSE, ifFalse)
-        );
-    }
 }

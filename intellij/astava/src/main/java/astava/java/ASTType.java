@@ -29,5 +29,4 @@ public class ASTType {
     public static final int BREAK = 25;
     public static final int CONTINUE = 26;
     public static final int INSTANCE_OF = 27;
-    public static final int TERNARY = 28;
 }
