@@ -122,6 +122,14 @@ public class ClassGenerator {
                 String valueType = populateMethodExpression(generator, methodScope, value, false, null, true);
                 int id = methodScope.getVarId(name);
                 generator.storeLocal(id, Type.getType(valueType));
+
+                break;
+            } case ASTType.INCREMENT: {
+                String name = statement.getStringProperty(Property.KEY_NAME);
+                int amount = statement.getIntProperty(Property.KEY_AMOUNT);
+                int id = methodScope.getVarId(name);
+                generator.iinc(id, amount);
+
                 break;
             } case ASTType.RETURN_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
@@ -386,22 +394,6 @@ public class ClassGenerator {
                 String name = expression.getStringProperty(Property.KEY_NAME);
                 int id = methodScope.getVarId(name);
                 generator.loadLocal(id);
-
-                return methodScope.getVarType(name);
-            } case ASTType.INCREMENT: {
-                String name = expression.getStringProperty(Property.KEY_NAME);
-                int timing = expression.getIntProperty(Property.KEY_TIMING);
-                int amount = expression.getIntProperty(Property.KEY_AMOUNT);
-                int id = methodScope.getVarId(name);
-
-                if(timing == IncTiming.PRE)
-                    generator.iinc(id, amount);
-
-                if(!isRoot)
-                    generator.loadLocal(id);
-
-                if(timing == IncTiming.POST)
-                    generator.iinc(id, amount);
 
                 return methodScope.getVarType(name);
             } case ASTType.NOT: {

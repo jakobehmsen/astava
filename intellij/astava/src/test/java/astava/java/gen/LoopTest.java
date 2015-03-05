@@ -2,7 +2,6 @@ package astava.java.gen;
 
 import astava.core.Tuple;
 import astava.java.Descriptor;
-import astava.java.IncTiming;
 import astava.java.RelationalOperator;
 import org.junit.Test;
 
@@ -24,7 +23,7 @@ public class LoopTest {
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             loop(lt(accessVar("i"), literal(repeat)),
-                intIncVar("i", IncTiming.POST, 1)
+                intIncVar("i", 1)
             ),
             ret(accessVar("i"))
         ));
@@ -48,7 +47,7 @@ public class LoopTest {
                     ifElse(ge(accessVar("i"), literal(repeat)),
                         brk(),
                         block(Collections.emptyList())),
-                    intIncVar("i", IncTiming.POST, 1)
+                    intIncVar("i", 1)
                 ))
             ),
             ret(accessVar("i"))
@@ -70,7 +69,7 @@ public class LoopTest {
             assignVar("i", literal(0)),
             loop(literal(true),
                 block(Arrays.asList(
-                    intIncVar("i", IncTiming.POST, 1),
+                    intIncVar("i", 1),
                     ifElse(lt(accessVar("i"), literal(repeat)),
                         cnt(),
                         block(Collections.emptyList())),

@@ -409,11 +409,10 @@ public class Factory {
         );
     }
 
-    public static Tuple intIncVar(String name, int timing, int amount) {
+    public static Tuple intIncVar(String name, int amount) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.INCREMENT)),
             Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
-            Tuple.newProperty(Property.KEY_TIMING, new Atom(timing)),
             Tuple.newProperty(Property.KEY_AMOUNT, new Atom(amount))
         );
     }
