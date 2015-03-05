@@ -79,8 +79,6 @@ public class ClassGenerator {
         mdBuilder.append(getDescriptor(returnTypeName));
 
         return mdBuilder.toString();
-
-        //return "(" + parameterTypeNames.stream().map(ptn -> getDescriptor(ptn)) + ")" + getDescriptor(returnTypeName);
     }
 
     public void populateMember(ClassNode classNode, Tuple member) {
@@ -94,7 +92,6 @@ public class ClassGenerator {
                     parameterTypes[i] = Type.getType(parameterTypeNames.get(i));
                 String returnTypeName = member.getStringProperty(Property.KEY_RETURN_TYPE);
 
-                //String methodDescriptor = Type.getMethodDescriptor(Type.getType(returnType), parameterTypes);
                 String methodDescriptor = getMethodDescriptor(parameterTypeNames, returnTypeName);
                 MethodNode methodNode = new MethodNode(Opcodes.ASM5, modifier, methodName, methodDescriptor, null, null);
 
@@ -144,6 +141,9 @@ public class ClassGenerator {
 
                 String resultType = populateMethodExpression(generator, methodScope, expression, false, null, true);
 
+                if(resultType.equals(Descriptor.VOID))
+                    throw new IllegalArgumentException("Expression of return statement results in void.");
+
                 generator.returnValue();
 
                 break;
@@ -151,7 +151,7 @@ public class ClassGenerator {
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
                 statements.forEach(s ->
-                    populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
+                        populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
 
                 break;
             } case ASTType.IF_ELSE: {
@@ -168,6 +168,7 @@ public class ClassGenerator {
                 generator.visitLabel(ifFalseLabel);
                 populateMethodStatement(generator, methodScope, ifFalse, breakLabel, continueLabel);
                 generator.visitLabel(endLabel);
+
                 break;
             } case ASTType.LOOP: {
                 Tuple condition = statement.getTupleProperty(Property.KEY_CONDITION);
@@ -190,8 +191,7 @@ public class ClassGenerator {
                 generator.goTo(continueLabel);
                 break;
             } default: {
-                // Assumed to be root expression
-                return populateMethodExpression(generator, methodScope, statement, true, null, false);
+                return null; // Not a statement
             }
         }
 
@@ -443,9 +443,16 @@ public class ClassGenerator {
                 List<String> expressionResultTypes = new ArrayList<>();
 
                 statements.forEach(s -> {
-                    String resultType = populateMethodStatement(generator, methodScope, (Tuple) s, null, null);
-                    if(!resultType.equals(Descriptor.VOID))
+                    // Try as expression
+                    String resultType = populateMethodExpression(generator, methodScope, (Tuple) s, false, null, true);
+
+                    if(resultType != null) {
+                        // Was an expression
                         expressionResultTypes.add(resultType);
+                    } else {
+                        // Try as statement
+                        populateMethodStatement(generator, methodScope, (Tuple) s, null, null);
+                    }
                 });
 
                 if(expressionResultTypes.size() > 1)
@@ -454,10 +461,29 @@ public class ClassGenerator {
                     throw new IllegalArgumentException("Expression block has no expressions.");
 
                 return expressionResultTypes.get(0);
+            } case ASTType.IF_ELSE: {
+                Tuple condition = expression.getTupleProperty(Property.KEY_CONDITION);
+                Tuple ifTrue = expression.getTupleProperty(Property.KEY_IF_TRUE);
+                Tuple ifFalse = expression.getTupleProperty(Property.KEY_IF_FALSE);
+
+                Label endLabel = generator.newLabel();
+                Label testIfFalseLabel = generator.newLabel();
+
+                String resultType = populateMethodExpression(generator, methodScope, condition, false, testIfFalseLabel, false);
+                String ifTrueResultType = populateMethodExpression(generator, methodScope, ifTrue, false, null, true);
+                generator.goTo(endLabel);
+                generator.visitLabel(testIfFalseLabel);
+                String ifFalseResultType = populateMethodExpression(generator, methodScope, ifFalse, false, null, true);
+                generator.visitLabel(endLabel);
+
+                if(!ifTrueResultType.equals(ifFalseResultType))
+                    throw new IllegalArgumentException("Inconsistent result types in test: ifTrue => " + ifTrueResultType + ", ifFalse => " + ifFalseResultType);
+
+                return ifTrueResultType;
             }
         }
 
-        return null;
+        return null; // Not an expression
     }
 
     public byte[] toBytes() {
