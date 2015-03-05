@@ -12,7 +12,9 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ClassGenerator {
     private Tuple ast;
@@ -114,7 +116,7 @@ public class ClassGenerator {
         }
     }
 
-    public void populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
+    public String populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
         switch(getType(statement)) {
             case ASTType.VARIABLE_DECLARATION: {
                 String type = statement.getStringProperty(Property.KEY_VAR_TYPE);
@@ -137,22 +139,22 @@ public class ClassGenerator {
                 generator.iinc(id, amount);
 
                 break;
-            } case ASTType.RETURN_STATEMENT:
+            } case ASTType.RETURN_STATEMENT: {
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
-                populateMethodExpression(generator, methodScope, expression, false, null, true);
+                String resultType = populateMethodExpression(generator, methodScope, expression, false, null, true);
 
                 generator.returnValue();
 
                 break;
-            case ASTType.BLOCK:
+            } case ASTType.BLOCK: {
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
                 statements.forEach(s ->
                     populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
 
                 break;
-            case ASTType.IF_ELSE: {
+            } case ASTType.IF_ELSE: {
                 Tuple condition = statement.getTupleProperty(Property.KEY_CONDITION);
                 Tuple ifTrue = statement.getTupleProperty(Property.KEY_IF_TRUE);
                 Tuple ifFalse = statement.getTupleProperty(Property.KEY_IF_FALSE);
@@ -189,9 +191,11 @@ public class ClassGenerator {
                 break;
             } default: {
                 // Assumed to be root expression
-                populateMethodExpression(generator, methodScope, statement, true, null, false);
+                return populateMethodExpression(generator, methodScope, statement, true, null, false);
             }
         }
+
+        return Descriptor.VOID;
     }
 
     public String populateMethodExpression(GeneratorAdapter generator, Scope methodScope, Tuple expression, boolean isRoot, Label ifFalseLabel, boolean reifyCondition) {
@@ -431,7 +435,25 @@ public class ClassGenerator {
                 generator.visitLabel(ternaryIfFalseLabel);
                 String ifFalseResultType = populateMethodExpression(generator, methodScope, ifFalse, false, null, true);
                 generator.visitLabel(endLabel);
-                break;
+
+                return ifTrueResultType;
+            } case ASTType.BLOCK: {
+                // Exactly one expression should be contained with statements
+                List<Node> statements = (List<Node>) expression.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+                List<String> expressionResultTypes = new ArrayList<>();
+
+                statements.forEach(s -> {
+                    String resultType = populateMethodStatement(generator, methodScope, (Tuple) s, null, null);
+                    if(!resultType.equals(Descriptor.VOID))
+                        expressionResultTypes.add(resultType);
+                });
+
+                if(expressionResultTypes.size() > 1)
+                    throw new IllegalArgumentException("Expression block has multiple expressions.");
+                else if(expressionResultTypes.isEmpty())
+                    throw new IllegalArgumentException("Expression block has no expressions.");
+
+                return expressionResultTypes.get(0);
             }
         }
 
