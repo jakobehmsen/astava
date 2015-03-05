@@ -14,7 +14,6 @@ import org.objectweb.asm.util.TraceClassVisitor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ClassGenerator {
     private Tuple ast;
@@ -101,7 +100,7 @@ public class ClassGenerator {
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
                 generator.visitCode();
-                populateMethodStatement(generator, new Scope(), body, null, null);
+                populateMethodStatement(generator, new GenerateScope(), body, null, null);
                 generator.visitEnd();
                 generator.visitMaxs(0, 0);
 
@@ -113,7 +112,7 @@ public class ClassGenerator {
         }
     }
 
-    public String populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
+    public String populateMethodStatement(GeneratorAdapter generator, GenerateScope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
         switch(getType(statement)) {
             case ASTType.VARIABLE_DECLARATION: {
                 String type = statement.getStringProperty(Property.KEY_VAR_TYPE);
@@ -196,7 +195,7 @@ public class ClassGenerator {
         return Descriptor.VOID;
     }
 
-    public String populateMethodExpression(GeneratorAdapter generator, Scope methodScope, Tuple expression, boolean isRoot, Label ifFalseLabel, boolean reifyCondition) {
+    public String populateMethodExpression(GeneratorAdapter generator, GenerateScope methodScope, Tuple expression, boolean isRoot, Label ifFalseLabel, boolean reifyCondition) {
         switch(getType(expression)) {
             case ASTType.BOOLEAN_LITERAL: {
                 boolean value = expression.getBooleanProperty(Property.KEY_VALUE);

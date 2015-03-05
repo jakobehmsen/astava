@@ -6,7 +6,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.Hashtable;
 
-public class Scope {
+public class GenerateScope {
     private Hashtable<String, Integer> nameToVarIdMap = new Hashtable<>();
     private Hashtable<Integer, String> varIdToTypeMap = new Hashtable<>();
 
