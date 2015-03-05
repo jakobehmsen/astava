@@ -116,7 +116,13 @@ public class ClassGenerator {
 
     public void populateMethodStatement(GeneratorAdapter generator, Scope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
         switch(getType(statement)) {
-            case ASTType.VARIABLE_ASSIGNMENT: {
+            case ASTType.VARIABLE_DECLARATION: {
+                String type = statement.getStringProperty(Property.KEY_VAR_TYPE);
+                String name = statement.getStringProperty(Property.KEY_NAME);
+                methodScope.declareVar(generator, type, name);
+
+                break;
+            } case ASTType.VARIABLE_ASSIGNMENT: {
                 String name = statement.getStringProperty(Property.KEY_NAME);
                 Tuple value = statement.getTupleProperty(Property.KEY_EXPRESSION);
                 String valueType = populateMethodExpression(generator, methodScope, value, false, null, true);
@@ -384,12 +390,6 @@ public class ClassGenerator {
                 }
 
                 return resultType;
-            } case ASTType.VARIABLE_DECLARATION: {
-                String type = expression.getStringProperty(Property.KEY_VAR_TYPE);
-                String name = expression.getStringProperty(Property.KEY_NAME);
-                methodScope.declareVar(generator, type, name);
-
-                return Descriptor.STRING;
             } case ASTType.VARIABLE_ACCESS: {
                 String name = expression.getStringProperty(Property.KEY_NAME);
                 int id = methodScope.getVarId(name);
