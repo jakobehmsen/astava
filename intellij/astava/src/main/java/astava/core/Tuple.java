@@ -180,4 +180,9 @@ public class Tuple extends AbstractList<Node> implements Node {
 
         return false;
     }
+
+    @Override
+    public String toString() {
+        return children.toString();
+    }
 }

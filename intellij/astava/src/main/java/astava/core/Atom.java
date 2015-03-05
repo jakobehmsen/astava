@@ -15,4 +15,9 @@ public class Atom implements Node {
     public boolean subsumes(Node other) {
         return other instanceof Atom && this.getValue().equals(((Atom)other).getValue());
     }
+
+    @Override
+    public String toString() {
+        return value.toString();
+    }
 }
