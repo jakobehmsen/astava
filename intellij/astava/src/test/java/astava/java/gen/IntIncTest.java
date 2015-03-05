@@ -16,10 +16,10 @@ import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class IncDecTest {
+public class IntIncTest {
     private int amount;
 
-    public IncDecTest(int amount) {
+    public IntIncTest(int amount) {
         this.amount = amount;
     }
 
