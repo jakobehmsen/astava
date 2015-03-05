@@ -77,7 +77,7 @@ public class ExpressionBlockTest {
                 }
             },
             // {Declare, assign, inc, *access} should succeed
-            // Corresponds to ++myVar
+            // Corresponds to {++myVar}
             new ExpressionBlockProvider(8, Descriptor.INT, false) {
                 @Override
                 public Tuple createExpression() {
@@ -86,6 +86,32 @@ public class ExpressionBlockTest {
                         assignVar("myVar", literal(7)),
                         intIncVar("myVar", 1),
                         accessVar("myVar")
+                    ));
+                }
+            },
+            // {*ifElse(true, {*true}, {*false})} should succeed
+            // Corresponds to {true ? true : false}
+            new ExpressionBlockProvider(true, Descriptor.BOOLEAN, false) {
+                @Override
+                public Tuple createExpression() {
+                    return block(Arrays.asList(
+                        ifElse(literal(true),
+                            block(Arrays.asList(literal(true))),
+                            block(Arrays.asList(literal(false)))
+                        )
+                    ));
+                }
+            },
+            // {*ifElse(false, {*true}, {*false})} should succeed
+            // Corresponds to {false ? true : false}
+            new ExpressionBlockProvider(false, Descriptor.BOOLEAN, false) {
+                @Override
+                public Tuple createExpression() {
+                    return block(Arrays.asList(
+                        ifElse(literal(false),
+                            block(Arrays.asList(literal(true))),
+                            block(Arrays.asList(literal(false)))
+                        )
                     ));
                 }
             }
