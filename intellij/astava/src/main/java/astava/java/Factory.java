@@ -482,25 +482,26 @@ public class Factory {
         );
     }
 
-    public static Tuple invokeInterface(String type, String name, String methodDescriptor, List<Node> arguments) {
-        return invoke(Invocation.INTERFACE, type, name, methodDescriptor, arguments);
+    public static Tuple invokeInterface(String type, String name, String methodDescriptor, Node target, List<Node> arguments) {
+        return invoke(Invocation.INTERFACE, type, name, methodDescriptor, target, arguments);
     }
 
     public static Tuple invokeStatic(String type, String name, String methodDescriptor, List<Node> arguments) {
-        return invoke(Invocation.STATIC, type, name, methodDescriptor, arguments);
+        return invoke(Invocation.STATIC, type, name, methodDescriptor, null, arguments);
     }
 
-    public static Tuple invokeVirtual(String type, String name, String methodDescriptor, List<Node> arguments) {
-        return invoke(Invocation.VIRTUAL, type, name, methodDescriptor, arguments);
+    public static Tuple invokeVirtual(String type, String name, String methodDescriptor, Node target, List<Node> arguments) {
+        return invoke(Invocation.VIRTUAL, type, name, methodDescriptor, target, arguments);
     }
 
-    public static Tuple invoke(int invocation, String type, String name, String methodDescriptor, List<Node> arguments) {
+    public static Tuple invoke(int invocation, String type, String name, String methodDescriptor, Node target /*null for static*/, List<Node> arguments) {
         return new Tuple(
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.INVOCATION)),
             Tuple.newProperty(Property.KEY_TYPE, new Atom(type)),
             Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
             Tuple.newProperty(Property.KEY_INVOCATION, new Atom(invocation)),
             Tuple.newProperty(Property.KEY_DESCRIPTOR, new Atom(methodDescriptor)),
+            Tuple.newProperty(Property.KEY_TARGET, target),
             Tuple.newProperty(Property.KEY_ARGUMENTS, new Atom(arguments))
         );
     }
