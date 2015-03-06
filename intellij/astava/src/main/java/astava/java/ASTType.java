@@ -3,7 +3,7 @@ package astava.java;
 public class ASTType {
     public static final int CLASS = 0;
     public static final int METHOD = 1;
-    public static final int RETURN_STATEMENT = 2;
+    public static final int RETURN_VALUE_STATEMENT = 2;
     public static final int BOOLEAN_LITERAL = 3;
     public static final int BYTE_LITERAL = 4;
     public static final int SHORT_LITERAL = 5;
@@ -29,4 +29,7 @@ public class ASTType {
     public static final int BREAK = 25;
     public static final int CONTINUE = 26;
     public static final int INSTANCE_OF = 27;
+    public static final int INVOCATION = 28;
+    public static final int NEW_INSTANCE = 29;
+    public static final int RETURN_STATEMENT = 30;
 }

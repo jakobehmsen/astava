@@ -74,7 +74,7 @@ public class Factory {
 
     public static String getReturnType(Tuple statement) {
         switch(statement.getIntProperty(Property.KEY_AST_TYPE)) {
-            case ASTType.RETURN_STATEMENT:
+            case ASTType.RETURN_VALUE_STATEMENT:
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
                 return expression.getStringProperty(Property.KEY_RESULT_TYPE);
@@ -83,9 +83,15 @@ public class Factory {
         return null;
     }
 
+    public static Tuple ret() {
+        return new Tuple(Arrays.asList(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.RETURN_STATEMENT))
+        ));
+    }
+
     public static Tuple ret(Node expression) {
         return new Tuple(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.RETURN_STATEMENT)),
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.RETURN_VALUE_STATEMENT)),
             Tuple.newProperty(Property.KEY_EXPRESSION, expression)
         );
     }
@@ -464,7 +470,7 @@ public class Factory {
 
     public static Tuple cnt() {
         return new Tuple(Arrays.asList(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CONTINUE))
+                Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CONTINUE))
         ));
     }
 
@@ -473,6 +479,38 @@ public class Factory {
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.INSTANCE_OF)),
             Tuple.newProperty(Property.KEY_EXPRESSION, expression),
             Tuple.newProperty(Property.KEY_TYPE, new Atom(type))
+        );
+    }
+
+    public static Tuple invokeInterface(String type, String name, String methodDescriptor, List<Node> arguments) {
+        return invoke(Invocation.INTERFACE, type, name, methodDescriptor, arguments);
+    }
+
+    public static Tuple invokeStatic(String type, String name, String methodDescriptor, List<Node> arguments) {
+        return invoke(Invocation.STATIC, type, name, methodDescriptor, arguments);
+    }
+
+    public static Tuple invokeVirtual(String type, String name, String methodDescriptor, List<Node> arguments) {
+        return invoke(Invocation.VIRTUAL, type, name, methodDescriptor, arguments);
+    }
+
+    public static Tuple invoke(int invocation, String type, String name, String methodDescriptor, List<Node> arguments) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.INVOCATION)),
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(type)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name)),
+            Tuple.newProperty(Property.KEY_INVOCATION, new Atom(invocation)),
+            Tuple.newProperty(Property.KEY_DESCRIPTOR, new Atom(methodDescriptor)),
+            Tuple.newProperty(Property.KEY_ARGUMENTS, new Atom(arguments))
+        );
+    }
+
+    public static Tuple newInstance(String type, List<String> parameterTypes, List<Node> arguments) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.NEW_INSTANCE)),
+            Tuple.newProperty(Property.KEY_TYPE, new Atom(type)),
+            Tuple.newProperty(Property.KEY_PARAMETER_TYPES, new Atom(parameterTypes)),
+            Tuple.newProperty(Property.KEY_ARGUMENTS, new Atom(arguments))
         );
     }
 }

@@ -23,4 +23,7 @@ public class Property {
     public static final String KEY_IF_TRUE = "ifTrue";
     public static final String KEY_IF_FALSE = "ifFalse";
     public static final String KEY_TYPE = "type";
+    public static final String KEY_DESCRIPTOR = "descriptor";
+    public static final String KEY_INVOCATION = "invocation";
+    public static final String KEY_ARGUMENTS = "arguments";
 }
