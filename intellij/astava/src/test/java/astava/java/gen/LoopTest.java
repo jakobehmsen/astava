@@ -16,7 +16,7 @@ import static org.junit.Assert.assertEquals;
 public class LoopTest {
     private Tuple whileLoop(Tuple condition, Tuple body) {
         return loop(
-            ifElse(condition, body, brk())
+            ifElse(condition, block(Arrays.asList(body, cnt())), brk())
         );
     }
 
