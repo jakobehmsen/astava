@@ -463,10 +463,19 @@ public class ClassGenerator {
         if(codeLevel == CODE_LEVEL_EXPRESSION && returnType.equals(Descriptor.VOID))
             throw new IllegalArgumentException("Invocations at expression level must return non-void value.");
 
+        // Push target for instance invocations
+        switch (invocation) {
+            case Invocation.INTERFACE:
+            case Invocation.VIRTUAL:
+                Tuple target = ast.getTupleProperty(Property.KEY_TARGET);
+                populateMethodExpression(generator, methodScope, target, false, null, true);
+                break;
+        }
+
         List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
 
         arguments.forEach(a ->
-                populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
+            populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
 
         switch (invocation) {
             case Invocation.INTERFACE:
