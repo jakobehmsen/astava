@@ -181,21 +181,13 @@ public class ClassGenerator {
         String descriptor = ast.getStringProperty(Property.KEY_DESCRIPTOR);
         String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
 
-        switch (codeLevel) {
-            case CODE_LEVEL_STATEMENT:
-                if(!returnType.equals(Descriptor.VOID))
-                    throw new IllegalArgumentException("Invocations at statement level must return void.");
-                break;
-            case CODE_LEVEL_EXPRESSION:
-                if(returnType.equals(Descriptor.VOID))
-                    throw new IllegalArgumentException("Invocations at expression level must return non-void value.");
-                break;
-        }
+        if(codeLevel == CODE_LEVEL_EXPRESSION && returnType.equals(Descriptor.VOID))
+            throw new IllegalArgumentException("Invocations at expression level must return non-void value.");
 
         List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
 
         arguments.forEach(a ->
-            populateMethodExpression(generator, methodScope, (Tuple)a, false, null, true));
+                populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
 
         switch (invocation) {
             case Invocation.INTERFACE:
@@ -208,6 +200,9 @@ public class ClassGenerator {
                 generator.invokeVirtual(Type.getType(type), new Method(name, descriptor));
                 break;
         }
+
+        if(codeLevel == CODE_LEVEL_STATEMENT && !returnType.equals(Descriptor.VOID))
+            generator.pop(); // Pop unused return value
 
         return returnType;
     }
