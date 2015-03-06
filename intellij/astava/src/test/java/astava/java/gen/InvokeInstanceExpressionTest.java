@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class InvokeInstanceExpression {
+public class InvokeInstanceExpressionTest {
     public static class InvokeInstanceVirtual {
         public int iToI(int x) {
             return x * 7;
@@ -69,7 +69,7 @@ public class InvokeInstanceExpression {
     private List<LiteralTest.LiteralProvider> argumentProviders;
     private Class<? extends Exception> expectedExceptionType;
 
-    public InvokeInstanceExpression(Class<?> typeToInstantiate, int invocation, Class<?> type, String name, List<Class<?>> parameterTypes, Class<?> returnType, List<LiteralTest.LiteralProvider> argumentProviders, Class<? extends Exception> expectedExceptionType) {
+    public InvokeInstanceExpressionTest(Class<?> typeToInstantiate, int invocation, Class<?> type, String name, List<Class<?>> parameterTypes, Class<?> returnType, List<LiteralTest.LiteralProvider> argumentProviders, Class<? extends Exception> expectedExceptionType) {
         this.typeToInstantiate = typeToInstantiate;
         this.invocation = invocation;
         this.type = type;
