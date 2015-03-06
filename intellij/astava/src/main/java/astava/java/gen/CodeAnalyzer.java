@@ -3,9 +3,6 @@ package astava.java.gen;
 import astava.core.Node;
 import astava.core.Tuple;
 import astava.java.*;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +42,7 @@ public class CodeAnalyzer {
                 break;
             } case ASTType.INCREMENT: {
                 break;
-            } case ASTType.RETURN_STATEMENT: {
+            } case ASTType.RETURN_VALUE_STATEMENT: {
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
                 return resultType(expression, methodScope);
