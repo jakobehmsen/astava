@@ -120,7 +120,7 @@ public class ClassGenerator {
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
                 statements.forEach(s ->
-                    populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
+                        populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
 
                 break;
             } case ASTType.IF_ELSE: {
@@ -163,48 +163,15 @@ public class ClassGenerator {
             } case ASTType.INVOCATION: {
                 populateMethodInvocation(generator, methodScope, statement, CODE_LEVEL_STATEMENT);
                 break;
+            } case ASTType.NEW_INSTANCE: {
+                populateMethodNewInstance(generator, methodScope, statement, CODE_LEVEL_STATEMENT);
+                break;
             } default: {
                 return null; // Not a statement
             }
         }
 
         return Descriptor.VOID;
-    }
-
-    private static final int CODE_LEVEL_STATEMENT = 0;
-    private static final int CODE_LEVEL_EXPRESSION = 1;
-
-    private String populateMethodInvocation(GeneratorAdapter generator, GenerateScope methodScope, Tuple ast, int codeLevel) {
-        int invocation = ast.getIntProperty(Property.KEY_INVOCATION);
-        String type = ast.getStringProperty(Property.KEY_TYPE);
-        String name = ast.getStringProperty(Property.KEY_NAME);
-        String descriptor = ast.getStringProperty(Property.KEY_DESCRIPTOR);
-        String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
-
-        if(codeLevel == CODE_LEVEL_EXPRESSION && returnType.equals(Descriptor.VOID))
-            throw new IllegalArgumentException("Invocations at expression level must return non-void value.");
-
-        List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
-
-        arguments.forEach(a ->
-                populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
-
-        switch (invocation) {
-            case Invocation.INTERFACE:
-                generator.invokeInterface(Type.getType(type), new Method(name, descriptor));
-                break;
-            case Invocation.STATIC:
-                generator.invokeStatic(Type.getType(type), new Method(name, descriptor));
-                break;
-            case Invocation.VIRTUAL:
-                generator.invokeVirtual(Type.getType(type), new Method(name, descriptor));
-                break;
-        }
-
-        if(codeLevel == CODE_LEVEL_STATEMENT && !returnType.equals(Descriptor.VOID))
-            generator.pop(); // Pop unused return value
-
-        return returnType;
     }
 
     public String populateMethodExpression(GeneratorAdapter generator, GenerateScope methodScope, Tuple expression, boolean isRoot, Label ifFalseLabel, boolean reifyCondition) {
@@ -474,48 +441,69 @@ public class ClassGenerator {
 
                 return ifTrueResultType;
             } case ASTType.INVOCATION: {
-                /*int invocation = expression.getIntProperty(Property.KEY_INVOCATION);
-                String type = expression.getStringProperty(Property.KEY_TYPE);
-                String name = expression.getStringProperty(Property.KEY_NAME);
-                String descriptor = expression.getStringProperty(Property.KEY_DESCRIPTOR);
-                String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
-                List<Node> arguments = (List<Node>) expression.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
-
-                arguments.forEach(a ->
-                    populateMethodExpression(generator, methodScope, (Tuple)a, false, null, true));
-
-                switch (invocation) {
-                    case Invocation.INTERFACE:
-                        generator.invokeInterface(Type.getType(type), new Method(name, descriptor));
-                        break;
-                    case Invocation.STATIC:
-                        generator.invokeStatic(Type.getType(type), new Method(name, descriptor));
-                        break;
-                    case Invocation.VIRTUAL:
-                        generator.invokeVirtual(Type.getType(type), new Method(name, descriptor));
-                        break;
-                }
-
-                return returnType;*/
-
                 return populateMethodInvocation(generator, methodScope, expression, CODE_LEVEL_EXPRESSION);
             } case ASTType.NEW_INSTANCE: {
-                String type = expression.getStringProperty(Property.KEY_TYPE);
-                List<String> parameterTypes = (List<String>)expression.getPropertyValueAs(Property.KEY_PARAMETER_TYPES, List.class);
-                String returnType = type;
-                List<Node> arguments = (List<Node>) expression.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
-
-                generator.newInstance(Type.getType(type));
-                generator.dup();
-                arguments.forEach(a ->
-                    populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
-                generator.invokeConstructor(Type.getType(type), new Method("<init>", Descriptor.getMethodDescriptor(parameterTypes, Descriptor.VOID)));
-
-                return type;
+                return populateMethodNewInstance(generator, methodScope, expression, CODE_LEVEL_EXPRESSION);
             }
         }
 
         return null; // Not an expression
+    }
+
+    private static final int CODE_LEVEL_STATEMENT = 0;
+    private static final int CODE_LEVEL_EXPRESSION = 1;
+
+    private String populateMethodInvocation(GeneratorAdapter generator, GenerateScope methodScope, Tuple ast, int codeLevel) {
+        int invocation = ast.getIntProperty(Property.KEY_INVOCATION);
+        String type = ast.getStringProperty(Property.KEY_TYPE);
+        String name = ast.getStringProperty(Property.KEY_NAME);
+        String descriptor = ast.getStringProperty(Property.KEY_DESCRIPTOR);
+        String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
+
+        if(codeLevel == CODE_LEVEL_EXPRESSION && returnType.equals(Descriptor.VOID))
+            throw new IllegalArgumentException("Invocations at expression level must return non-void value.");
+
+        List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
+
+        arguments.forEach(a ->
+                populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
+
+        switch (invocation) {
+            case Invocation.INTERFACE:
+                generator.invokeInterface(Type.getType(type), new Method(name, descriptor));
+                break;
+            case Invocation.STATIC:
+                generator.invokeStatic(Type.getType(type), new Method(name, descriptor));
+                break;
+            case Invocation.VIRTUAL:
+                generator.invokeVirtual(Type.getType(type), new Method(name, descriptor));
+                break;
+        }
+
+        if(codeLevel == CODE_LEVEL_STATEMENT && !returnType.equals(Descriptor.VOID))
+            generator.pop(); // Pop unused return value
+
+        return returnType;
+    }
+
+    private String populateMethodNewInstance(GeneratorAdapter generator, GenerateScope methodScope, Tuple ast, int codeLevel) {
+        String type = ast.getStringProperty(Property.KEY_TYPE);
+        List<String> parameterTypes = (List<String>)ast.getPropertyValueAs(Property.KEY_PARAMETER_TYPES, List.class);
+        String returnType = type;
+        List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
+
+        generator.newInstance(Type.getType(type));
+        generator.dup();
+        arguments.forEach(a ->
+            populateMethodExpression(generator, methodScope, (Tuple) a, false, null, true));
+        generator.invokeConstructor(Type.getType(type), new Method("<init>", Descriptor.getMethodDescriptor(parameterTypes, Descriptor.VOID)));
+
+        if(codeLevel == CODE_LEVEL_STATEMENT) {
+            generator.pop();
+            returnType = Descriptor.VOID;
+        }
+
+        return returnType;
     }
 
     public byte[] toBytes() {
