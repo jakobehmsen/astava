@@ -1,5 +1,6 @@
 package astava.java.gen;
 
+import astava.core.Node;
 import astava.core.Tuple;
 import astava.java.Descriptor;
 import org.junit.Test;
@@ -11,6 +12,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static astava.CommonTest.testExpression;
 import static astava.java.Factory.invokeStatic;
@@ -66,6 +68,7 @@ public class InvokeStaticExpressionTest {
     public void testInvokeStatic() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Method method = type.getMethod(name, parameterTypes.toArray(new Class<?>[parameterTypes.size()]));
         Object[] arguments = argumentProviders.stream().map(ap -> ap.getValue()).toArray(s -> new Object[s]);
+        List<Node> astArguments = argumentProviders.stream().map(ap -> ap.createAST(ap.getValue())).collect(Collectors.toList());
 
         Object expectedResult = method.invoke(null, arguments);
 
@@ -73,8 +76,8 @@ public class InvokeStaticExpressionTest {
             Descriptor.get(type),
             name,
             Descriptor.getMethodDescriptor(parameterTypes, returnType),
-            Arrays.asList(literal(1.5)));
-
+            astArguments
+        );
         try {
             testExpression(expression, Descriptor.get(returnType), actualValue -> {
                 assertEquals(expectedResult, actualValue);
