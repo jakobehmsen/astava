@@ -130,10 +130,6 @@ public class LabelScopeTest {
         testMethodBody(methodBody, Descriptor.INT, actualValue -> assertEquals(expectedValue, actualValue));
     }
 
-        /*thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Bla");
-        throw new IllegalArgumentException("Bla");*/
-
     @Test
     public void testRedefine() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         String labelName = "l";
