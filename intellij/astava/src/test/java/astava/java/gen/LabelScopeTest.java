@@ -71,7 +71,7 @@ public class LabelScopeTest {
     }
 
     @Test
-    public void testGoToMultiSetFails() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public void testMultiSetFails() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         String labelName = "l";
         int expectedValue = 1;
 
