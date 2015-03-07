@@ -514,4 +514,26 @@ public class Factory {
             Tuple.newProperty(Property.KEY_ARGUMENTS, new Atom(arguments))
         );
     }
+
+    public static Tuple labelScope(List<String> names, Tuple body) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LABEL_SCOPE)),
+            Tuple.newProperty(Property.KEY_NAMES, new Atom(names)),
+            Tuple.newProperty(Property.KEY_BODY, body)
+        );
+    }
+
+    public static Tuple labelSet(String name) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LABEL_SET)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
+
+    public static Tuple labelGoTo(String name) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LABEL_GO_TO)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
 }

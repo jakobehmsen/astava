@@ -32,4 +32,7 @@ public class ASTType {
     public static final int INVOCATION = 28;
     public static final int NEW_INSTANCE = 29;
     public static final int RETURN_STATEMENT = 30;
+    public static final int LABEL_SCOPE = 31;
+    public static final int LABEL_SET = 32;
+    public static final int LABEL_GO_TO = 33;
 }

@@ -10,11 +10,13 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
-import sun.security.krb5.internal.crypto.Des;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ClassGenerator {
     private Tuple ast;
@@ -70,7 +72,7 @@ public class ClassGenerator {
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
                 generator.visitCode();
-                populateMethodStatement(generator, new GenerateScope(), body, null, null);
+                populateMethodStatement(generator, new GenerateScope(), body, null, null, new LabelScope());
                 generator.visitEnd();
                 generator.visitMaxs(0, 0);
 
@@ -82,7 +84,7 @@ public class ClassGenerator {
         }
     }
 
-    public String populateMethodStatement(GeneratorAdapter generator, GenerateScope methodScope, Tuple statement, Label breakLabel, Label continueLabel) {
+    public String populateMethodStatement(GeneratorAdapter generator, GenerateScope methodScope, Tuple statement, Label breakLabel, Label continueLabel, LabelScope labelScope) {
         switch(getType(statement)) {
             case ASTType.VARIABLE_DECLARATION: {
                 String type = statement.getStringProperty(Property.KEY_VAR_TYPE);
@@ -120,7 +122,7 @@ public class ClassGenerator {
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
                 statements.forEach(s ->
-                        populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel));
+                    populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel, labelScope));
 
                 break;
             } case ASTType.IF_ELSE: {
@@ -132,10 +134,10 @@ public class ClassGenerator {
                 Label ifFalseLabel = generator.newLabel();
 
                 String resultType = populateMethodExpression(generator, methodScope, condition, false, ifFalseLabel, false);
-                populateMethodStatement(generator, methodScope, ifTrue, breakLabel, continueLabel);
+                populateMethodStatement(generator, methodScope, ifTrue, breakLabel, continueLabel, labelScope);
                 generator.goTo(endLabel);
                 generator.visitLabel(ifFalseLabel);
-                populateMethodStatement(generator, methodScope, ifFalse, breakLabel, continueLabel);
+                populateMethodStatement(generator, methodScope, ifFalse, breakLabel, continueLabel, labelScope);
                 generator.visitLabel(endLabel);
 
                 break;
@@ -146,7 +148,7 @@ public class ClassGenerator {
                 Label endLabel = generator.newLabel();
 
                 generator.visitLabel(startLabel);
-                populateMethodStatement(generator, methodScope, body, endLabel, startLabel);
+                populateMethodStatement(generator, methodScope, body, endLabel, startLabel, labelScope);
                 generator.goTo(startLabel);
                 generator.visitLabel(endLabel);
 
@@ -165,6 +167,30 @@ public class ClassGenerator {
                 break;
             } case ASTType.NEW_INSTANCE: {
                 populateMethodNewInstance(generator, methodScope, statement, CODE_LEVEL_STATEMENT);
+                break;
+            } case ASTType.LABEL_SCOPE: {
+                List<String> names = (List<String>) statement.getPropertyValueAs(Property.KEY_NAMES, List.class);
+                Tuple body = statement.getTupleProperty(Property.KEY_BODY);
+
+                Map<String, Label> nameToLabelMap = names.stream().collect(Collectors.toMap(n -> n, n -> generator.newLabel()));
+                LabelScope newLabelScope = new LabelScope(nameToLabelMap, labelScope);
+
+                populateMethodStatement(generator, methodScope, body, breakLabel, continueLabel, newLabelScope);
+
+                newLabelScope.verify();
+
+                break;
+            } case ASTType.LABEL_SET: {
+                String name = statement.getStringProperty(Property.KEY_NAME);
+
+                labelScope.set(generator, name);
+
+                break;
+            } case ASTType.LABEL_GO_TO: {
+                String name = statement.getStringProperty(Property.KEY_NAME);
+
+                labelScope.goTo(generator, name);
+
                 break;
             } default: {
                 return null; // Not a statement
@@ -411,7 +437,7 @@ public class ClassGenerator {
                         expressionResultTypes.add(resultType);
                     } else {
                         // Try as statement
-                        populateMethodStatement(generator, methodScope, (Tuple) s, null, null);
+                        populateMethodStatement(generator, methodScope, (Tuple) s, null, null, new LabelScope());
                     }
                 });
 

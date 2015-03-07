@@ -27,4 +27,5 @@ public class Property {
     public static final String KEY_INVOCATION = "invocation";
     public static final String KEY_ARGUMENTS = "arguments";
     public static final String KEY_TARGET = "target";
+    public static final String KEY_NAMES = "names";
 }
