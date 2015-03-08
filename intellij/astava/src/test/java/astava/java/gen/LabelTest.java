@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
 import static astava.CommonTest.testMethodBody;
+import static astava.CommonTest.whileLoop;
 import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 
@@ -73,15 +74,7 @@ public class LabelTest {
         Tuple methodBody = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            label("continue"),
-            ifElse(lt(accessVar("i"), literal(count)),
-                block(Arrays.asList(
-                    intIncVar("i", 1),
-                    goTo("continue")
-                )),
-                goTo("break")
-            ),
-            label("break"),
+            whileLoop(lt(accessVar("i"), literal(count)), intIncVar("i", 1)),
             ret(accessVar("i"))
         ));
 

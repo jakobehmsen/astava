@@ -10,9 +10,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
 
-import static astava.java.Factory.classDeclaration;
-import static astava.java.Factory.methodDeclaration;
-import static astava.java.Factory.ret;
+import static astava.java.Factory.*;
+import static astava.java.Factory.goTo;
+import static astava.java.Factory.label;
 
 public class CommonTest {
     public static <T> void testExpression(Tuple expression, String returnType, Consumer<T> assertion)
@@ -29,5 +29,20 @@ public class CommonTest {
         ClassGenerator generator = new ClassGenerator(classDeclaration);
         Object actualValue = generator.newClass().getMethod(methodName).invoke(null, null);
         assertion.accept((T)actualValue);
+    }
+
+    public static Tuple whileLoop(Tuple condition, Tuple body) {
+        // Embedded loop aren't supported
+        return block(Arrays.asList(
+            label("continue"),
+            ifElse(condition,
+                block(Arrays.asList(
+                    body,
+                    goTo("continue")
+                )),
+                goTo("break")
+            ),
+            label("break")
+        ));
     }
 }
