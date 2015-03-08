@@ -7,13 +7,13 @@ import astava.java.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.commons.TableSwitchGenerator;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -124,7 +124,7 @@ public class ClassGenerator {
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
                 statements.forEach(s ->
-                        populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel, labelScope));
+                    populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel, labelScope));
 
                 break;
             } case ASTType.IF_ELSE: {
@@ -182,10 +182,42 @@ public class ClassGenerator {
                 labelScope.goTo2(generator, name);
 
                 break;
+            } case ASTType.SWITCH: {
+                Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
+                List<Node> cases = (List<Node>) statement.getPropertyValueAs(Property.KEY_CASES, List.class);
+                Tuple defaultBody = statement.getTupleProperty(Property.KEY_DEFAULT);
+
+                populateMethodExpression(generator, methodScope, expression, false, null, true);
+
+                Map<Integer, Tuple> keyToBodyMap = cases.stream()
+                    .collect(Collectors.toMap(x -> ((Tuple)x).getIntProperty(Property.KEY_KEY), x -> ((Tuple)x).getTupleProperty(Property.KEY_BODY)));
+                int[] keys = keyToBodyMap.keySet().stream().mapToInt(x -> (int)x).toArray();
+
+                generator.tableSwitch(keys, new TableSwitchGenerator() {
+                    Label switchEnd;
+
+                    @Override
+                    public void generateCase(int key, Label end) {
+                        switchEnd = end;
+
+                        Tuple body = keyToBodyMap.get(key);
+                        populateMethodStatement(generator, methodScope, body, end, null, labelScope);
+                    }
+
+                    @Override
+                    public void generateDefault() {
+                        populateMethodStatement(generator, methodScope, defaultBody, switchEnd, null, labelScope);
+                    }
+                });
+
+                break;
             } default: {
                 return null; // Not a statement
             }
         }
+
+        //generator.visitLookupSwitchInsn();
+        //generator.tableSwitch();
 
         return Descriptor.VOID;
     }
