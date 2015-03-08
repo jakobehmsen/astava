@@ -536,4 +536,18 @@ public class Factory {
             Tuple.newProperty(Property.KEY_NAME, new Atom(name))
         );
     }
+
+    public static Tuple label(String name) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LABEL)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
+
+    public static Tuple goTo(String name) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.GO_TO)),
+            Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
 }
