@@ -56,16 +56,10 @@ public class InvokeInstanceStatementTest {
             assignVar("target", newInstance(Descriptor.get(InvokeInstanceVirtual.class), Collections.emptyList(), Collections.emptyList())),
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(
-                ifElse(lt(accessVar("i"), literal(count)),
-                    block(Arrays.asList(
-                        invocation,
-                        intIncVar("i", 1),
-                        cnt()
-                    )),
-                    brk()
-                )
-            ),
+            whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
+                invocation,
+                intIncVar("i", 1)
+            ))),
             ret(accessVar("target"))
         ));
 
@@ -94,8 +88,8 @@ public class InvokeInstanceStatementTest {
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
-                invocation,
-                intIncVar("i", 1)
+                    invocation,
+                    intIncVar("i", 1)
             ))),
             ret(accessVar("target"))
         ));
