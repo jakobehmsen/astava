@@ -59,10 +59,6 @@ public class CodeAnalyzer {
 
                 // What if they are different?
                 return ifTrueReturnType;
-            } case ASTType.LOOP: {
-                Tuple body = statement.getTupleProperty(Property.KEY_BODY);
-
-                return returnType(body, methodScope);
             } case ASTType.BREAK: {
                 break;
             } case ASTType.CONTINUE: {

@@ -455,13 +455,6 @@ public class Factory {
         );
     }
 
-    public static Tuple loop(Tuple body) {
-        return new Tuple(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.LOOP)),
-            Tuple.newProperty(Property.KEY_BODY, body)
-        );
-    }
-
     public static Tuple brk() {
         return new Tuple(Arrays.asList(
                 Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.BREAK))
