@@ -71,10 +71,12 @@ public class ClassGenerator {
                 Method m = new Method(methodName, methodNode.desc);
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
+                LabelScope labelScope = new LabelScope();
                 generator.visitCode();
-                populateMethodStatement(generator, new GenerateScope(), body, null, null, new LabelScope());
+                populateMethodStatement(generator, new GenerateScope(), body, null, null, labelScope);
                 generator.visitEnd();
                 generator.visitMaxs(0, 0);
+                labelScope.verify();
 
                 classNode.methods.add(methodNode);
 
@@ -122,7 +124,7 @@ public class ClassGenerator {
                 List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
 
                 statements.forEach(s ->
-                    populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel, labelScope));
+                        populateMethodStatement(generator, methodScope, (Tuple) s, breakLabel, continueLabel, labelScope));
 
                 break;
             } case ASTType.IF_ELSE: {
@@ -190,6 +192,18 @@ public class ClassGenerator {
                 String name = statement.getStringProperty(Property.KEY_NAME);
 
                 labelScope.goTo(generator, name);
+
+                break;
+            } case ASTType.LABEL: {
+                String name = statement.getStringProperty(Property.KEY_NAME);
+
+                labelScope.label(generator, name);
+
+                break;
+            } case ASTType.GO_TO: {
+                String name = statement.getStringProperty(Property.KEY_NAME);
+
+                labelScope.goTo2(generator, name);
 
                 break;
             } default: {
@@ -428,6 +442,8 @@ public class ClassGenerator {
                 List<Node> statements = (List<Node>) expression.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
                 List<String> expressionResultTypes = new ArrayList<>();
 
+                LabelScope labelScope = new LabelScope();
+
                 statements.forEach(s -> {
                     // Try as expression
                     String resultType = populateMethodExpression(generator, methodScope, (Tuple) s, false, null, true);
@@ -437,9 +453,11 @@ public class ClassGenerator {
                         expressionResultTypes.add(resultType);
                     } else {
                         // Try as statement
-                        populateMethodStatement(generator, methodScope, (Tuple) s, null, null, new LabelScope());
+                        populateMethodStatement(generator, methodScope, (Tuple) s, null, null, labelScope);
                     }
                 });
+
+                labelScope.verify();
 
                 if(expressionResultTypes.size() > 1)
                     throw new IllegalArgumentException("Expression block has multiple expressions.");

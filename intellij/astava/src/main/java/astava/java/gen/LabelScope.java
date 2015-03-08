@@ -71,4 +71,22 @@ public class LabelScope {
             throw new IllegalStateException("Unset labels were used: " + usedAndNotSetAsString + ".");
         }
     }
+
+    public void label(GeneratorAdapter generator, String name) {
+        LabelInfo label = getOrCreate(generator, name);
+        if(label.isSet)
+            throw new IllegalArgumentException("Label '" + name + "' is already set.");
+        generator.visitLabel(label.label);
+        label.isSet = true;
+    }
+
+    public void goTo2(GeneratorAdapter generator, String name) {
+        LabelInfo label = getOrCreate(generator, name);
+        generator.goTo(label.label);
+        label.isUsed = true;
+    }
+
+    private LabelInfo getOrCreate(GeneratorAdapter generator, String name) {
+        return nameToLabelMap.computeIfAbsent(name, k -> new LabelInfo(generator.newLabel()));
+    }
 }
