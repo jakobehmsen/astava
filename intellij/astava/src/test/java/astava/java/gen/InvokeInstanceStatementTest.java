@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static astava.CommonTest.testMethodBody;
+import static astava.CommonTest.whileLoop;
 import static astava.java.Factory.*;
 import static astava.java.Factory.brk;
 import static astava.java.Factory.ret;
@@ -81,27 +82,21 @@ public class InvokeInstanceStatementTest {
 
         int count = 10;
         Tuple invocation = invokeInterface(
-                Descriptor.get(InvokeInstanceInterface.class),
-                "vToV",
-                Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID),
-                accessVar("target"),
-                Arrays.asList());
+            Descriptor.get(InvokeInstanceInterface.class),
+            "vToV",
+            Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID),
+            accessVar("target"),
+            Arrays.asList());
 
         Tuple methodBody = block(Arrays.asList(
             declareVar(Descriptor.get(InvokeInstanceImpl.class), "target"),
             assignVar("target", newInstance(Descriptor.get(InvokeInstanceImpl.class), Collections.emptyList(), Collections.emptyList())),
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(
-                ifElse(lt(accessVar("i"), literal(count)),
-                    block(Arrays.asList(
-                        invocation,
-                        intIncVar("i", 1),
-                        cnt()
-                    )),
-                    brk()
-                )
-            ),
+            whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
+                invocation,
+                intIncVar("i", 1)
+            ))),
             ret(accessVar("target"))
         ));
 

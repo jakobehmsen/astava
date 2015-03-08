@@ -11,6 +11,7 @@ import java.util.Collections;
 
 import static astava.CommonTest.testExpression;
 import static astava.CommonTest.testMethodBody;
+import static astava.CommonTest.whileLoop;
 import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,16 +54,10 @@ public class NewInstanceTest {
         Tuple methodBody = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(
-                ifElse(lt(accessVar("i"), literal(count)),
-                    block(Arrays.asList(
-                        instantiation,
-                        intIncVar("i", 1),
-                        cnt()
-                    )),
-                    brk()
-                )
-            ),
+            whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
+                instantiation,
+                intIncVar("i", 1)
+            ))),
             ret()
         ));
 

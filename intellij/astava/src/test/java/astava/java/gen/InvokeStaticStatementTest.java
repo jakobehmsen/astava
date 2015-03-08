@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
 import static astava.CommonTest.testMethodBody;
+import static astava.CommonTest.whileLoop;
 import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -70,16 +71,10 @@ public class InvokeStaticStatementTest {
         Tuple methodBody = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
-            loop(
-                ifElse(lt(accessVar("i"), literal(count)),
-                    block(Arrays.asList(
-                        invocation,
-                        intIncVar("i", 1),
-                        cnt()
-                    )),
-                    brk()
-                )
-            ),
+            whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
+                invocation,
+                intIncVar("i", 1)
+            ))),
             ret()
         ));
 
