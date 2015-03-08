@@ -20,47 +20,7 @@ public class LabelScope {
         }
     }
 
-    private LabelScope parent;
-    private Map<String, LabelInfo> nameToLabelMap;
-
-    public LabelScope(Map<String, Label> nameToLabelMap, LabelScope parent) {
-        this.nameToLabelMap = nameToLabelMap.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> new LabelInfo(e.getValue())));
-        this.parent = parent;
-    }
-
-    public LabelScope(Map<String, Label> nameToLabelMap) {
-        this(nameToLabelMap, null);
-    }
-
-    public LabelScope() {
-        this(Collections.emptyMap());
-    }
-
-    private LabelInfo getLabel(String name) {
-        LabelInfo label = nameToLabelMap.get(name);
-        if(label == null) {
-            if(parent != null)
-                return parent.getLabel(name);
-
-            throw new IllegalArgumentException("Label '" + name + "' is undeclared.");
-        }
-
-        return label;
-    }
-
-    public void set(GeneratorAdapter generator, String name) {
-        LabelInfo label = getLabel(name);
-        if(label.isSet)
-            throw new IllegalArgumentException("Label '" + name + "' is already set.");
-        generator.visitLabel(label.label);
-        label.isSet = true;
-    }
-
-    public void goTo(GeneratorAdapter generator, String name) {
-        LabelInfo label = getLabel(name);
-        generator.goTo(label.label);
-        label.isUsed = true;
-    }
+    private Map<String, LabelInfo> nameToLabelMap = new Hashtable<>();
 
     public void verify() {
         List<String> usedAndNotSet =

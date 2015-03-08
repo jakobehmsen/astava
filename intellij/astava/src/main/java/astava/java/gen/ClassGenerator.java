@@ -170,30 +170,6 @@ public class ClassGenerator {
             } case ASTType.NEW_INSTANCE: {
                 populateMethodNewInstance(generator, methodScope, statement, CODE_LEVEL_STATEMENT);
                 break;
-            } case ASTType.LABEL_SCOPE: {
-                List<String> names = (List<String>) statement.getPropertyValueAs(Property.KEY_NAMES, List.class);
-                Tuple body = statement.getTupleProperty(Property.KEY_BODY);
-
-                Map<String, Label> nameToLabelMap = names.stream().collect(Collectors.toMap(n -> n, n -> generator.newLabel()));
-                LabelScope newLabelScope = new LabelScope(nameToLabelMap, labelScope);
-
-                populateMethodStatement(generator, methodScope, body, breakLabel, continueLabel, newLabelScope);
-
-                newLabelScope.verify();
-
-                break;
-            } case ASTType.LABEL_SET: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
-
-                labelScope.set(generator, name);
-
-                break;
-            } case ASTType.LABEL_GO_TO: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
-
-                labelScope.goTo(generator, name);
-
-                break;
             } case ASTType.LABEL: {
                 String name = statement.getStringProperty(Property.KEY_NAME);
 
