@@ -85,7 +85,7 @@ public class Factory {
 
     public static Tuple ret() {
         return new Tuple(Arrays.asList(
-            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.RETURN_STATEMENT))
+                Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.RETURN_STATEMENT))
         ));
     }
 
@@ -526,6 +526,23 @@ public class Factory {
         return new Tuple(
             Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.GO_TO)),
             Tuple.newProperty(Property.KEY_NAME, new Atom(name))
+        );
+    }
+
+    public static Tuple select(Tuple expression, List<Node> cases, Tuple defaultBody) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.SWITCH)),
+            Tuple.newProperty(Property.KEY_EXPRESSION, expression),
+            Tuple.newProperty(Property.KEY_CASES, new Atom(cases)),
+            Tuple.newProperty(Property.KEY_DEFAULT, defaultBody)
+        );
+    }
+
+    public static Tuple option(int key, Tuple body) {
+        return new Tuple(
+            Tuple.newProperty(Property.KEY_AST_TYPE, new Atom(ASTType.CASE)),
+            Tuple.newProperty(Property.KEY_KEY, new Atom(key)),
+            Tuple.newProperty(Property.KEY_BODY, body)
         );
     }
 }

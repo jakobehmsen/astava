@@ -37,4 +37,6 @@ public class ASTType {
     public static final int LABEL_GO_TO = 33;
     public static final int LABEL = 34;
     public static final int GO_TO = 35;
+    public static final int SWITCH = 36;
+    public static final int CASE = 37;
 }

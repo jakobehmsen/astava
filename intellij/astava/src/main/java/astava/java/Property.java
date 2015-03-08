@@ -28,4 +28,8 @@ public class Property {
     public static final String KEY_ARGUMENTS = "arguments";
     public static final String KEY_TARGET = "target";
     public static final String KEY_NAMES = "names";
+    public static final String KEY_KEYS = "cases";
+    public static final String KEY_CASES = "keys";
+    public static final String KEY_DEFAULT = "default";
+    public static final String KEY_KEY = "key";
 }
