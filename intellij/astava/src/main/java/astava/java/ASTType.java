@@ -25,7 +25,7 @@ public class ASTType {
     public static final int BITWISE = 21;
     public static final int LOGICAL = 22;
     public static final int IF_ELSE = 23;
-    public static final int BREAK = 25;
+    public static final int BREAK_CASE = 25;
     public static final int CONTINUE = 26;
     public static final int INSTANCE_OF = 27;
     public static final int INVOCATION = 28;

@@ -59,7 +59,7 @@ public class CodeAnalyzer {
 
                 // What if they are different?
                 return ifTrueReturnType;
-            } case ASTType.BREAK: {
+            } case ASTType.BREAK_CASE: {
                 break;
             } case ASTType.CONTINUE: {
                 break;

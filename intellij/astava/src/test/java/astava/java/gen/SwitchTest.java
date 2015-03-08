@@ -18,9 +18,9 @@ public class SwitchTest {
             declareVar(Descriptor.INT, "result"),
             select(literal(0),
                 Arrays.asList(
-                    option(0, block(Arrays.asList(assignVar("result", literal(0)), brk()))),
-                    option(1, block(Arrays.asList(assignVar("result", literal(1)), brk()))),
-                    option(2, block(Arrays.asList(assignVar("result", literal(2)), brk())))
+                    option(0, block(Arrays.asList(assignVar("result", literal(0)), breakOption()))),
+                    option(1, block(Arrays.asList(assignVar("result", literal(1)), breakOption()))),
+                    option(2, block(Arrays.asList(assignVar("result", literal(2)), breakOption())))
                 ),
                 assignVar("result", literal(-1))
             ),
@@ -37,9 +37,9 @@ public class SwitchTest {
             declareVar(Descriptor.INT, "result"),
             select(literal(1),
                 Arrays.asList(
-                    option(0, block(Arrays.asList(assignVar("result", literal(0)), brk()))),
-                    option(1, block(Arrays.asList(assignVar("result", literal(1)), brk()))),
-                    option(2, block(Arrays.asList(assignVar("result", literal(2)), brk())))
+                    option(0, block(Arrays.asList(assignVar("result", literal(0)), breakOption()))),
+                    option(1, block(Arrays.asList(assignVar("result", literal(1)), breakOption()))),
+                    option(2, block(Arrays.asList(assignVar("result", literal(2)), breakOption())))
                 ),
                 assignVar("result", literal(-1))
             ),
@@ -56,9 +56,9 @@ public class SwitchTest {
             declareVar(Descriptor.INT, "result"),
             select(literal(2),
                 Arrays.asList(
-                    option(0, block(Arrays.asList(assignVar("result", literal(0)), brk()))),
-                    option(1, block(Arrays.asList(assignVar("result", literal(1)), brk()))),
-                    option(2, block(Arrays.asList(assignVar("result", literal(2)), brk())))
+                    option(0, block(Arrays.asList(assignVar("result", literal(0)), breakOption()))),
+                    option(1, block(Arrays.asList(assignVar("result", literal(1)), breakOption()))),
+                    option(2, block(Arrays.asList(assignVar("result", literal(2)), breakOption())))
                 ),
                 assignVar("result", literal(-1))
             ),
@@ -77,7 +77,7 @@ public class SwitchTest {
                 Arrays.asList(
                     option(0, block(Arrays.asList(assignVar("result", literal(0))))), // Fallthrough
                     option(1, block(Arrays.asList(assignVar("result", literal(1))))), // Fallthrough
-                    option(2, block(Arrays.asList(assignVar("result", literal(2)), brk())))
+                    option(2, block(Arrays.asList(assignVar("result", literal(2)), breakOption())))
                 ),
                 assignVar("result", literal(-1))
             ),
@@ -94,9 +94,9 @@ public class SwitchTest {
             declareVar(Descriptor.INT, "result"),
             select(literal(3),
                 Arrays.asList(
-                    option(0, block(Arrays.asList(assignVar("result", literal(0)), brk()))),
-                    option(1, block(Arrays.asList(assignVar("result", literal(1)), brk()))),
-                    option(2, block(Arrays.asList(assignVar("result", literal(2)), brk())))
+                    option(0, block(Arrays.asList(assignVar("result", literal(0)), breakOption()))),
+                    option(1, block(Arrays.asList(assignVar("result", literal(1)), breakOption()))),
+                    option(2, block(Arrays.asList(assignVar("result", literal(2)), breakOption())))
                 ),
                 assignVar("result", literal(-1))
             ),
@@ -113,9 +113,9 @@ public class SwitchTest {
             declareVar(Descriptor.INT, "result"),
             select(literal(-1),
                 Arrays.asList(
-                    option(0, block(Arrays.asList(assignVar("result", literal(0)), brk()))),
-                    option(1, block(Arrays.asList(assignVar("result", literal(1)), brk()))),
-                    option(2, block(Arrays.asList(assignVar("result", literal(2)), brk())))
+                    option(0, block(Arrays.asList(assignVar("result", literal(0)), breakOption()))),
+                    option(1, block(Arrays.asList(assignVar("result", literal(1)), breakOption()))),
+                    option(2, block(Arrays.asList(assignVar("result", literal(2)), breakOption())))
                 ),
                 assignVar("result", literal(-1))
             ),

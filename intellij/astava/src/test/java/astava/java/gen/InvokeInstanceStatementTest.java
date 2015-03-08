@@ -11,7 +11,6 @@ import java.util.Collections;
 import static astava.CommonTest.testMethodBody;
 import static astava.CommonTest.whileLoop;
 import static astava.java.Factory.*;
-import static astava.java.Factory.brk;
 import static astava.java.Factory.ret;
 import static org.junit.Assert.assertEquals;
 
