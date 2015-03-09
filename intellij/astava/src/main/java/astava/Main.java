@@ -1,14 +1,16 @@
 package astava;
 
+import astava.core.Atom;
 import astava.core.Node;
-import static astava.java.Factory.*;
-import astava.java.gen.ClassGenerator;
+
+import astava.core.Tuple;
+import astava.macro.AtomProcessor;
+import astava.macro.IndexProcessor;
+import astava.macro.MapProcessor;
+import astava.macro.Processor;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collections;
 
 public class Main {
 
@@ -35,8 +37,48 @@ public class Main {
         ));
         */
 
+        Processor labelScopeProcessor = createLabelScopeProcess();
 
-        Node classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(
+
+        Node in = new Tuple(Arrays.asList(
+            new Tuple(new Atom("scopedLabel"), new Atom("outer")),
+            new Tuple(
+                new Atom("labelScope"),
+                new Tuple(
+                    new Tuple(new Atom("scopedLabel"), new Atom("start")),
+                    new Tuple(
+                        new Atom("labelScope"),
+                        new Tuple(
+                            new Tuple(new Atom("op"), new Tuple(
+                                new Tuple(new Atom("scopedLabel"), new Atom("start")),
+                                new Tuple(new Atom("scopedGoTo"), new Atom("start"))
+                            )),
+                            new Tuple(new Atom("scopedLabel"), new Atom("start")),
+                            new Tuple(new Atom("scopedGoTo"), new Atom("start"))
+                        )
+                    ),
+                    new Tuple(new Atom("scopedGoTo"), new Atom("start"))
+                )
+            )
+        ));
+
+        /*
+        Node in = new Tuple(
+            new Tuple(new Atom("op"), new Tuple(
+                new Tuple(new Atom("scopedLabel"), new Atom("start")),
+                new Tuple(new Atom("scopedGoTo"), new Atom("start"))
+            )),
+            new Tuple(new Atom("scopedLabel"), new Atom("start")),
+            new Tuple(new Atom("scopedGoTo"), new Atom("start"))
+        );
+        */
+        Node n = labelScopeProcessor.process(in);
+
+        System.out.println(in);
+        System.out.println("=>");
+        System.out.println(n);
+
+        /*Node classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(
             methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, "myMethod", Collections.emptyList(), "D",
                 ret(mul(literal(7.0), literal(11.0)))
             )
@@ -50,6 +92,37 @@ public class Main {
 
         Object result = m.invoke(null, null);
 
-        System.out.println(result);
+        System.out.println(result);*/
+    }
+
+    public static Processor createLabelScopeProcess() {
+        return new MapProcessor() {
+            int scopeCount;
+
+            {
+                createLayer(this);
+            }
+
+            void createLayer(MapProcessor layer) {
+                int id = scopeCount++;
+
+                Processor nameProcessor = new AtomProcessor<String, String>(name -> id + name);
+
+                layer.put("scopedLabel", new IndexProcessor()
+                    .set(0, new AtomProcessor<String, String>(operator -> "label"))
+                    .set(1, nameProcessor));
+                layer.put("scopedGoTo", new IndexProcessor()
+                    .set(0, new AtomProcessor<String, String>(operator -> "goTo"))
+                    .set(1, nameProcessor));
+                layer.put("labelScope", code -> createLayer().process(code));
+            }
+
+            Processor createLayer() {
+                MapProcessor layer = new MapProcessor();
+                createLayer(layer);
+
+                return code -> layer.process(((Tuple)code).get(1));
+            }
+        };
     }
 }
