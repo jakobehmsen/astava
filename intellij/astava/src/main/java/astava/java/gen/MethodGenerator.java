@@ -42,7 +42,7 @@ public class MethodGenerator {
             } case ASTType.VARIABLE_ASSIGNMENT: {
                 String name = statement.getStringProperty(Property.KEY_NAME);
                 Tuple value = statement.getTupleProperty(Property.KEY_EXPRESSION);
-                String valueType = populateMethodExpression(generator, value, false, null, true);
+                String valueType = populateMethodExpression(generator, value, null, true);
                 int id = methodScope.getVarId(name);
                 generator.storeLocal(id, Type.getType(valueType));
 
@@ -57,7 +57,7 @@ public class MethodGenerator {
             } case ASTType.RETURN_VALUE_STATEMENT: {
                 Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
 
-                String resultType = populateMethodExpression(generator, expression, false, null, true);
+                String resultType = populateMethodExpression(generator, expression, null, true);
 
                 if(resultType.equals(Descriptor.VOID))
                     throw new IllegalArgumentException("Expression of return statement results in void.");
@@ -80,7 +80,7 @@ public class MethodGenerator {
                 Label endLabel = generator.newLabel();
                 Label ifFalseLabel = generator.newLabel();
 
-                String resultType = populateMethodExpression(generator, condition, false, ifFalseLabel, false);
+                String resultType = populateMethodExpression(generator, condition, ifFalseLabel, false);
                 populateMethodStatement(generator, ifTrue, breakLabel, labelScope);
                 generator.goTo(endLabel);
                 generator.visitLabel(ifFalseLabel);
@@ -117,7 +117,7 @@ public class MethodGenerator {
                 List<Node> cases = (List<Node>) statement.getPropertyValueAs(Property.KEY_CASES, List.class);
                 Tuple defaultBody = statement.getTupleProperty(Property.KEY_DEFAULT);
 
-                populateMethodExpression(generator, expression, false, null, true);
+                populateMethodExpression(generator, expression, null, true);
 
                 Map<Integer, Tuple> keyToBodyMap = cases.stream()
                         .collect(Collectors.toMap(x -> ((Tuple) x).getIntProperty(Property.KEY_KEY), x -> ((Tuple) x).getTupleProperty(Property.KEY_BODY)));
@@ -149,7 +149,7 @@ public class MethodGenerator {
         return Descriptor.VOID;
     }
 
-    public String populateMethodExpression(GeneratorAdapter generator, Tuple expression, boolean isRoot, Label ifFalseLabel, boolean reifyCondition) {
+    public String populateMethodExpression(GeneratorAdapter generator, Tuple expression, Label ifFalseLabel, boolean reifyCondition) {
         switch(expression.getIntProperty(Property.KEY_AST_TYPE)) {
             case ASTType.BOOLEAN_LITERAL: {
                 boolean value = expression.getBooleanProperty(Property.KEY_VALUE);
@@ -221,8 +221,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, lhs, false, ifFalseLabel, false);
-                String rhsResultType = populateMethodExpression(generator, rhs, false, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, false);
+                String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
 
                 String resultType = Factory.arithmeticResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
@@ -243,8 +243,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, lhs, false, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(generator, rhs, false, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
                 String resultType = Factory.shiftResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
@@ -264,8 +264,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, lhs, false, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(generator, rhs, false, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
                 String resultType = Factory.bitwiseResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
@@ -288,8 +288,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(generator, lhs, false, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(generator, rhs, false, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, reifyCondition);
+                String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
 
                 Type t = Type.getType(lhsResultType);
 
@@ -319,8 +319,8 @@ public class MethodGenerator {
                     case LogicalOperator.AND: {
                         Label lhsIfFalseLabel = ifFalseLabel != null ? ifFalseLabel : generator.newLabel();
                         boolean lhsReify = ifFalseLabel != null ? false : true;
-                        String lhsResultType = populateMethodExpression(generator, lhs, false, lhsIfFalseLabel, lhsReify);
-                        String rhsResultType = populateMethodExpression(generator, rhs, false, ifFalseLabel, reifyCondition);
+                        String lhsResultType = populateMethodExpression(generator, lhs, lhsIfFalseLabel, lhsReify);
+                        String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
 
                         if(ifFalseLabel == null) {
                             generator.visitLabel(lhsIfFalseLabel);
@@ -333,10 +333,10 @@ public class MethodGenerator {
                     case LogicalOperator.OR: {
                         Label endLabel = generator.newLabel();
                         Label nextTestLabel = generator.newLabel();
-                        String lhsResultType = populateMethodExpression(generator, lhs, false, nextTestLabel, reifyCondition);
+                        String lhsResultType = populateMethodExpression(generator, lhs, nextTestLabel, reifyCondition);
                         generator.goTo(endLabel);
                         generator.visitLabel(nextTestLabel);
-                        String rhsResultType = populateMethodExpression(generator, rhs, false, ifFalseLabel, reifyCondition);
+                        String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
                         generator.visitLabel(endLabel);
                         resultType = Factory.logicalResultType(lhsResultType, rhsResultType);
 
@@ -354,7 +354,7 @@ public class MethodGenerator {
             } case ASTType.NOT: {
                 Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
 
-                String resultType = populateMethodExpression(generator, bExpression, false, null, true);
+                String resultType = populateMethodExpression(generator, bExpression, null, true);
 
                 if(reifyCondition)
                     generator.not();
@@ -366,7 +366,7 @@ public class MethodGenerator {
                 Tuple oExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
                 String type = expression.getStringProperty(Property.KEY_TYPE);
 
-                String resultType = populateMethodExpression(generator, oExpression, false, null, true);
+                String resultType = populateMethodExpression(generator, oExpression, null, true);
                 Type t = Type.getType(type);
 
                 generator.instanceOf(t);
@@ -381,7 +381,7 @@ public class MethodGenerator {
 
                 statements.forEach(s -> {
                     // Try as expression
-                    String resultType = populateMethodExpression(generator, (Tuple) s, false, null, true);
+                    String resultType = populateMethodExpression(generator, (Tuple) s, null, true);
 
                     if(resultType != null) {
                         // Was an expression
@@ -408,11 +408,11 @@ public class MethodGenerator {
                 Label endLabel = generator.newLabel();
                 Label testIfFalseLabel = generator.newLabel();
 
-                String resultType = populateMethodExpression(generator, condition, false, testIfFalseLabel, false);
-                String ifTrueResultType = populateMethodExpression(generator, ifTrue, false, null, true);
+                String resultType = populateMethodExpression(generator, condition, testIfFalseLabel, false);
+                String ifTrueResultType = populateMethodExpression(generator, ifTrue, null, true);
                 generator.goTo(endLabel);
                 generator.visitLabel(testIfFalseLabel);
-                String ifFalseResultType = populateMethodExpression(generator, ifFalse, false, null, true);
+                String ifFalseResultType = populateMethodExpression(generator, ifFalse, null, true);
                 generator.visitLabel(endLabel);
 
                 if(!ifTrueResultType.equals(ifFalseResultType))
@@ -447,14 +447,14 @@ public class MethodGenerator {
             case Invocation.INTERFACE:
             case Invocation.VIRTUAL:
                 Tuple target = ast.getTupleProperty(Property.KEY_TARGET);
-                populateMethodExpression(generator, target, false, null, true);
+                populateMethodExpression(generator, target, null, true);
                 break;
         }
 
         List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
 
         arguments.forEach(a ->
-                populateMethodExpression(generator, (Tuple) a, false, null, true));
+                populateMethodExpression(generator, (Tuple) a, null, true));
 
         switch (invocation) {
             case Invocation.INTERFACE:
@@ -483,7 +483,7 @@ public class MethodGenerator {
         generator.newInstance(Type.getType(type));
         generator.dup();
         arguments.forEach(a ->
-            populateMethodExpression(generator, (Tuple) a, false, null, true));
+            populateMethodExpression(generator, (Tuple) a, null, true));
         generator.invokeConstructor(Type.getType(type), new Method("<init>", Descriptor.getMethodDescriptor(parameterTypes, Descriptor.VOID)));
 
         if(codeLevel == CODE_LEVEL_STATEMENT) {
