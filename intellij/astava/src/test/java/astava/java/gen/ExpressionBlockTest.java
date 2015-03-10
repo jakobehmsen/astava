@@ -6,7 +6,6 @@ import astava.java.Descriptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import sun.security.krb5.internal.crypto.Des;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;

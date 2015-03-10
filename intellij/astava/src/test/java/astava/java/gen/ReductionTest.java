@@ -372,7 +372,7 @@ public class ReductionTest {
     private static abstract class ArithmeticResultTest extends NumberResultTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.arithmeticResultType(lhsResultType, rhsResultType);
+            return arithmeticResultType(lhsResultType, rhsResultType);
         }
     }
 
@@ -439,7 +439,7 @@ public class ReductionTest {
     private static abstract class ShiftResultTest extends NumberResultTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.shiftResultType(lhsResultType, rhsResultType);
+            return shiftResultType(lhsResultType, rhsResultType);
         }
     }
 
@@ -482,7 +482,7 @@ public class ReductionTest {
     private static abstract class BitwiseResultTest extends NumberResultTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.bitwiseResultType(lhsResultType, rhsResultType);
+            return bitwiseResultType(lhsResultType, rhsResultType);
         }
     }
 
@@ -532,7 +532,7 @@ public class ReductionTest {
     private static abstract class CompareResultTest extends BooleanResultTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.compareResultType(lhsResultType, rhsResultType);
+            return compareResultType(lhsResultType, rhsResultType);
         }
 
         @Override
@@ -618,7 +618,7 @@ public class ReductionTest {
     private static abstract class LogicalResultTest extends BooleanResultTest {
         @Override
         public String resultType(String lhsResultType, String rhsResultType) {
-            return Factory.logicalResultType(lhsResultType, rhsResultType);
+            return logicalResultType(lhsResultType, rhsResultType);
         }
 
         @Override

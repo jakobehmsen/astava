@@ -129,7 +129,7 @@ public class InvokeInstanceExpressionTest {
             if(expectedExceptionType != null)
                 fail();
         } catch (Exception e) {
-            if(!expectedExceptionType.isInstance(e))
+            if(expectedExceptionType != null && !expectedExceptionType.isInstance(e))
                 throw e;
         }
     }

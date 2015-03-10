@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import static astava.java.Factory.literal;
-import static astava.java.Factory.ret;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -117,7 +116,6 @@ public class LiteralTest {
         }
     }
 
-
     public static class FloatProvider extends LiteralProvider {
         protected FloatProvider(float value) {
             super(value, Descriptor.FLOAT);
@@ -128,7 +126,6 @@ public class LiteralTest {
             return literal((float)value);
         }
     }
-
 
     public static class DoubleProvider extends LiteralProvider {
         protected DoubleProvider(double value) {

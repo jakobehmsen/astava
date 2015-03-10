@@ -7,16 +7,14 @@ import astava.java.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.commons.TableSwitchGenerator;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import static astava.java.Factory.*;
 
 public class ClassGenerator {
     private Tuple ast;
@@ -26,11 +24,12 @@ public class ClassGenerator {
     }
 
     public void populate(ClassNode classNode) {
-        switch(ast.getIntProperty(Property.KEY_AST_TYPE)) {
+        switch(astType(ast)) {
             case ASTType.CLASS:
-                int modifier = ast.getIntProperty(Property.KEY_MODIFIER);
+                int modifier = classDeclarationModifier(ast);
                 String className = getClassName();
-                String superName = ast.getStringProperty(Property.KEY_SUPER_NAME);
+                String superName = classDeclarationSuperName(ast);
+                List<Node> members = classDeclarationMembers(ast);
 
                 classNode.version = Opcodes.V1_8;
                 classNode.access = modifier;
@@ -38,9 +37,7 @@ public class ClassGenerator {
                 classNode.signature = "L" + className + ";";
                 classNode.superName = superName;
 
-                Tuple members = ast.getTupleProperty(Property.KEY_MEMBERS);
-
-                members.getTuples().forEach(m -> populateMember(classNode, m));
+                members.forEach(m -> populateMember(classNode, (Tuple) m));
 
                 break;
             default:
@@ -49,24 +46,24 @@ public class ClassGenerator {
     }
 
     public String getClassName() {
-        return ast.getStringProperty(Property.KEY_NAME);
+        return classDeclarationName(ast);
     }
 
     public void populateMember(ClassNode classNode, Tuple member) {
-        switch(member.getIntProperty(Property.KEY_AST_TYPE)) {
+        switch(astType(member)) {
             case ASTType.METHOD:
-                int modifier = member.getIntProperty(Property.KEY_MODIFIER);
-                String methodName = member.getStringProperty(Property.KEY_NAME);
-                List<String> parameterTypeNames = (List<String>)member.getPropertyValueAs(Property.KEY_PARAMETER_TYPES, List.class);
+                int modifier = methodDeclarationModifier(member);
+                String methodName = methodDeclarationName(member);
+                List<String> parameterTypeNames =  methodDeclarationParameterTypes(member);
+                String returnTypeName = methodDeclarationReturnType(member);
+                Tuple body = methodDeclarationBody(member);
+
                 Type[] parameterTypes = new Type[parameterTypeNames.size()];
                 for(int i = 0; i < parameterTypeNames.size(); i++)
                     parameterTypes[i] = Type.getType(parameterTypeNames.get(i));
-                String returnTypeName = member.getStringProperty(Property.KEY_RETURN_TYPE);
 
                 String methodDescriptor = Descriptor.getMethodDescriptor(parameterTypeNames, returnTypeName);
                 MethodNode methodNode = new MethodNode(Opcodes.ASM5, modifier, methodName, methodDescriptor, null, null);
-
-                Tuple body = (Tuple)member.getPropertyValue(Property.KEY_BODY);
 
                 Method m = new Method(methodName, methodNode.desc);
                 GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);

@@ -2,7 +2,6 @@ package astava.java.gen;
 
 import astava.core.Tuple;
 import astava.java.Descriptor;
-import junit.framework.Assert;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;

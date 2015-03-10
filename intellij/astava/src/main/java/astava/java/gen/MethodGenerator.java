@@ -3,7 +3,9 @@ package astava.java.gen;
 import astava.core.Node;
 import astava.core.Tuple;
 import astava.java.*;
-import org.objectweb.asm.*;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
@@ -12,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static astava.java.Factory.*;
 
 public class MethodGenerator {
     private Tuple body;
@@ -32,30 +36,30 @@ public class MethodGenerator {
     }
 
     public String populateMethodStatement(GeneratorAdapter generator, Tuple statement, Label breakLabel, LabelScope labelScope) {
-        switch(statement.getIntProperty(Property.KEY_AST_TYPE)) {
+        switch(astType(statement)) {
             case ASTType.VARIABLE_DECLARATION: {
-                String type = statement.getStringProperty(Property.KEY_VAR_TYPE);
-                String name = statement.getStringProperty(Property.KEY_NAME);
+                String type = declareVarType(statement);
+                String name = declareVarName(statement);
                 methodScope.declareVar(generator, type, name);
 
                 break;
             } case ASTType.VARIABLE_ASSIGNMENT: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
-                Tuple value = statement.getTupleProperty(Property.KEY_EXPRESSION);
+                String name = assignVarName(statement);
+                Tuple value = assignVarExpression(statement);
                 String valueType = populateMethodExpression(generator, value, null, true);
                 int id = methodScope.getVarId(name);
                 generator.storeLocal(id, Type.getType(valueType));
 
                 break;
             } case ASTType.INCREMENT: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
-                int amount = statement.getIntProperty(Property.KEY_AMOUNT);
+                String name = intIncVarName(statement);
+                int amount = intIncVarAmount(statement);
                 int id = methodScope.getVarId(name);
                 generator.iinc(id, amount);
 
                 break;
             } case ASTType.RETURN_VALUE_STATEMENT: {
-                Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
+                Tuple expression = retExpression(statement);
 
                 String resultType = populateMethodExpression(generator, expression, null, true);
 
@@ -66,16 +70,16 @@ public class MethodGenerator {
 
                 break;
             } case ASTType.BLOCK: {
-                List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+                List<Node> statements = blockStatements(statement);
 
                 statements.forEach(s ->
                     populateMethodStatement(generator, (Tuple) s, breakLabel, labelScope));
 
                 break;
             } case ASTType.IF_ELSE: {
-                Tuple condition = statement.getTupleProperty(Property.KEY_CONDITION);
-                Tuple ifTrue = statement.getTupleProperty(Property.KEY_IF_TRUE);
-                Tuple ifFalse = statement.getTupleProperty(Property.KEY_IF_FALSE);
+                Tuple condition = ifElseCondition(statement);
+                Tuple ifTrue = ifElseIfTrue(statement);
+                Tuple ifFalse = ifElseIfFalse(statement);
 
                 Label endLabel = generator.newLabel();
                 Label ifFalseLabel = generator.newLabel();
@@ -101,26 +105,26 @@ public class MethodGenerator {
                 populateMethodNewInstance(generator, methodScope, statement, CODE_LEVEL_STATEMENT);
                 break;
             } case ASTType.LABEL: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
+                String name = labelName(statement);
 
                 labelScope.label(generator, name);
 
                 break;
             } case ASTType.GO_TO: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
+                String name = goToName(statement);
 
                 labelScope.goTo2(generator, name);
 
                 break;
             } case ASTType.SWITCH: {
-                Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
-                List<Node> cases = (List<Node>) statement.getPropertyValueAs(Property.KEY_CASES, List.class);
-                Tuple defaultBody = statement.getTupleProperty(Property.KEY_DEFAULT);
+                Tuple expression = selectExpression(statement);
+                List<Node> cases = selectOptions(statement);
+                Tuple defaultBody = selectDefault(statement);
 
                 populateMethodExpression(generator, expression, null, true);
 
                 Map<Integer, Tuple> keyToBodyMap = cases.stream()
-                        .collect(Collectors.toMap(x -> ((Tuple) x).getIntProperty(Property.KEY_KEY), x -> ((Tuple) x).getTupleProperty(Property.KEY_BODY)));
+                    .collect(Collectors.toMap(x -> optionKey((Tuple) x), x -> optionBody((Tuple) x)));
                 int[] keys = keyToBodyMap.keySet().stream().mapToInt(x -> (int)x).toArray();
 
                 generator.tableSwitch(keys, new TableSwitchGenerator() {
@@ -150,9 +154,9 @@ public class MethodGenerator {
     }
 
     public String populateMethodExpression(GeneratorAdapter generator, Tuple expression, Label ifFalseLabel, boolean reifyCondition) {
-        switch(expression.getIntProperty(Property.KEY_AST_TYPE)) {
+        switch(astType(expression)) {
             case ASTType.BOOLEAN_LITERAL: {
-                boolean value = expression.getBooleanProperty(Property.KEY_VALUE);
+                boolean value = literalBoolean(expression);
 
                 if(!value) {
                     if(reifyCondition)
@@ -166,50 +170,50 @@ public class MethodGenerator {
 
                 return Descriptor.BOOLEAN;
             } case ASTType.BYTE_LITERAL: {
-                byte value = expression.getByteProperty(Property.KEY_VALUE);
+                byte value = literalByte(expression);
                 generator.push(value);
 
                 return Descriptor.BYTE;
             } case ASTType.SHORT_LITERAL: {
-                short value = expression.getShortProperty(Property.KEY_VALUE);
+                short value = literalShort(expression);
                 generator.push(value);
 
                 return Descriptor.SHORT;
             } case ASTType.INT_LITERAL: {
-                int value = expression.getIntProperty(Property.KEY_VALUE);
+                int value = literalInt(expression);
                 generator.push(value);
 
                 return Descriptor.INT;
             } case ASTType.LONG_LITERAL: {
-                long value = expression.getLongProperty(Property.KEY_VALUE);
+                long value = literalLong(expression);
                 generator.push(value);
 
                 return Descriptor.LONG;
             } case ASTType.FLOAT_LITERAL: {
-                float value = expression.getFloatProperty(Property.KEY_VALUE);
+                float value = literalFloat(expression);
                 generator.push(value);
 
                 return Descriptor.FLOAT;
             } case ASTType.DOUBLE_LITERAL: {
-                double value = expression.getDoubleProperty(Property.KEY_VALUE);
+                double value = literalDouble(expression);
                 generator.push(value);
 
                 return Descriptor.DOUBLE;
             } case ASTType.CHAR_LITERAL: {
-                char value = expression.getCharProperty(Property.KEY_VALUE);
+                char value = literalChar(expression);
                 generator.push(value);
 
                 return Descriptor.CHAR;
             } case ASTType.STRING_LITERAL: {
-                String value = expression.getStringProperty(Property.KEY_VALUE);
+                String value = literalString(expression);
                 generator.push(value);
 
                 return Descriptor.STRING;
             } case ASTType.REDUCE: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                int operator = arithmeticOperator(expression);
+                Tuple lhs = arithmeticLhs(expression);
+                Tuple rhs = arithmeticRhs(expression);
 
-                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 int op;
 
                 switch(operator) {
@@ -224,16 +228,16 @@ public class MethodGenerator {
                 String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, false);
                 String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
 
-                String resultType = Factory.arithmeticResultType(lhsResultType, rhsResultType);
+                String resultType = arithmeticResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
 
                 return resultType;
             } case ASTType.SHIFT: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                int operator = shiftOperator(expression);
+                Tuple lhs = shiftLhs(expression);
+                Tuple rhs = shiftRhs(expression);
 
-                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 int op;
 
                 switch(operator) {
@@ -245,16 +249,16 @@ public class MethodGenerator {
 
                 String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, reifyCondition);
                 String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
-                String resultType = Factory.shiftResultType(lhsResultType, rhsResultType);
+                String resultType = shiftResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
 
                 return resultType;
             } case ASTType.BITWISE: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                int operator = bitwiseOperator(expression);
+                Tuple lhs = bitwiseLhs(expression);
+                Tuple rhs = bitwiseRhs(expression);
 
-                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 int op;
 
                 switch(operator) {
@@ -266,16 +270,16 @@ public class MethodGenerator {
 
                 String lhsResultType = populateMethodExpression(generator, lhs, ifFalseLabel, reifyCondition);
                 String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
-                String resultType = Factory.bitwiseResultType(lhsResultType, rhsResultType);
+                String resultType = bitwiseResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
 
                 return resultType;
             } case ASTType.COMPARE: {
-                Tuple lhs = (Tuple) expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple) expression.getPropertyValue(Property.KEY_RHS);
+                int operator = compareOperator(expression);
+                Tuple lhs = compareLhs(expression);
+                Tuple rhs = compareRhs(expression);
 
-                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 int op;
 
                 switch (operator) {
@@ -309,10 +313,10 @@ public class MethodGenerator {
 
                 return Descriptor.BOOLEAN;
             } case ASTType.LOGICAL: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                int operator = logicalOperator(expression);
+                Tuple lhs = logicalLhs(expression);
+                Tuple rhs = logicalRhs(expression);
 
-                int operator = expression.getIntProperty(Property.KEY_OPERATOR);
                 String resultType = null;
 
                 switch(operator) {
@@ -326,7 +330,7 @@ public class MethodGenerator {
                             generator.visitLabel(lhsIfFalseLabel);
                         }
 
-                        resultType = Factory.logicalResultType(lhsResultType, rhsResultType);
+                        resultType = logicalResultType(lhsResultType, rhsResultType);
 
                         break;
                     }
@@ -338,7 +342,7 @@ public class MethodGenerator {
                         generator.visitLabel(nextTestLabel);
                         String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);
                         generator.visitLabel(endLabel);
-                        resultType = Factory.logicalResultType(lhsResultType, rhsResultType);
+                        resultType = logicalResultType(lhsResultType, rhsResultType);
 
                         break;
                     }
@@ -346,13 +350,13 @@ public class MethodGenerator {
 
                 return resultType;
             } case ASTType.VARIABLE_ACCESS: {
-                String name = expression.getStringProperty(Property.KEY_NAME);
+                String name = accessVarName(expression);
                 int id = methodScope.getVarId(name);
                 generator.loadLocal(id);
 
                 return methodScope.getVarType(name);
             } case ASTType.NOT: {
-                Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
+                Tuple bExpression = notExpression(expression);
 
                 String resultType = populateMethodExpression(generator, bExpression, null, true);
 
@@ -363,8 +367,8 @@ public class MethodGenerator {
 
                 return Descriptor.BOOLEAN;
             } case ASTType.INSTANCE_OF: {
-                Tuple oExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
-                String type = expression.getStringProperty(Property.KEY_TYPE);
+                Tuple oExpression = instanceOfExpression(expression);
+                String type = instanceOfType(expression);
 
                 String resultType = populateMethodExpression(generator, oExpression, null, true);
                 Type t = Type.getType(type);
@@ -374,7 +378,7 @@ public class MethodGenerator {
                 return Descriptor.BOOLEAN;
             } case ASTType.BLOCK: {
                 // Exactly one expression should be contained with statements
-                List<Node> statements = (List<Node>) expression.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+                List<Node> statements = blockStatements(expression);
                 List<String> expressionResultTypes = new ArrayList<>();
 
                 LabelScope labelScope = new LabelScope();
@@ -401,9 +405,9 @@ public class MethodGenerator {
 
                 return expressionResultTypes.get(0);
             } case ASTType.IF_ELSE: {
-                Tuple condition = expression.getTupleProperty(Property.KEY_CONDITION);
-                Tuple ifTrue = expression.getTupleProperty(Property.KEY_IF_TRUE);
-                Tuple ifFalse = expression.getTupleProperty(Property.KEY_IF_FALSE);
+                Tuple condition = ifElseCondition(expression);
+                Tuple ifTrue = ifElseIfTrue(expression);
+                Tuple ifFalse = ifElseIfFalse(expression);
 
                 Label endLabel = generator.newLabel();
                 Label testIfFalseLabel = generator.newLabel();
@@ -433,10 +437,12 @@ public class MethodGenerator {
     private static final int CODE_LEVEL_EXPRESSION = 1;
 
     private String populateMethodInvocation(GeneratorAdapter generator, GenerateScope methodScope, Tuple ast, int codeLevel) {
-        int invocation = ast.getIntProperty(Property.KEY_INVOCATION);
-        String type = ast.getStringProperty(Property.KEY_TYPE);
-        String name = ast.getStringProperty(Property.KEY_NAME);
-        String descriptor = ast.getStringProperty(Property.KEY_DESCRIPTOR);
+        int invocation = invokeInvocation(ast);
+        String type = invokeType(ast);
+        String name = invokeName(ast);
+        String descriptor = invokeMethodDescriptor(ast);
+        List<Node> arguments = invokeMethodArguments(ast);
+
         String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
 
         if(codeLevel == CODE_LEVEL_EXPRESSION && returnType.equals(Descriptor.VOID))
@@ -446,12 +452,10 @@ public class MethodGenerator {
         switch (invocation) {
             case Invocation.INTERFACE:
             case Invocation.VIRTUAL:
-                Tuple target = ast.getTupleProperty(Property.KEY_TARGET);
+                Tuple target = invokeTarget(ast);
                 populateMethodExpression(generator, target, null, true);
                 break;
         }
-
-        List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
 
         arguments.forEach(a ->
                 populateMethodExpression(generator, (Tuple) a, null, true));
@@ -475,10 +479,10 @@ public class MethodGenerator {
     }
 
     private String populateMethodNewInstance(GeneratorAdapter generator, GenerateScope methodScope, Tuple ast, int codeLevel) {
-        String type = ast.getStringProperty(Property.KEY_TYPE);
-        List<String> parameterTypes = (List<String>)ast.getPropertyValueAs(Property.KEY_PARAMETER_TYPES, List.class);
+        String type = newInstanceType(ast);
+        List<String> parameterTypes = newInstanceParameterTypes(ast);
         String returnType = type;
-        List<Node> arguments = (List<Node>) ast.getPropertyValueAs(Property.KEY_ARGUMENTS, List.class);
+        List<Node> arguments = newInstanceArguments(ast);
 
         generator.newInstance(Type.getType(type));
         generator.dup();
