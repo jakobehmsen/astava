@@ -209,7 +209,7 @@ public class MethodGenerator {
                 generator.push(value);
 
                 return Descriptor.STRING;
-            } case ASTType.REDUCE: {
+            } case ASTType.ARITHMETIC: {
                 int operator = arithmeticOperator(expression);
                 Tuple lhs = arithmeticLhs(expression);
                 Tuple rhs = arithmeticRhs(expression);

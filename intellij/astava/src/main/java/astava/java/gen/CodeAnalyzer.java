@@ -95,7 +95,7 @@ public class CodeAnalyzer {
                 return Descriptor.CHAR;
             } case ASTType.STRING_LITERAL: {
                 return Descriptor.STRING;
-            } case ASTType.REDUCE: {
+            } case ASTType.ARITHMETIC: {
                 Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
                 Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
 

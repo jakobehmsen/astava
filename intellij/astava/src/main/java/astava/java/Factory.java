@@ -207,7 +207,7 @@ public class Factory {
 
     public static Tuple arithmetic(Tuple lhs, Tuple rhs, int operator) {
         return new Tuple(
-            new Atom(ASTType.REDUCE),
+            new Atom(ASTType.ARITHMETIC),
             new Atom(operator),
             lhs,
             rhs

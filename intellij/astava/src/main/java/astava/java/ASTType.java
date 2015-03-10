@@ -13,7 +13,7 @@ public class ASTType {
     public static final int DOUBLE_LITERAL = 9;
     public static final int CHAR_LITERAL = 10;
     public static final int STRING_LITERAL = 11;
-    public static final int REDUCE = 12;
+    public static final int ARITHMETIC = 12;
     public static final int BLOCK = 13;
     public static final int VARIABLE_DECLARATION = 14;
     public static final int VARIABLE_ASSIGNMENT = 15;
