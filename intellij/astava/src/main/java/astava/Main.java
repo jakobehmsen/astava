@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.Map;
 
 public class Main {
 
@@ -101,17 +102,57 @@ public class Main {
 
         System.out.println(result);*/
 
-        /*Parser parser = new TupleParser().or(new AtomParser()).trim((m, p) -> m.ignoreWS()).then((m, p) -> {
-            if(m.peekByte() == -1)
-                m.match();
-        });*/
-
         Hashtable<String, Parser> rules = new Hashtable<>();
 
-        rules.put("element", new TupleParser(new RuleParser("elements")).or(new AtomParser()));
-        rules.put("elements", new ElementsParser(new RuleParser("element")));
+        Parser tupleParser = (matcher, r) -> {
+            if(matcher.peekByte() == '(') {
+                matcher.consume();
 
-        Parser parser = new RuleParser("elements").then((m, p) -> {
+                matcher.ignoreWS();
+
+                ArrayList<Node> elements = new ArrayList<>();
+                Matcher elementsMatcher = matcher.beginMatch(new BufferCollector(elements));
+                rules.get("elements").parse(elementsMatcher, rules);
+                if(elementsMatcher.matched()) {
+                    if(matcher.peekByte() == ')') {
+                        matcher.consume();
+
+                        matcher.put(new Tuple(elements));
+                        matcher.match();
+                    }
+                }
+            }
+        };
+        Parser atomParser = (matcher, r) -> {
+            if(Character.isLetter(matcher.peekByte())) {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append((char)matcher.peekByte());
+                matcher.consume();
+
+                while(Character.isLetter(matcher.peekByte())) {
+                    stringBuilder.append((char)matcher.peekByte());
+                    matcher.consume();
+                }
+
+                matcher.put(new Atom(stringBuilder.toString()));
+                matcher.match();
+            }
+        };
+        rules.put("element", tupleParser.or(atomParser));
+        rules.put("elements", (matcher, r) -> {
+            matcher.ignoreWS();
+            Matcher elementMatcher = matcher.beginMatch();
+            rules.get("element").parse(elementMatcher, rules);
+            while(elementMatcher.matched()) {
+                matcher.ignoreWS();
+                elementMatcher = matcher.beginMatch();
+                rules.get("element").parse(elementMatcher, rules);
+            }
+            matcher.ignoreWS();
+            matcher.match();
+        });
+
+        Parser parser = rules.get("elements").then((m, p) -> {
             if(m.peekByte() == -1)
                 m.match();
         });
