@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static astava.java.Factory.*;
+import static astava.java.Factory.compareRhs;
+import static astava.java.Factory.logicalRhs;
+
 public class CodeAnalyzer {
     private Tuple code;
     private AnalyseScope methodScope;
@@ -72,7 +76,7 @@ public class CodeAnalyzer {
     }
 
     private String resultType(Tuple expression, AnalyseScope methodScope) {
-        switch(expression.getIntProperty(Property.KEY_AST_TYPE)) {
+        switch(astType(expression)) {
             case ASTType.BOOLEAN_LITERAL: {
                 return Descriptor.BOOLEAN;
             } case ASTType.BYTE_LITERAL: {
@@ -96,8 +100,8 @@ public class CodeAnalyzer {
             } case ASTType.STRING_LITERAL: {
                 return Descriptor.STRING;
             } case ASTType.ARITHMETIC: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                Tuple lhs = arithmeticLhs(expression);
+                Tuple rhs = arithmeticRhs(expression);
 
                 String lhsResultType = resultType(lhs, methodScope);
                 String rhsResultType = resultType(rhs, methodScope);
@@ -106,8 +110,8 @@ public class CodeAnalyzer {
 
                 return resultType;
             } case ASTType.SHIFT: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                Tuple lhs = shiftLhs(expression);
+                Tuple rhs = shiftRhs(expression);
 
                 String lhsResultType = resultType(lhs, methodScope);
                 String rhsResultType = resultType(rhs, methodScope);
@@ -115,8 +119,8 @@ public class CodeAnalyzer {
 
                 return resultType;
             } case ASTType.BITWISE: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                Tuple lhs = bitwiseLhs(expression);
+                Tuple rhs = bitwiseRhs(expression);
 
                 String lhsResultType = resultType(lhs, methodScope);
                 String rhsResultType = resultType(rhs, methodScope);
@@ -124,16 +128,16 @@ public class CodeAnalyzer {
 
                 return resultType;
             } case ASTType.COMPARE: {
-                Tuple lhs = (Tuple) expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple) expression.getPropertyValue(Property.KEY_RHS);
+                Tuple lhs = compareLhs(expression);
+                Tuple rhs = compareRhs(expression);
 
                 String lhsResultType = resultType(lhs, methodScope);
                 String rhsResultType = resultType(rhs, methodScope);
 
                 return Descriptor.BOOLEAN;
             } case ASTType.LOGICAL: {
-                Tuple lhs = (Tuple)expression.getPropertyValue(Property.KEY_LHS);
-                Tuple rhs = (Tuple)expression.getPropertyValue(Property.KEY_RHS);
+                Tuple lhs = logicalLhs(expression);
+                Tuple rhs = logicalRhs(expression);
 
                 String resultType = null;
 
@@ -144,24 +148,24 @@ public class CodeAnalyzer {
 
                 return resultType;
             } case ASTType.VARIABLE_ACCESS: {
-                String name = expression.getStringProperty(Property.KEY_NAME);
+                String name = accessVarName(expression);
 
                 if(!methodScope.varIsSet(name))
                     throw new IllegalArgumentException("Variable '" + name + " hasn't been set yet.");
 
                 return methodScope.getVarType(name);
             } case ASTType.NOT: {
-                Tuple bExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
+                Tuple bExpression = notExpression(expression);
 
                 return Descriptor.BOOLEAN;
             } case ASTType.INSTANCE_OF: {
-                Tuple oExpression = expression.getTupleProperty(Property.KEY_EXPRESSION);
+                Tuple oExpression = instanceOfExpression(expression);
                 String type = expression.getStringProperty(Property.KEY_TYPE);
 
                 return Descriptor.BOOLEAN;
             } case ASTType.BLOCK: {
                 // Exactly one expression should be contained with statements
-                List<Node> statements = (List<Node>) expression.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+                List<Node> statements = blockStatements(expression);
                 List<String> expressionResultTypes = new ArrayList<>();
 
                 statements.forEach(s -> {
@@ -184,9 +188,9 @@ public class CodeAnalyzer {
 
                 return expressionResultTypes.get(0);
             } case ASTType.IF_ELSE: {
-                Tuple condition = expression.getTupleProperty(Property.KEY_CONDITION);
-                Tuple ifTrue = expression.getTupleProperty(Property.KEY_IF_TRUE);
-                Tuple ifFalse = expression.getTupleProperty(Property.KEY_IF_FALSE);
+                Tuple condition = ifElseCondition(expression);
+                Tuple ifTrue = ifElseIfTrue(expression);
+                Tuple ifFalse = ifElseIfFalse(expression);
 
                 String resultType = resultType(condition, methodScope);
                 String ifTrueResultType = resultType(ifTrue, methodScope);
