@@ -24,7 +24,7 @@ public class MapProcessor implements Processor {
         if(operator != null) {
             Processor processor = map.get(operator);
             if(processor != null) {
-                return processor.process(code);
+                return processCode(code, processor);
             }
         } else {
             if(code instanceof Tuple) {
@@ -35,6 +35,11 @@ public class MapProcessor implements Processor {
 
         //return code;
         return processOperands(code);
+    }
+
+    protected Node processCode(Node code, Processor processor) {
+        code = processOperands(code);
+        return processor.process(code);
     }
 
     public Node processOperands(Node code) {
