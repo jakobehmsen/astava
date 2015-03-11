@@ -1,42 +1,30 @@
 package parse;
 
-import java.util.Map;
-
 public interface Parser {
-    void parse(Matcher matcher, Map<String, Parser> rules);
+    void parse(Matcher matcher);
 
     default Parser or(Parser other) {
         Parser self = this;
 
-        return (matcher, rules) -> {
+        return matcher -> {
             Matcher thisMatcher = matcher.beginMatch();
-            self.parse(thisMatcher, rules);
+            self.parse(thisMatcher);
             if(thisMatcher.matched()) {
                 matcher.match();
             } else {
-                other.parse(matcher, rules);
+                other.parse(matcher);
             }
-        };
-    }
-
-    default Parser trim(Parser trimmer) {
-        Parser self = this;
-
-        return (matcher, rules) -> {
-            trimmer.parse(matcher, rules);
-            self.parse(matcher, rules);
-            trimmer.parse(matcher, rules);
         };
     }
 
     default Parser then(Parser next) {
         Parser self = this;
 
-        return (matcher, rules) -> {
+        return matcher -> {
             Matcher firstMatcher = matcher.beginMatch();
-            self.parse(firstMatcher, rules);
+            self.parse(firstMatcher);
             if(firstMatcher.matched())
-                next.parse(matcher, rules);
+                next.parse(matcher);
         };
     }
 }

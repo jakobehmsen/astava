@@ -4,7 +4,6 @@ import astava.core.Atom;
 import astava.core.Node;
 
 import astava.core.Tuple;
-import astava.java.ASTType;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
@@ -12,7 +11,6 @@ import astava.macro.AtomProcessor;
 import astava.macro.IndexProcessor;
 import astava.macro.MapProcessor;
 import astava.macro.Processor;
-import com.sun.org.apache.xpath.internal.operations.Mod;
 import parse.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -110,7 +108,7 @@ public class Main {
 
         Hashtable<String, Parser> rules = new Hashtable<>();
 
-        Parser tupleParser = (matcher, r) -> {
+        Parser tupleParser = matcher -> {
             if(matcher.peekByte() == '(') {
                 matcher.consume();
 
@@ -118,7 +116,7 @@ public class Main {
 
                 ArrayList<Node> elements = new ArrayList<>();
                 Matcher elementsMatcher = matcher.beginMatch(new BufferCollector(elements));
-                rules.get("elements").parse(elementsMatcher, rules);
+                rules.get("elements").parse(elementsMatcher);
                 if(elementsMatcher.matched()) {
                     if(matcher.peekByte() == ')') {
                         matcher.consume();
@@ -129,7 +127,7 @@ public class Main {
                 }
             }
         };
-        Parser atomParser = (matcher, r) -> {
+        Parser atomParser = matcher -> {
             if(Character.isLetter(matcher.peekByte())) {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.append((char)matcher.peekByte());
@@ -157,20 +155,20 @@ public class Main {
             }
         };
         rules.put("element", tupleParser.or(atomParser));
-        rules.put("elements", (matcher, r) -> {
+        rules.put("elements", matcher -> {
             matcher.ignoreWS();
             Matcher elementMatcher = matcher.beginMatch();
-            rules.get("element").parse(elementMatcher, rules);
+            rules.get("element").parse(elementMatcher);
             while(elementMatcher.matched()) {
                 matcher.ignoreWS();
                 elementMatcher = matcher.beginMatch();
-                rules.get("element").parse(elementMatcher, rules);
+                rules.get("element").parse(elementMatcher);
             }
             matcher.ignoreWS();
             matcher.match();
         });
 
-        Parser parser = rules.get("elements").then((m, p) -> {
+        Parser parser = rules.get("elements").then(m -> {
             if (m.peekByte() == -1)
                 m.match();
         });
@@ -178,7 +176,7 @@ public class Main {
         String input = "(sub (short 7) (short 9))";
         List<Node> elements = new ArrayList<>();
         CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
-        parser.parse(matcher, rules);
+        parser.parse(matcher);
 
         if(matcher.matched()) {
             System.out.println(input);
