@@ -3,19 +3,25 @@ package astava.macro;
 import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
+import astava.macro.Processor;
 
-public class OperatorProcessor implements Processor {
-    private String operator;
+import java.util.function.Function;
+
+public class OperatorProcessor<T> implements Processor {
+    private T operator;
     private Processor processor;
 
-    public OperatorProcessor(String operator, Processor processor) {
+    private Function<Node, T> operatorFunc;
+
+    public OperatorProcessor(T operator, Processor processor, Function<Node, T> operatorFunc) {
         this.operator = operator;
         this.processor = processor;
+        this.operatorFunc = operatorFunc;
     }
 
     @Override
     public Node process(Node code) {
-        String operator = getOperator(code);
+        T operator = operatorFunc.apply(code);// getOperator(code);
 
         if(operator != null && processor.equals(operator)) {
             return processor.process(code);
@@ -24,6 +30,7 @@ public class OperatorProcessor implements Processor {
         return null;
     }
 
+    /*
     private String getOperator(Node code) {
         if(code instanceof Tuple) {
             Tuple codeTuple = (Tuple)code;
@@ -37,4 +44,5 @@ public class OperatorProcessor implements Processor {
 
         return null;
     }
+    */
 }

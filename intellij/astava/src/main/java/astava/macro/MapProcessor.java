@@ -7,19 +7,25 @@ import astava.core.Tuple;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class MapProcessor implements Processor {
-    private Hashtable<String, Processor> map = new Hashtable<>();
+public class MapProcessor<T> implements Processor {
+    private Hashtable<T, Processor> map = new Hashtable<>();
+    private Function<Node, T> operatorFunc;
 
-    public void put(String op, Processor processor) {
+    public MapProcessor(Function<Node, T> operatorFunc) {
+        this.operatorFunc = operatorFunc;
+    }
+
+    public void put(T op, Processor processor) {
         map.put(op, processor);
     }
 
     @Override
     public Node process(Node code) {
-        String operator = getOperator(code);
+        T operator = operatorFunc.apply(code);// getOperator(code);
 
         if(operator != null) {
             Processor processor = map.get(operator);
@@ -53,7 +59,7 @@ public class MapProcessor implements Processor {
 
         return code;
     }
-
+    /*
     private String getOperator(Node code) {
         if(code instanceof Tuple) {
             Tuple codeTuple = (Tuple)code;
@@ -67,4 +73,5 @@ public class MapProcessor implements Processor {
 
         return null;
     }
+    */
 }

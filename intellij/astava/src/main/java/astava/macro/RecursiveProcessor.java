@@ -22,7 +22,8 @@ public class RecursiveProcessor implements Processor {
                 List<Node> elements = ((Tuple)code).stream().map(n ->
                     processOrKeep(n)).collect(Collectors.toList());
                 return new Tuple(elements);
-            }
+            } else
+                return code;
         }
 
         return result;
