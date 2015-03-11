@@ -8,9 +8,12 @@ import astava.macro.AtomProcessor;
 import astava.macro.IndexProcessor;
 import astava.macro.MapProcessor;
 import astava.macro.Processor;
+import parse.*;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Hashtable;
 
 public class Main {
 
@@ -72,11 +75,15 @@ public class Main {
             new Tuple(new Atom("scopedGoTo"), new Atom("start"))
         );
         */
-        Node n = labelScopeProcessor.process(in);
+
+/*        Node n = labelScopeProcessor.process(in);
 
         System.out.println(in);
         System.out.println("=>");
         System.out.println(n);
+        */
+
+
 
         /*Node classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(
             methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, "myMethod", Collections.emptyList(), "D",
@@ -93,6 +100,32 @@ public class Main {
         Object result = m.invoke(null, null);
 
         System.out.println(result);*/
+
+        /*Parser parser = new TupleParser().or(new AtomParser()).trim((m, p) -> m.ignoreWS()).then((m, p) -> {
+            if(m.peekByte() == -1)
+                m.match();
+        });*/
+
+        Hashtable<String, Parser> rules = new Hashtable<>();
+
+        rules.put("element", new TupleParser(new RuleParser("elements")).or(new AtomParser()));
+        rules.put("elements", new ElementsParser(new RuleParser("element")));
+
+        Parser parser = new RuleParser("elements").then((m, p) -> {
+            if(m.peekByte() == -1)
+                m.match();
+        });
+
+        String input = "(x u (h tail))\n(gfd  gfd) ";
+        ArrayList<Node> elements = new ArrayList<>();
+        CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
+        parser.parse(matcher, rules);
+
+        if(matcher.matched()) {
+            System.out.println(input);
+            System.out.println("=>");
+            System.out.println(elements);
+        }
     }
 
     public static Processor createLabelScopeProcess() {
