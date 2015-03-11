@@ -7,10 +7,7 @@ import astava.core.Tuple;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
-import astava.macro.AtomProcessor;
-import astava.macro.IndexProcessor;
-import astava.macro.MapProcessor;
-import astava.macro.Processor;
+import astava.macro.*;
 import parse.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -173,7 +170,7 @@ public class Main {
                 m.match();
         });
 
-        String input = "(sub (short 7) (short 9))";
+        String input = "(add (add 7 9) 9)";
         List<Node> elements = new ArrayList<>();
         CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
         parser.parse(matcher);
@@ -183,13 +180,24 @@ public class Main {
             System.out.println("=>");
             System.out.println(elements);
 
-            Processor labelScopeProcessor = createLabelScopeProcessor();
-            elements = elements.stream().map(n -> labelScopeProcessor.process(n)).collect(Collectors.toList());
+            Processor literalExpander = createLiteralExpander();
+            elements = elements.stream().map(n ->
+                literalExpander.process(n)
+            ).collect(Collectors.toList());
             System.out.println("=>");
             System.out.println(elements);
+
+            Processor labelScopeProcessor = createLabelScopeProcessor();
+            elements = elements.stream().map(n ->
+                labelScopeProcessor.process(n)
+            ).collect(Collectors.toList());
+            System.out.println("=>");
+            System.out.println(elements);
+
             Processor operatorProcessor = createOperatorToBuiltinProcessor();
             elements = elements.stream().map(n ->
-                operatorProcessor.process(n)).collect(Collectors.toList());
+                operatorProcessor.process(n)
+            ).collect(Collectors.toList());
             System.out.println("=>");
             System.out.println(elements);
 
@@ -206,7 +214,20 @@ public class Main {
             Object result = c.getMethod("myMethod").invoke(null, null);
             System.out.println("=> " + resultType);
             System.out.println(result);
+
+            /*
+            How to match nodes?
+
+            */
         }
+    }
+
+    public static Processor createLiteralExpander() {
+        Processor intLiteralProcessor =
+            new OperatorProcessor("int", n -> n).or(n ->
+                n instanceof Atom && ((Atom)n).getValue() instanceof Integer ? new Tuple(new Atom("int"), n) : null);
+
+        return new RecursiveProcessor(intLiteralProcessor);
     }
 
     public static Processor createLabelScopeProcessor() {
