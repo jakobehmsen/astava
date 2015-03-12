@@ -13,6 +13,7 @@ import parse.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -309,30 +310,33 @@ public class Main {
         };
     }
 
+    private static Processor createLiteralProcessor(Symbol operator, Function<Number, Node> literalFunction) {
+        return new OperatorProcessor<>(
+            operator,
+            n -> {
+                Number number = (Number) ((Atom) ((Tuple) n).get(1)).getValue();
+                return literalFunction.apply(number);
+            },
+            operatorFunc
+        );
+    }
+
     public static Processor createOperatorToBuiltinProcessor() {
         Hashtable<String, Processor> rules = new Hashtable<>();
         Supplier<Processor> operandProcessorSupplier = () -> rules.get("base");
+        BiFunction<Symbol, Processor, Processor> operatorOperandsFactory = (operator, processor) ->
+            createOperatorOperandsProcessor(operator, operandProcessorSupplier, processor);
 
-        Processor addProcessor = createOperatorOperandsProcessor(
+        Processor addProcessor = operatorOperandsFactory.apply(
             new Symbol("add"),
-            operandProcessorSupplier,
             n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)));
-        Processor subProcessor = createOperatorOperandsProcessor(
+        Processor subProcessor = operatorOperandsFactory.apply(
             new Symbol("sub"),
-            operandProcessorSupplier,
             n -> sub((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)));
-        Processor shortProcessor = new OperatorProcessor<>(
-            new Symbol("short"),
-            n -> literal(
-                ((Number) ((Atom) ((Tuple) n).get(1)).getValue()).shortValue()
-            ),
-            operatorFunc);
-        Processor intProcessor = new OperatorProcessor<>(
-            new Symbol("int"),
-            n -> literal(
-                ((Number) ((Atom) ((Tuple) n).get(1)).getValue()).intValue()
-            ),
-            operatorFunc);
+
+        Processor shortProcessor = createLiteralProcessor(new Symbol("short"), number -> literal(number.shortValue()));
+        Processor intProcessor = createLiteralProcessor(new Symbol("int"), number -> literal(number.intValue()));
+
         Processor stringLiteralProcessor = n ->
             n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
 
@@ -342,50 +346,5 @@ public class Main {
             addProcessor.or(subProcessor).or(shortProcessor).or(intProcessor).or(stringLiteralProcessor).or(defaultOperandsProcessor));
 
         return rules.get("base");
-
-        /*
-        Processor addProcessor = new OperatorProcessor<>(
-            new Symbol("add"),
-            n -> add((Tuple)((Tuple)n).get(1), (Tuple)((Tuple)n).get(2)),
-            operatorFunc);
-        Processor subProcessor = new OperatorProcessor<>(
-            new Symbol("sub"),
-            n -> sub((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)),
-            operatorFunc);
-        Processor shortProcessor = new OperatorProcessor<>(
-            new Symbol("short"),
-            n -> literal(
-                ((Number) ((Atom) ((Tuple) n).get(1)).getValue()).shortValue()
-            ),
-            operatorFunc);
-        Processor intProcessor = new OperatorProcessor<>(
-            new Symbol("int"),
-            n -> literal(
-                ((Number) ((Atom) ((Tuple) n).get(1)).getValue()).intValue()
-            ),
-            operatorFunc);
-        Processor stringLiteralProcessor = n ->
-            n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
-
-        return new RecursiveProcessor(addProcessor.or(subProcessor).or(shortProcessor).or(intProcessor).or(stringLiteralProcessor));
-        */
-
-
-        /*
-        MapProcessor<Symbol> processor = new MapProcessor<>(operatorFunc);
-
-        processor.put(new Symbol("add"), n -> add((Tuple)((Tuple)n).get(1), (Tuple)((Tuple)n).get(2)));
-        processor.put(new Symbol("sub"), n -> sub((Tuple)((Tuple)n).get(1),(Tuple)((Tuple) n).get(2)));
-        processor.put(new Symbol("short"), n -> literal(
-            ((Number) ((Atom) ((Tuple) n).get(1)).getValue()).shortValue()
-        ));
-        processor.put(new Symbol("int"), n -> literal(
-            ((Number) ((Atom) ((Tuple) n).get(1)).getValue()).intValue()
-        ));
-        Processor stringLiteralProcessor = n ->
-            n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
-
-        return processor.or(stringLiteralProcessor);
-        */
     }
 }
