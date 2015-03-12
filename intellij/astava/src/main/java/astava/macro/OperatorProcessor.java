@@ -23,26 +23,10 @@ public class OperatorProcessor<T> implements Processor {
     public Node process(Node code) {
         T operator = operatorFunc.apply(code);// getOperator(code);
 
-        if(operator != null && processor.equals(operator)) {
+        if(operator != null && this.operator.equals(operator)) {
             return processor.process(code);
         }
 
         return null;
     }
-
-    /*
-    private String getOperator(Node code) {
-        if(code instanceof Tuple) {
-            Tuple codeTuple = (Tuple)code;
-
-            if(codeTuple.size() > 0 && codeTuple.get(0) instanceof Atom) {
-                Atom firstElement = (Atom)codeTuple.get(0);
-                if(firstElement.getValue() instanceof String)
-                    return (String)firstElement.getValue();
-            }
-        }
-
-        return null;
-    }
-    */
 }
