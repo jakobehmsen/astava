@@ -149,7 +149,15 @@ public class Main {
                     matcher.consume();
                 }
 
-                matcher.put(new Atom(Integer.parseInt(stringBuilder.toString())));
+                if(Character.toUpperCase(matcher.peekByte()) == 'L') {
+                    // long
+                    matcher.consume();
+                    matcher.put(new Atom(Long.parseLong(stringBuilder.toString())));
+                } else {
+                    // int
+                    matcher.put(new Atom(Integer.parseInt(stringBuilder.toString())));
+                }
+
                 matcher.match();
             } else if(matcher.peekByte() == '\"') {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -164,6 +172,16 @@ public class Main {
                     matcher.consume();
                     matcher.put(new Atom(stringBuilder.toString()));
                     matcher.match();
+                }
+            } else {
+                switch(matcher.peekByte()) {
+                    case '+':
+                    case '-':
+                    case '/':
+                    case '*':
+                        matcher.put(new Atom(new Symbol("" + (char)matcher.peekByte())));
+                        matcher.consume();
+                        matcher.match();
                 }
             }
         };
@@ -186,8 +204,8 @@ public class Main {
                 m.match();
         });
 
-        //String input = "(add 8 (sub 9 4))";
-        String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
+        String input = "(+ 8 (* 7 9))";
+        //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
         List<Node> elements = new ArrayList<>();
         CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
@@ -234,9 +252,16 @@ public class Main {
 
     public static Processor createLiteralExpander() {
         return new SelfProcessor(self ->
-            new MapProcessor().put(new Symbol("int"), n -> n)
+            new MapProcessor()
+                .put(new Symbol("byte"), n -> n)
+                .put(new Symbol("short"), n -> n)
+                .put(new Symbol("int"), n -> n)
+                .put(new Symbol("long"), n -> n)
             .or(n ->
                 n instanceof Atom && ((Atom) n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null
+            )
+            .or(n ->
+                n instanceof Atom && ((Atom) n).getValue() instanceof Long ? new Tuple(new Atom(new Symbol("long")), n) : null
             )
             .or(createFallbackProcessor(self))
         );
@@ -264,8 +289,8 @@ public class Main {
                             .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
                             .set(1, nameProcessor)))
                         .put(new Symbol("scopedGoTo"), operandsProcessor.apply(new IndexProcessor()
-                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
-                            .set(1, nameProcessor)))
+                                .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
+                                .set(1, nameProcessor)))
                             // Process the first operand of the labelScope form
                         .put(new Symbol("labelScope"), code -> createLayer().process(((Tuple) code).get(1)))
                             .or(createFallbackProcessor(n -> self.process(n)));
@@ -292,14 +317,22 @@ public class Main {
                 new OperandsProcessor(n -> self.process(n)).then(processor);
 
             MapProcessor mp = new MapProcessor()
-                .put(new Symbol("add"),
+                .put(new Symbol("+"),
                     operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
                 )
-                .put(new Symbol("sub"),
-                    operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
+                .put(new Symbol("-"),
+                    operandsProcessor.apply(n -> sub((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
                 )
+                .put(new Symbol("*"),
+                    operandsProcessor.apply(n -> mul((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
+                )
+                .put(new Symbol("/"),
+                    operandsProcessor.apply(n -> div((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
+                )
+                .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
                 .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
-                .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())));
+                .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
+                .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())));
 
             Processor stringLiteralProcessor = n ->
                 n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
