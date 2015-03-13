@@ -266,10 +266,10 @@ public class Main {
                 MapProcessor mapProcessor = new MapProcessor();
 
                 Function<Processor, Processor> operandsProcessor = p ->
-                    createOperandsProcessor(() -> rules.get("base")).then(p);
+                    new OperandsProcessor(n -> rules.get("base").process(n)).then(p);
 
                 Processor defaultOperandsProcessor =
-                    createOperandsProcessor(() -> rules.get("base"))
+                    new OperandsProcessor(n -> rules.get("base").process(n))
                     .or(new TupleProcessor(n -> rules.get("base").process(n)))
                     .or(n -> n);
 
@@ -294,21 +294,6 @@ public class Main {
         };
     }
 
-    private static Processor createOperandsProcessor(Supplier<Processor> operandProcessorSupplier) {
-        return n -> {
-            if(n instanceof Tuple && ((Tuple)n).size() > 0 && ((Tuple)n).get(0) instanceof Atom) {
-                Processor operandProcessor = operandProcessorSupplier.get();
-                List<Node> newElements = ((Tuple) n).stream().skip(1).map(o ->
-                    operandProcessor.process(o)
-                ).collect(Collectors.toList());
-                newElements.add(0, ((Tuple) n).get(0));
-                return new Tuple(newElements);
-            }
-
-            return null;
-        };
-    }
-
     private static Processor createLiteralProcessor(Function<Number, Node> literalFunction) {
         return n -> {
             Number number = (Number) ((Atom) ((Tuple) n).get(1)).getValue();
@@ -318,9 +303,8 @@ public class Main {
 
     public static Processor createOperatorToBuiltinProcessor() {
         Hashtable<String, Processor> rules = new Hashtable<>();
-        Supplier<Processor> operandProcessorSupplier = () -> rules.get("base");
         Function<Processor, Processor> operandsProcessor = processor ->
-            createOperandsProcessor(operandProcessorSupplier).then(processor);
+            new OperandsProcessor(n -> rules.get("base").process(n)).then(processor);
 
         MapProcessor mp = new MapProcessor()
             .put(new Symbol("add"),
@@ -336,7 +320,7 @@ public class Main {
             n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
 
         Processor defaultOperandsProcessor =
-            createOperandsProcessor(() -> rules.get("base"))
+            new OperandsProcessor(n -> rules.get("base").process(n))
             .or(new TupleProcessor(n -> rules.get("base").process(n)))
             .or(n -> n);
 
