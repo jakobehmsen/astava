@@ -186,8 +186,8 @@ public class Main {
                 m.match();
         });
 
-        String input = "(add 8 (sub 9 4))";
-        //String input = "((scopedLabel x) (labelScope (scopedLabel x)))";
+        //String input = "(add 8 (sub 9 4))";
+        String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
         List<Node> elements = new ArrayList<>();
         CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
@@ -226,39 +226,20 @@ public class Main {
         }
     }
 
-    private static Function<Node, Symbol> operatorFunc = code ->
-    {
-        if(code instanceof Tuple) {
-            Tuple codeTuple = (Tuple)code;
-
-            if(codeTuple.size() > 0 && codeTuple.get(0) instanceof Atom) {
-                Atom firstElement = (Atom)codeTuple.get(0);
-                if(firstElement.getValue() instanceof Symbol)
-                    return (Symbol)firstElement.getValue();
-            }
-        }
-
-        return null;
-    };
+    private static Processor createFallbackProcessor(Processor elementProcessor) {
+        return new OperandsProcessor(n -> elementProcessor.process(n))
+            .or(new TupleProcessor(n -> elementProcessor.process(n)))
+            .or(n -> n);
+    }
 
     public static Processor createLiteralExpander() {
-        return new Processor() {
-            Processor defaultOperandsProcessor =
-                new OperandsProcessor(n -> process(n))
-                .or(new TupleProcessor(n -> process(n)))
-                .or(n -> n);
-            Processor intLiteralProcessor =
-                new MapProcessor().put(new Symbol("int"), n -> n)
-                .or(n ->
-                    n instanceof Atom && ((Atom)n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null
-                )
-                .or(defaultOperandsProcessor);
-
-            @Override
-            public Node process(Node code) {
-                return intLiteralProcessor.process(code);
-            }
-        };
+        return new SelfProcessor(self ->
+            new MapProcessor().put(new Symbol("int"), n -> n)
+            .or(n ->
+                n instanceof Atom && ((Atom) n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null
+            )
+            .or(createFallbackProcessor(self))
+        );
     }
 
     public static Processor createLabelScopeProcessor() {
@@ -270,32 +251,25 @@ public class Main {
             Processor createLayer() {
                 int id = scopeCount++;
 
-                Hashtable<String, Processor> rules = new Hashtable<>();
+                return new SelfProcessor(self -> {
+                    Processor nameProcessor = new AtomProcessor<Symbol, Symbol>(name -> new Symbol(id + name.str));
 
-                Processor nameProcessor = new AtomProcessor<Symbol, Symbol>(name -> new Symbol(id + name.str));
+                    MapProcessor mapProcessor = new MapProcessor();
 
-                MapProcessor mapProcessor = new MapProcessor();
+                    Function<Processor, Processor> operandsProcessor = p ->
+                        new OperandsProcessor(n -> self.process(n)).then(p);
 
-                Function<Processor, Processor> operandsProcessor = p ->
-                    new OperandsProcessor(n -> rules.get("base").process(n)).then(p);
-
-                Processor defaultOperandsProcessor =
-                    new OperandsProcessor(n -> rules.get("base").process(n))
-                    .or(new TupleProcessor(n -> rules.get("base").process(n)))
-                    .or(n -> n);
-
-                rules.put("base", mapProcessor
-                    .put(new Symbol("scopedLabel"), operandsProcessor.apply(new IndexProcessor()
-                        .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
-                        .set(1, nameProcessor)))
-                    .put(new Symbol("scopedGoTo"), operandsProcessor.apply(new IndexProcessor()
-                        .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
-                        .set(1, nameProcessor)))
-                        // Process the first operand of the labelScope form
-                    .put(new Symbol("labelScope"), code -> createLayer().process(((Tuple) code).get(1)))
-                    .or(defaultOperandsProcessor));
-
-                return rules.get("base");
+                    return mapProcessor
+                        .put(new Symbol("scopedLabel"), operandsProcessor.apply(new IndexProcessor()
+                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
+                            .set(1, nameProcessor)))
+                        .put(new Symbol("scopedGoTo"), operandsProcessor.apply(new IndexProcessor()
+                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
+                            .set(1, nameProcessor)))
+                            // Process the first operand of the labelScope form
+                        .put(new Symbol("labelScope"), code -> createLayer().process(((Tuple) code).get(1)))
+                            .or(createFallbackProcessor(n -> self.process(n)));
+                });
             }
 
             @Override
@@ -313,31 +287,24 @@ public class Main {
     }
 
     public static Processor createOperatorToBuiltinProcessor() {
-        Hashtable<String, Processor> rules = new Hashtable<>();
-        Function<Processor, Processor> operandsProcessor = processor ->
-            new OperandsProcessor(n -> rules.get("base").process(n)).then(processor);
+        return new SelfProcessor(self -> {
+            Function<Processor, Processor> operandsProcessor = processor ->
+                new OperandsProcessor(n -> self.process(n)).then(processor);
 
-        MapProcessor mp = new MapProcessor()
-            .put(new Symbol("add"),
-                operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
-            )
-            .put(new Symbol("sub"),
-                operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
-            )
-            .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
-            .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())));
+            MapProcessor mp = new MapProcessor()
+                .put(new Symbol("add"),
+                    operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
+                )
+                .put(new Symbol("sub"),
+                    operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
+                )
+                .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
+                .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())));
 
-        Processor stringLiteralProcessor = n ->
-            n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
+            Processor stringLiteralProcessor = n ->
+                n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
 
-        Processor defaultOperandsProcessor =
-            new OperandsProcessor(n -> rules.get("base").process(n))
-            .or(new TupleProcessor(n -> rules.get("base").process(n)))
-            .or(n -> n);
-
-        rules.put("base",
-            mp.or(stringLiteralProcessor).or(defaultOperandsProcessor));
-
-        return rules.get("base");
+            return mp.or(stringLiteralProcessor).or(createFallbackProcessor(n -> self.process(n)));
+        });
     }
 }
