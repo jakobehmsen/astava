@@ -1,10 +1,6 @@
 package astava.macro;
 
 import astava.core.Node;
-import astava.core.Tuple;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public interface Processor {
     Node process(Node code);
