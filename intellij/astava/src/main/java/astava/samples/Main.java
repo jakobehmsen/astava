@@ -242,6 +242,7 @@ public class Main {
     };
 
     public static Processor createLiteralExpander() {
+        // Configure without RecursiveProcessor
         Processor intLiteralProcessor =
             new OperatorProcessor<Symbol>(new Symbol("int"), n -> n, operatorFunc).or(n ->
                 n instanceof Atom && ((Atom)n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null);
@@ -269,7 +270,7 @@ public class Main {
 
                 Processor defaultOperandsProcessor =
                     createOperandsProcessor(() -> rules.get("base"))
-                    .or(createTupleProcessor(() -> rules.get("base")))
+                    .or(new TupleProcessor(n -> rules.get("base").process(n)))
                     .or(n -> n);
 
                 rules.put("base", mapProcessor
@@ -290,20 +291,6 @@ public class Main {
             public Node process(Node code) {
                 return processor.process(code);
             }
-        };
-    }
-
-    private static Processor createTupleProcessor(Supplier<Processor> elementProcessorSupplier) {
-        return n -> {
-            if(n instanceof Tuple) {
-                Processor elementProcessor = elementProcessorSupplier.get();
-                List<Node> newElements = ((Tuple) n).stream().map(o ->
-                    elementProcessor.process(o)
-                ).collect(Collectors.toList());
-                return new Tuple(newElements);
-            }
-
-            return null;
         };
     }
 
@@ -350,7 +337,7 @@ public class Main {
 
         Processor defaultOperandsProcessor =
             createOperandsProcessor(() -> rules.get("base"))
-            .or(createTupleProcessor(() -> rules.get("base")))
+            .or(new TupleProcessor(n -> rules.get("base").process(n)))
             .or(n -> n);
 
         rules.put("base",
