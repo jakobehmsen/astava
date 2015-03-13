@@ -186,8 +186,8 @@ public class Main {
                 m.match();
         });
 
-        //String input = "(add 8 (sub 9 4))";
-        String input = "((scopedLabel x) (labelScope (scopedLabel x)))";
+        String input = "(add 8 (sub 9 4))";
+        //String input = "((scopedLabel x) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
         List<Node> elements = new ArrayList<>();
         CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
@@ -242,12 +242,23 @@ public class Main {
     };
 
     public static Processor createLiteralExpander() {
-        // Configure without RecursiveProcessor
-        Processor intLiteralProcessor =
-            new OperatorProcessor<Symbol>(new Symbol("int"), n -> n, operatorFunc).or(n ->
-                n instanceof Atom && ((Atom)n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null);
+        return new Processor() {
+            Processor defaultOperandsProcessor =
+                new OperandsProcessor(n -> process(n))
+                .or(new TupleProcessor(n -> process(n)))
+                .or(n -> n);
+            Processor intLiteralProcessor =
+                new MapProcessor().put(new Symbol("int"), n -> n)
+                .or(n ->
+                    n instanceof Atom && ((Atom)n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null
+                )
+                .or(defaultOperandsProcessor);
 
-        return new RecursiveProcessor(intLiteralProcessor);
+            @Override
+            public Node process(Node code) {
+                return intLiteralProcessor.process(code);
+            }
+        };
     }
 
     public static Processor createLabelScopeProcessor() {
