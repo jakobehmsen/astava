@@ -270,12 +270,11 @@ public class Main {
     }
 
     public static Processor createLabelScopeProcessor() {
-        return new Processor() {
+        return new DelegateProcessor() {
             int scopeCount;
 
-            Processor processor = createLayer();
-
-            Processor createLayer() {
+            @Override
+            protected Processor createProcessor() {
                 int id = scopeCount++;
 
                 return new SelfProcessor(self -> {
@@ -291,14 +290,9 @@ public class Main {
                             .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
                             .set(1, nameProcessor)))
                             // Process the first operand of the labelScope form
-                        .put(new Symbol("labelScope"), code -> createLayer().process(((Tuple) code).get(1)))
-                            .or(createFallbackProcessor(n -> self.process(n)));
+                        .put(new Symbol("labelScope"), code -> createProcessor().process(((Tuple) code).get(1)))
+                        .or(createFallbackProcessor(n -> self.process(n)));
                 });
-            }
-
-            @Override
-            public Node process(Node code) {
-                return processor.process(code);
             }
         };
     }
@@ -331,7 +325,7 @@ public class Main {
                     .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())));
 
                 Processor stringLiteralProcessor = n ->
-                        n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
+                    n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
 
                 return mp.or(stringLiteralProcessor).or(createFallbackProcessor(n -> this.process(n)));
             }
