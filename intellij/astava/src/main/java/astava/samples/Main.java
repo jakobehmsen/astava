@@ -210,33 +210,53 @@ public class Main {
                 m.match();
         });
 
-        String input = "(|| (< 1 2) false)"; // Why does this fail?
+        Processor processor =
+            createLabelScopeProcessor()
+            .then(createLiteralExpander())
+            .then(createOperatorToBuiltinProcessor());
+
+        /*String input =
+            "(== 5L 4L)" + "\n" +
+            "(+ 1 4)" + "\n" +
+            "(|| (< 1 2) false)" + "\n" +
+            "(|| (< 1 2) true)" + "\n"
+            "";*/
+
+        /*
+        String input =
+            "(" + "\n" +
+            "    (declareVar \"I\" \"x\")" + "\n" +
+            "    (assignVar \"x\" 5)" + "\n" +
+            "    (accessVar \"x\")" + "\n" +
+            ")" + "\n" +
+            "";
+        */
+        String input =
+            "(" + "\n" +
+            "    (declareVar \"I\" \"x\")" + "\n" +
+            "    (assignVar \"x\" 5)" + "\n" +
+            "    (+ (accessVar \"x\") (accessVar \"x\"))" + "\n" +
+            ")" + "\n" +
+            "";
+
         //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
-        List<Node> elements = new ArrayList<>();
-        CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
-        parser.parse(matcher);
 
+        System.out.println("Input:");
         System.out.println(input);
-        System.out.println("=>");
+        System.out.println("Parsing...");
 
-        if(matcher.matched()) {
-            System.out.println(elements);
+        Collector collector = matchedElement -> {
+            System.out.print("Matched: ");
+            System.out.println(matchedElement);
 
-            Processor processor =
-                createLabelScopeProcessor()
-                .then(createLiteralExpander())
-                .then(createOperatorToBuiltinProcessor());
+            Node processedElement = processor.process(matchedElement);
 
-            elements = elements.stream().map(n ->
-                processor.process(n)
-            ).collect(Collectors.toList());
+            System.out.print("Processed to: ");
+            System.out.println(processedElement);
 
-            System.out.println("=>");
-            System.out.println(elements);
-
-            Tuple expression = (Tuple)elements.get(0);
+            Tuple expression = (Tuple)processedElement;
 
             CodeAnalyzer analyzer = new CodeAnalyzer(expression);
             String resultType = analyzer.resultType();
@@ -245,13 +265,31 @@ public class Main {
                 methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, "myMethod", Collections.emptyList(), resultType, ret(expression))
             )));
 
-            Class<?> c = generator.newClass();
-            Object result = c.getMethod("myMethod").invoke(null, null);
-            System.out.println("=> " + resultType);
-            System.out.println(result);
-        } else {
+            Class<?> c = null;
+            try {
+                c = generator.newClass();
+                Object result = c.getMethod("myMethod").invoke(null, null);
+                System.out.print("Evaluates to (" + resultType + "): ");
+                System.out.println(result);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        };
+        List<Node> elements = new ArrayList<>();
+        CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, collector);
+        parser.parse(matcher);
+
+        if(!matcher.matched()) {
             System.out.print("Could not parse.");
         }
+
+        System.out.println("Finished parsing.");
     }
 
     private static boolean isSpecialSymbolChar(char ch) {
@@ -274,7 +312,9 @@ public class Main {
 
     private static Processor createFallbackProcessor(Processor elementProcessor) {
         return new OperandsProcessor(n -> elementProcessor.process(n))
-            .or(new TupleProcessor(n -> elementProcessor.process(n)))
+            .or(new TupleProcessor(
+                n -> elementProcessor.process(n),
+                newElements -> new Tuple(newElements)))
             .or(n -> n);
     }
 
@@ -347,6 +387,26 @@ public class Main {
                     compare((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), compareOperator));
             }
 
+            private Node processDeclareVar(Node n) {
+                Tuple t = (Tuple)n;
+                String type = (String)((Atom)t.get(1)).getValue();
+                String name = (String)((Atom)t.get(2)).getValue();
+                return declareVar(type, name);
+            }
+
+            private Node processAssignVar(Node n) {
+                Tuple t = (Tuple)n;
+                String name = (String)((Atom)t.get(1)).getValue();
+                Tuple value = (Tuple)process(t.get(2));
+                return assignVar(name, value);
+            }
+
+            private Node processAccessVar(Node n) {
+                Tuple t = (Tuple)n;
+                String name = (String)((Atom)t.get(1)).getValue();
+                return accessVar(name);
+            }
+
             @Override
             protected Processor createProcessor() {
                 MapProcessor mp = new MapProcessor()
@@ -366,14 +426,29 @@ public class Main {
                     .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
                     .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
                     .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
-                    .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())));
+                    .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())))
+                    .put(new Symbol("declareVar"), n -> processDeclareVar(n))
+                    .put(new Symbol("assignVar"), n -> processAssignVar(n))
+                    .put(new Symbol("accessVar"), n -> processAccessVar(n))
+                    ;
 
                 Processor stringLiteralProcessor = n ->
                     n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
                 Processor booleanLiteralProcessor = n ->
                     n instanceof Atom && ((Atom)n).getValue() instanceof Boolean ? literal((boolean)((Atom)n).getValue()) : null;
 
-                return mp.or(stringLiteralProcessor).or(booleanLiteralProcessor).or(createFallbackProcessor(n -> this.process(n)));
+                Processor fallbackProcessor =
+                    new OperandsProcessor(n ->
+                        this.process(n))
+                        // Generate non-operator tuples as blocks
+                    .or(new TupleProcessor(
+                        n ->
+                            this.process(n),
+                        newElements ->
+                            block(newElements)))
+                    .or(n -> n);
+
+                return mp.or(stringLiteralProcessor).or(booleanLiteralProcessor).or(fallbackProcessor);
             }
         };
     }
