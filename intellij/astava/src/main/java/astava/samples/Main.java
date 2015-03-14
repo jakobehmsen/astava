@@ -4,10 +4,7 @@ import astava.core.Atom;
 import astava.core.Node;
 
 import astava.core.Tuple;
-import astava.java.ArithmeticOperator;
-import astava.java.Descriptor;
-import astava.java.LogicalOperator;
-import astava.java.RelationalOperator;
+import astava.java.*;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
@@ -256,7 +253,7 @@ public class Main {
             "";
         */
 
-        String input = "(+ 0.6 0.7)";
+        String input = "(>>> 512 8)";
 
         //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
@@ -404,6 +401,11 @@ public class Main {
                     arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
             }
 
+            private Processor shiftProcessor(int shiftOperator) {
+                return forOperands(n ->
+                    shift((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), shiftOperator));
+            }
+
             private Processor logicalProcessor(int logicalOperator) {
                 return forOperands(n ->
                     logical((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), logicalOperator));
@@ -442,20 +444,28 @@ public class Main {
                     .put(new Symbol("*"), arithmeticProcessor(ArithmeticOperator.MUL))
                     .put(new Symbol("/"), arithmeticProcessor(ArithmeticOperator.DIV))
                     .put(new Symbol("%"), arithmeticProcessor(ArithmeticOperator.REM))
+
+                    .put(new Symbol("<<"), shiftProcessor(ShiftOperator.SHL))
+                    .put(new Symbol(">>"), shiftProcessor(ShiftOperator.SHR))
+                    .put(new Symbol(">>>"), shiftProcessor(ShiftOperator.USHR))
+
                     .put(new Symbol("&&"), logicalProcessor(LogicalOperator.AND))
                     .put(new Symbol("||"), logicalProcessor(LogicalOperator.OR))
+
                     .put(new Symbol("<"), compareProcessor(RelationalOperator.LT))
                     .put(new Symbol("<="), compareProcessor(RelationalOperator.LE))
                     .put(new Symbol(">"), compareProcessor(RelationalOperator.GT))
                     .put(new Symbol(">="), compareProcessor(RelationalOperator.GE))
                     .put(new Symbol("=="), compareProcessor(RelationalOperator.EQ))
                     .put(new Symbol("!="), compareProcessor(RelationalOperator.NE))
+
                     .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
                     .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
                     .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
                     .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())))
                     .put(new Symbol("float"), createLiteralProcessor(number -> literal(number.floatValue())))
                     .put(new Symbol("double"), createLiteralProcessor(number -> literal(number.doubleValue())))
+
                     .put(new Symbol("declareVar"), n -> processDeclareVar(n))
                     .put(new Symbol("assignVar"), n -> processAssignVar(n))
                     .put(new Symbol("accessVar"), n -> processAccessVar(n))
