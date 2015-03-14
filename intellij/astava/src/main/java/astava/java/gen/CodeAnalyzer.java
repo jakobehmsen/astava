@@ -34,29 +34,30 @@ public class CodeAnalyzer {
     }
 
     private String returnType(Tuple statement, AnalyseScope methodScope) {
-        switch(statement.getIntProperty(Property.KEY_AST_TYPE)) {
+        switch(astType(statement)) {
             case ASTType.VARIABLE_DECLARATION: {
-                String type = statement.getStringProperty(Property.KEY_VAR_TYPE);
-                String name = statement.getStringProperty(Property.KEY_NAME);
+                String type = declareVarType(statement);
+                String name = declareVarName(statement);
                 methodScope.declareVar(type, name);
                 break;
             } case ASTType.VARIABLE_ASSIGNMENT: {
-                String name = statement.getStringProperty(Property.KEY_NAME);
+                String name = assignVarName(statement);
                 methodScope.assignVar(name);
                 break;
             } case ASTType.INCREMENT: {
                 break;
             } case ASTType.RETURN_VALUE_STATEMENT: {
-                Tuple expression = statement.getTupleProperty(Property.KEY_EXPRESSION);
+                Tuple expression = retExpression(statement);
 
                 return resultType(expression, methodScope);
             } case ASTType.BLOCK: {
-                List<Node> statements = (List<Node>) statement.getPropertyValueAs(Property.KEY_STATEMENTS, List.class);
+                List<Node> statements = blockStatements(statement);
                 List<String> returnTypes = statements.stream().map(s -> returnType(statement, methodScope)).filter(s -> s != null).collect(Collectors.toList());
                 return returnTypes.get(0); // Bad assumption!!!
             } case ASTType.IF_ELSE: {
-                Tuple ifTrue = statement.getTupleProperty(Property.KEY_IF_TRUE);
-                Tuple ifFalse = statement.getTupleProperty(Property.KEY_IF_FALSE);
+                Tuple condition = ifElseCondition(statement);
+                Tuple ifTrue = ifElseIfTrue(statement);
+                Tuple ifFalse = ifElseIfFalse(statement);
 
                 String ifTrueReturnType = returnType(ifTrue, methodScope);
                 String ifFalseReturnType = returnType(ifFalse, methodScope);
