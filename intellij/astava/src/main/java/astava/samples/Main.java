@@ -6,6 +6,7 @@ import astava.core.Node;
 import astava.core.Tuple;
 import astava.java.ArithmeticOperator;
 import astava.java.Descriptor;
+import astava.java.LogicalOperator;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
@@ -129,12 +130,12 @@ public class Main {
             }
         };
         Parser atomParser = matcher -> {
-            if(Character.isLetter(matcher.peekByte())) {
+            if(Character.isLetter(matcher.peekByte()) || isSpecialSymbolChar((char)matcher.peekByte())) {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.append((char)matcher.peekByte());
                 matcher.consume();
 
-                while(Character.isLetter(matcher.peekByte())) {
+                while(Character.isLetter(matcher.peekByte()) || isSpecialSymbolChar((char)matcher.peekByte())) {
                     stringBuilder.append((char)matcher.peekByte());
                     matcher.consume();
                 }
@@ -187,17 +188,6 @@ public class Main {
                     matcher.put(new Atom(stringBuilder.toString()));
                     matcher.match();
                 }
-            } else {
-                switch(matcher.peekByte()) {
-                    case '+':
-                    case '-':
-                    case '/':
-                    case '*':
-                    case '%':
-                        matcher.put(new Atom(new Symbol("" + (char)matcher.peekByte())));
-                        matcher.consume();
-                        matcher.match();
-                }
             }
         };
         rules.put("element", tupleParser.or(atomParser));
@@ -219,7 +209,7 @@ public class Main {
                 m.match();
         });
 
-        String input = "false";
+        String input = "(|| (&& true false) true)";
         //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
@@ -227,9 +217,10 @@ public class Main {
         CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, new BufferCollector(elements));
         parser.parse(matcher);
 
+        System.out.println(input);
+        System.out.println("=>");
+
         if(matcher.matched()) {
-            System.out.println(input);
-            System.out.println("=>");
             System.out.println(elements);
 
             Processor processor =
@@ -257,7 +248,24 @@ public class Main {
             Object result = c.getMethod("myMethod").invoke(null, null);
             System.out.println("=> " + resultType);
             System.out.println(result);
+        } else {
+            System.out.print("Could not parse.");
         }
+    }
+
+    private static boolean isSpecialSymbolChar(char ch) {
+        switch (ch) {
+            case '+':
+            case '-':
+            case '/':
+            case '*':
+            case '%':
+            case '&':
+            case '|':
+                return true;
+        }
+
+        return false;
     }
 
     private static Processor createFallbackProcessor(Processor elementProcessor) {
@@ -298,11 +306,11 @@ public class Main {
 
                     return mapProcessor
                         .put(new Symbol("scopedLabel"), forOperands(new IndexProcessor()
-                                .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
-                                .set(1, nameProcessor)))
+                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
+                            .set(1, nameProcessor)))
                         .put(new Symbol("scopedGoTo"), forOperands(new IndexProcessor()
-                                .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
-                                .set(1, nameProcessor)))
+                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
+                            .set(1, nameProcessor)))
                             // Process the first operand of the labelScope form
                         .put(new Symbol("labelScope"), code -> createProcessor().process(((Tuple) code).get(1)))
                         .or(createFallbackProcessor(n -> self.process(n)));
@@ -325,6 +333,11 @@ public class Main {
                     arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
             }
 
+            private Processor logicalProcessor(int logicalOperator) {
+                return forOperands(n ->
+                    logical((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), logicalOperator));
+            }
+
             @Override
             protected Processor createProcessor() {
                 MapProcessor mp = new MapProcessor()
@@ -333,6 +346,8 @@ public class Main {
                     .put(new Symbol("*"), arithmeticProcessor(ArithmeticOperator.MUL))
                     .put(new Symbol("/"), arithmeticProcessor(ArithmeticOperator.DIV))
                     .put(new Symbol("%"), arithmeticProcessor(ArithmeticOperator.REM))
+                    .put(new Symbol("&&"), logicalProcessor(LogicalOperator.AND))
+                    .put(new Symbol("||"), logicalProcessor(LogicalOperator.OR))
                     .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
                     .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
                     .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
@@ -340,8 +355,10 @@ public class Main {
 
                 Processor stringLiteralProcessor = n ->
                     n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
+                Processor booleanLiteralProcessor = n ->
+                    n instanceof Atom && ((Atom)n).getValue() instanceof Boolean ? literal((boolean)((Atom)n).getValue()) : null;
 
-                return mp.or(stringLiteralProcessor).or(createFallbackProcessor(n -> this.process(n)));
+                return mp.or(stringLiteralProcessor).or(booleanLiteralProcessor).or(createFallbackProcessor(n -> this.process(n)));
             }
         };
     }
