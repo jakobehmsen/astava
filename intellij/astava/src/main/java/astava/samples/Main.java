@@ -7,6 +7,7 @@ import astava.core.Tuple;
 import astava.java.ArithmeticOperator;
 import astava.java.Descriptor;
 import astava.java.LogicalOperator;
+import astava.java.RelationalOperator;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
@@ -209,7 +210,7 @@ public class Main {
                 m.match();
         });
 
-        String input = "(|| (&& true false) true)";
+        String input = "(|| (> 1 2) true)"; // Why does this fail?
         //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
@@ -262,6 +263,9 @@ public class Main {
             case '%':
             case '&':
             case '|':
+            case '<':
+            case '>':
+            case '=':
                 return true;
         }
 
@@ -338,6 +342,11 @@ public class Main {
                     logical((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), logicalOperator));
             }
 
+            private Processor compareProcessor(int compareOperator) {
+                return forOperands(n ->
+                    compare((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), compareOperator));
+            }
+
             @Override
             protected Processor createProcessor() {
                 MapProcessor mp = new MapProcessor()
@@ -348,6 +357,12 @@ public class Main {
                     .put(new Symbol("%"), arithmeticProcessor(ArithmeticOperator.REM))
                     .put(new Symbol("&&"), logicalProcessor(LogicalOperator.AND))
                     .put(new Symbol("||"), logicalProcessor(LogicalOperator.OR))
+                    .put(new Symbol("<"), compareProcessor(RelationalOperator.LT))
+                    .put(new Symbol("<="), compareProcessor(RelationalOperator.LE))
+                    .put(new Symbol(">"), compareProcessor(RelationalOperator.GT))
+                    .put(new Symbol(">="), compareProcessor(RelationalOperator.GE))
+                    .put(new Symbol("=="), compareProcessor(RelationalOperator.EQ))
+                    .put(new Symbol("!="), compareProcessor(RelationalOperator.NE))
                     .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
                     .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
                     .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
