@@ -337,7 +337,9 @@ public class MethodGenerator {
                     case LogicalOperator.OR: {
                         Label endLabel = generator.newLabel();
                         Label nextTestLabel = generator.newLabel();
-                        String lhsResultType = populateMethodExpression(generator, lhs, nextTestLabel, reifyCondition);
+                        String lhsResultType = populateMethodExpression(generator, lhs, nextTestLabel, false);
+                        if(reifyCondition)
+                            generator.push(true);
                         generator.goTo(endLabel);
                         generator.visitLabel(nextTestLabel);
                         String rhsResultType = populateMethodExpression(generator, rhs, ifFalseLabel, reifyCondition);

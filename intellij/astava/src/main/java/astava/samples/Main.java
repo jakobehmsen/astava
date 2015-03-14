@@ -210,7 +210,7 @@ public class Main {
                 m.match();
         });
 
-        String input = "(|| (> 1 2) true)"; // Why does this fail?
+        String input = "(|| (< 1 2) false)"; // Why does this fail?
         //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
