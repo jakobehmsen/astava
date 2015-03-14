@@ -283,14 +283,11 @@ public class Main {
 
                     MapProcessor mapProcessor = new MapProcessor();
 
-                    Function<Processor, Processor> operandsProcessor = p ->
-                        new OperandsProcessor(n -> self.process(n)).then(p);
-
                     return mapProcessor
-                        .put(new Symbol("scopedLabel"), operandsProcessor.apply(new IndexProcessor()
+                        .put(new Symbol("scopedLabel"), forOperands(new IndexProcessor()
                             .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
                             .set(1, nameProcessor)))
-                        .put(new Symbol("scopedGoTo"), operandsProcessor.apply(new IndexProcessor()
+                        .put(new Symbol("scopedGoTo"), forOperands(new IndexProcessor()
                             .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
                             .set(1, nameProcessor)))
                             // Process the first operand of the labelScope form
@@ -306,13 +303,6 @@ public class Main {
         };
     }
 
-    private static Processor createLiteralProcessor(Function<Number, Node> literalFunction) {
-        return n -> {
-            Number number = (Number) ((Atom) ((Tuple) n).get(1)).getValue();
-            return literalFunction.apply(number);
-        };
-    }
-
     public static Processor createOperatorToBuiltinProcessor() {
         return new DelegateProcessor() {
             private Processor createLiteralProcessor(Function<Number, Node> literalFunction) {
@@ -322,12 +312,8 @@ public class Main {
                 };
             }
 
-            private Processor operandsProcessor(Processor processor) {
-                return new OperandsProcessor(n -> this.process(n)).then(processor);
-            }
-
             private Processor arithmeticProcessor(int arithmeticOperator) {
-                return operandsProcessor(n ->
+                return forOperands(n ->
                     arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
             }
 
