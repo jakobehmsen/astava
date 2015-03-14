@@ -291,8 +291,8 @@ public class Main {
                             .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
                             .set(1, nameProcessor)))
                         .put(new Symbol("scopedGoTo"), operandsProcessor.apply(new IndexProcessor()
-                                .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
-                                .set(1, nameProcessor)))
+                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
+                            .set(1, nameProcessor)))
                             // Process the first operand of the labelScope form
                         .put(new Symbol("labelScope"), code -> createLayer().process(((Tuple) code).get(1)))
                             .or(createFallbackProcessor(n -> self.process(n)));
@@ -314,28 +314,41 @@ public class Main {
     }
 
     public static Processor createOperatorToBuiltinProcessor() {
-        return new SelfProcessor(self -> {
-            Function<Processor, Processor> operandsProcessor = processor ->
-                new OperandsProcessor(n -> self.process(n)).then(processor);
-            Function<Integer, Processor> arithmeticProcessor = arithmeticOperator ->
-                operandsProcessor.apply(n ->
+        return new DelegateProcessor() {
+            private Processor createLiteralProcessor(Function<Number, Node> literalFunction) {
+                return n -> {
+                    Number number = (Number) ((Atom) ((Tuple) n).get(1)).getValue();
+                    return literalFunction.apply(number);
+                };
+            }
+
+            private Processor operandsProcessor(Processor processor) {
+                return new OperandsProcessor(n -> this.process(n)).then(processor);
+            }
+
+            private Processor arithmeticProcessor(int arithmeticOperator) {
+                return operandsProcessor(n ->
                     arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
+            }
 
-            MapProcessor mp = new MapProcessor()
-                .put(new Symbol("+"), arithmeticProcessor.apply(ArithmeticOperator.ADD))
-                .put(new Symbol("-"), arithmeticProcessor.apply(ArithmeticOperator.SUB))
-                .put(new Symbol("*"), arithmeticProcessor.apply(ArithmeticOperator.MUL))
-                .put(new Symbol("/"), arithmeticProcessor.apply(ArithmeticOperator.DIV))
-                .put(new Symbol("%"), arithmeticProcessor.apply(ArithmeticOperator.REM))
-                .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
-                .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
-                .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
-                .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())));
+            @Override
+            protected Processor createProcessor() {
+                MapProcessor mp = new MapProcessor()
+                    .put(new Symbol("+"), arithmeticProcessor(ArithmeticOperator.ADD))
+                    .put(new Symbol("-"), arithmeticProcessor(ArithmeticOperator.SUB))
+                    .put(new Symbol("*"), arithmeticProcessor(ArithmeticOperator.MUL))
+                    .put(new Symbol("/"), arithmeticProcessor(ArithmeticOperator.DIV))
+                    .put(new Symbol("%"), arithmeticProcessor(ArithmeticOperator.REM))
+                    .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
+                    .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
+                    .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
+                    .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())));
 
-            Processor stringLiteralProcessor = n ->
-                n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
+                Processor stringLiteralProcessor = n ->
+                        n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
 
-            return mp.or(stringLiteralProcessor).or(createFallbackProcessor(n -> self.process(n)));
-        });
+                return mp.or(stringLiteralProcessor).or(createFallbackProcessor(n -> this.process(n)));
+            }
+        };
     }
 }
