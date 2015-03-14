@@ -4,11 +4,13 @@ import astava.core.Atom;
 import astava.core.Node;
 
 import astava.core.Tuple;
+import astava.java.ArithmeticOperator;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
 import parse.*;
+import sun.dc.pr.PRError;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -315,20 +317,16 @@ public class Main {
         return new SelfProcessor(self -> {
             Function<Processor, Processor> operandsProcessor = processor ->
                 new OperandsProcessor(n -> self.process(n)).then(processor);
+            Function<Integer, Processor> arithmeticProcessor = arithmeticOperator ->
+                operandsProcessor.apply(n ->
+                    arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
 
             MapProcessor mp = new MapProcessor()
-                .put(new Symbol("+"),
-                    operandsProcessor.apply(n -> add((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
-                )
-                .put(new Symbol("-"),
-                    operandsProcessor.apply(n -> sub((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
-                )
-                .put(new Symbol("*"),
-                    operandsProcessor.apply(n -> mul((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
-                )
-                .put(new Symbol("/"),
-                    operandsProcessor.apply(n -> div((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2)))
-                )
+                .put(new Symbol("+"), arithmeticProcessor.apply(ArithmeticOperator.ADD))
+                .put(new Symbol("-"), arithmeticProcessor.apply(ArithmeticOperator.SUB))
+                .put(new Symbol("*"), arithmeticProcessor.apply(ArithmeticOperator.MUL))
+                .put(new Symbol("/"), arithmeticProcessor.apply(ArithmeticOperator.DIV))
+                .put(new Symbol("%"), arithmeticProcessor.apply(ArithmeticOperator.REM))
                 .put(new Symbol("byte"), createLiteralProcessor(number -> literal(number.byteValue())))
                 .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
                 .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
