@@ -165,7 +165,23 @@ public class Main {
                     matcher.consume();
                 }
 
-                if(Character.toUpperCase(matcher.peekByte()) == 'L') {
+                if(matcher.peekByte() == '.') {
+                    stringBuilder.append((char)matcher.peekByte());
+                    matcher.consume();
+                    while(Character.isDigit(matcher.peekByte())) {
+                        stringBuilder.append((char)matcher.peekByte());
+                        matcher.consume();
+                    }
+
+                    if(Character.toUpperCase(matcher.peekByte()) == 'F') {
+                        // long
+                        matcher.consume();
+                        matcher.put(new Atom(Float.parseFloat(stringBuilder.toString())));
+                    } else {
+                        // int
+                        matcher.put(new Atom(Double.parseDouble(stringBuilder.toString())));
+                    }
+                } else if(Character.toUpperCase(matcher.peekByte()) == 'L') {
                     // long
                     matcher.consume();
                     matcher.put(new Atom(Long.parseLong(stringBuilder.toString())));
@@ -231,13 +247,16 @@ public class Main {
             ")" + "\n" +
             "";
         */
-        String input =
+        /*String input =
             "(" + "\n" +
             "    (declareVar \"I\" \"x\")" + "\n" +
             "    (assignVar \"x\" 5)" + "\n" +
             "    (+ (accessVar \"x\") (accessVar \"x\"))" + "\n" +
             ")" + "\n" +
             "";
+        */
+
+        String input = "(+ 0.6 0.7)";
 
         //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
@@ -325,11 +344,19 @@ public class Main {
                 .put(new Symbol("short"), n -> n)
                 .put(new Symbol("int"), n -> n)
                 .put(new Symbol("long"), n -> n)
+                .put(new Symbol("float"), n -> n)
+                .put(new Symbol("double"), n -> n)
             .or(n ->
                 n instanceof Atom && ((Atom) n).getValue() instanceof Integer ? new Tuple(new Atom(new Symbol("int")), n) : null
             )
             .or(n ->
                 n instanceof Atom && ((Atom) n).getValue() instanceof Long ? new Tuple(new Atom(new Symbol("long")), n) : null
+            )
+            .or(n ->
+                n instanceof Atom && ((Atom) n).getValue() instanceof Float ? new Tuple(new Atom(new Symbol("float")), n) : null
+            )
+            .or(n ->
+                n instanceof Atom && ((Atom) n).getValue() instanceof Double ? new Tuple(new Atom(new Symbol("double")), n) : null
             )
             .or(createFallbackProcessor(self))
         );
@@ -427,6 +454,8 @@ public class Main {
                     .put(new Symbol("short"), createLiteralProcessor(number -> literal(number.shortValue())))
                     .put(new Symbol("int"), createLiteralProcessor(number -> literal(number.intValue())))
                     .put(new Symbol("long"), createLiteralProcessor(number -> literal(number.longValue())))
+                    .put(new Symbol("float"), createLiteralProcessor(number -> literal(number.floatValue())))
+                    .put(new Symbol("double"), createLiteralProcessor(number -> literal(number.doubleValue())))
                     .put(new Symbol("declareVar"), n -> processDeclareVar(n))
                     .put(new Symbol("assignVar"), n -> processAssignVar(n))
                     .put(new Symbol("accessVar"), n -> processAccessVar(n))
