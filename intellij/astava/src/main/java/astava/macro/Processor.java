@@ -20,4 +20,8 @@ public interface Processor {
             return result != null ? next.process(result) : null;
         };
     }
+
+    default Processor forOperands(Processor processor) {
+        return new OperandsProcessor(n -> this.process(n)).then(processor);
+    }
 }
