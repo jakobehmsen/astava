@@ -139,7 +139,19 @@ public class Main {
                     matcher.consume();
                 }
 
-                matcher.put(new Atom(new Symbol(stringBuilder.toString())));
+                String str = stringBuilder.toString();
+
+                switch (str) {
+                    case "true":
+                        matcher.put(new Atom(true));
+                        break;
+                    case "false":
+                        matcher.put(new Atom(false));
+                        break;
+                    default:
+                        matcher.put(new Atom(new Symbol(stringBuilder.toString())));
+                }
+
                 matcher.match();
             } else if(Character.isDigit(matcher.peekByte())) {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -181,6 +193,7 @@ public class Main {
                     case '-':
                     case '/':
                     case '*':
+                    case '%':
                         matcher.put(new Atom(new Symbol("" + (char)matcher.peekByte())));
                         matcher.consume();
                         matcher.match();
@@ -206,7 +219,8 @@ public class Main {
                 m.match();
         });
 
-        String input = "(+ 8 (* 7 9))";
+        String input = "false";
+        //String input = "(+ 8 (* 7 9))";
         //String input = "((scopedLabel x) (labelScope (scopedLabel x)) (labelScope (scopedLabel x)))";
         //String input = "((scopedLabel x) (scopedLabel x))";
         List<Node> elements = new ArrayList<>();
@@ -284,11 +298,11 @@ public class Main {
 
                     return mapProcessor
                         .put(new Symbol("scopedLabel"), forOperands(new IndexProcessor()
-                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
-                            .set(1, nameProcessor)))
+                                .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
+                                .set(1, nameProcessor)))
                         .put(new Symbol("scopedGoTo"), forOperands(new IndexProcessor()
-                            .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
-                            .set(1, nameProcessor)))
+                                .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
+                                .set(1, nameProcessor)))
                             // Process the first operand of the labelScope form
                         .put(new Symbol("labelScope"), code -> createProcessor().process(((Tuple) code).get(1)))
                         .or(createFallbackProcessor(n -> self.process(n)));
