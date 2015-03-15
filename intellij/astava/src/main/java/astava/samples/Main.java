@@ -9,18 +9,79 @@ import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
 import parse.*;
-import sun.dc.pr.PRError;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 import static astava.java.Factory.*;
 
 public class Main {
+    private static class CharRouter implements Parser {
+        private Hashtable<Character, Parser> charToParserMap = new Hashtable<>();
+
+        @Override
+        public void parse(Matcher matcher) {
+            char ch = (char)matcher.peekByte();
+
+            Parser parser = charToParserMap.get(ch);
+
+            if(parser != null) {
+                parser.parse(matcher);
+            } else {
+                matcher.error("Expected either of " + charToParserMap.keySet() + ".");
+                matcher.reject();
+            }
+        }
+
+        public CharRouter put(char ch, Parser parser) {
+            charToParserMap.put(ch, parser);
+            return this;
+        }
+    }
+
+    private static class CharSet implements Parser {
+        private HashSet<Character> chars = new HashSet<>();
+
+        @Override
+        public void parse(Matcher matcher) {
+            char ch = (char)matcher.peekByte();
+
+            if(chars.contains(ch))
+                matcher.accept();
+            else {
+                matcher.error("Expected either of " + chars + ".");
+                matcher.reject();
+            }
+        }
+
+        public CharSet add(char ch) {
+            chars.add(ch);
+            return this;
+        }
+    }
+
+    private static class Assert implements Parser {
+        private Predicate<Matcher> assertion;
+        private String errorMessage;
+
+        private Assert(Predicate<Matcher> assertion, String errorMessage) {
+            this.assertion = assertion;
+            this.errorMessage = errorMessage;
+        }
+
+        @Override
+        public void parse(Matcher matcher) {
+            if(assertion.test(matcher))
+                matcher.accept();
+            else {
+                matcher.error(errorMessage);
+                matcher.reject();;
+            }
+        }
+    }
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 //        Node classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(
@@ -106,6 +167,48 @@ public class Main {
 
         System.out.println(result);*/
 
+        Parser p =
+            (new CharSet().add('a').add('e').add('i'))
+            .then(matcher -> { matcher.consume(); matcher.accept();})
+            .then(
+                (new CharRouter()
+                    .put('a', matcher -> { matcher.consume(); matcher.accept(); } )
+                    .put('b', matcher -> { matcher.consume(); matcher.accept(); } )
+                ).or(matcher -> {
+                    if(Character.isDigit(matcher.peekByte())) {
+                        matcher.consume();
+                        matcher.accept();
+                    } else {
+                        matcher.error("Expected digit.");
+                        matcher.reject();
+                    }
+                }).or(matcher -> {
+                    if(matcher.peekByte() == '/') {
+                        matcher.consume();
+                        matcher.accept();
+                    } else {
+                        matcher.error("Expected '/'.");
+                        matcher.reject();
+                    }
+                })
+            )
+            .then(new Assert(matcher -> matcher.peekByte() == -1, "Expected end."));
+
+        Matcher matcher2 = new CommonMatcher(new CharSequenceByteSource("a6"),
+            matchedElement -> { },
+            (index, message) -> {
+                System.err.println("Error at " + index + ": " + message);
+            });
+
+        p.parse(matcher2);
+
+        if(matcher2.accepted()) {
+
+        }
+
+        if(1 != 2)
+            return;
+
         Hashtable<String, Parser> rules = new Hashtable<>();
 
         Parser tupleParser = matcher -> {
@@ -117,12 +220,12 @@ public class Main {
                 ArrayList<Node> elements = new ArrayList<>();
                 Matcher elementsMatcher = matcher.beginMatch(new BufferCollector(elements));
                 rules.get("elements").parse(elementsMatcher);
-                if(elementsMatcher.matched()) {
+                if(elementsMatcher.accepted()) {
                     if(matcher.peekByte() == ')') {
                         matcher.consume();
 
                         matcher.put(new Tuple(elements));
-                        matcher.match();
+                        matcher.accept();
                     }
                 }
             }
@@ -151,7 +254,7 @@ public class Main {
                         matcher.put(new Atom(new Symbol(stringBuilder.toString())));
                 }
 
-                matcher.match();
+                matcher.accept();
             } else if(Character.isDigit(matcher.peekByte())) {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.append((char)matcher.peekByte());
@@ -187,7 +290,7 @@ public class Main {
                     matcher.put(new Atom(Integer.parseInt(stringBuilder.toString())));
                 }
 
-                matcher.match();
+                matcher.accept();
             } else if(matcher.peekByte() == '\"') {
                 StringBuilder stringBuilder = new StringBuilder();
                 matcher.consume();
@@ -200,7 +303,7 @@ public class Main {
                 if(matcher.peekByte() == '\"') {
                     matcher.consume();
                     matcher.put(new Atom(stringBuilder.toString()));
-                    matcher.match();
+                    matcher.accept();
                 }
             }
         };
@@ -209,18 +312,18 @@ public class Main {
             matcher.ignoreWS();
             Matcher elementMatcher = matcher.beginMatch();
             rules.get("element").parse(elementMatcher);
-            while(elementMatcher.matched()) {
+            while(elementMatcher.accepted()) {
                 matcher.ignoreWS();
                 elementMatcher = matcher.beginMatch();
                 rules.get("element").parse(elementMatcher);
             }
             matcher.ignoreWS();
-            matcher.match();
+            matcher.accept();
         });
 
         Parser parser = rules.get("elements").then(m -> {
             if (m.peekByte() == -1)
-                m.match();
+                m.accept();
         });
 
         Processor processor =
@@ -263,7 +366,45 @@ public class Main {
         System.out.println(input);
         System.out.println("Parsing...");
 
-        Collector collector = matchedElement -> {
+        Collector collector = new Collector() {
+            @Override
+            public void put(Node matchedElement) {
+                System.out.print("Matched: ");
+                System.out.println(matchedElement);
+
+                Node processedElement = processor.process(matchedElement);
+
+                System.out.print("Processed to: ");
+                System.out.println(processedElement);
+
+                Tuple expression = (Tuple)processedElement;
+
+                CodeAnalyzer analyzer = new CodeAnalyzer(expression);
+                String resultType = analyzer.resultType();
+
+                ClassGenerator generator = new ClassGenerator(classDeclaration(Modifier.PUBLIC, "MyClass", Descriptor.get(Object.class), Arrays.asList(
+                    methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, "myMethod", Collections.emptyList(), resultType, ret(expression))
+                )));
+
+                Class<?> c = null;
+                try {
+                    c = generator.newClass();
+                    Object result = c.getMethod("myMethod").invoke(null, null);
+                    System.out.print("Evaluates to (" + resultType + "): ");
+                    System.out.println(result);
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        /*Collector collector = matchedElement -> {
             System.out.print("Matched: ");
             System.out.println(matchedElement);
 
@@ -296,12 +437,13 @@ public class Main {
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
-        };
+        };*/
+        ErrorHandler errorHandler = (index, message) -> { };
         List<Node> elements = new ArrayList<>();
-        CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, collector);
+        CommonMatcher matcher = new CommonMatcher(new CharSequenceByteSource(input), 0, null, collector, errorHandler);
         parser.parse(matcher);
 
-        if(!matcher.matched()) {
+        if(!matcher.accepted()) {
             System.out.print("Could not parse.");
         }
 

@@ -9,8 +9,8 @@ public interface Parser {
         return matcher -> {
             Matcher thisMatcher = matcher.beginMatch();
             self.parse(thisMatcher);
-            if(thisMatcher.matched()) {
-                matcher.match();
+            if(thisMatcher.accepted()) {
+                matcher.accept();
             } else {
                 other.parse(matcher);
             }
@@ -23,8 +23,10 @@ public interface Parser {
         return matcher -> {
             Matcher firstMatcher = matcher.beginMatch();
             self.parse(firstMatcher);
-            if(firstMatcher.matched())
+            if(firstMatcher.accepted())
                 next.parse(matcher);
+            else
+                matcher.reject();
         };
     }
 }
