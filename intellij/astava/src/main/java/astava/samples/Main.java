@@ -9,8 +9,8 @@ import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
 import astava.parse.*;
-import astava.parse2.CharPredicate;
-import astava.parse2.Multi;
+import astava.parse.Parser;
+import astava.parse2.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -169,9 +169,40 @@ public class Main {
 
         System.out.println(result);*/
 
-        String charsSource = "(sdf)";
+        astava.parse2.Parser<Character, List<Node>, String> p3 = new astava.parse2.Parser<Character, List<Node>, String>() {
+            astava.parse2.Parser<Character, List<Character>, String> whitespace =
+                // Failure within this multi is always non-informative for errors
+                new Multi<>(CharPredicate.isWhitespace());
+            astava.parse2.Parser<Character, Node, String> symbol =
+                (CharPredicate.isLetter()
+                .then(new Multi<>(CharPredicate.isLetter())).map(charThenChars -> {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(charThenChars.getFirst());
+                    charThenChars.getSecond().forEach(ch -> sb.append(ch));
+                    return new Atom(new Symbol(sb.toString()));
+                }));
+            astava.parse2.Parser<Character, Node, String> tuple =
+                CharPredicate.is('(')
+                .ignoreThen(Parsers.ref(() -> this.elements))
+                .thenIgnore(CharPredicate.is(')')).map(elements -> new Tuple(elements));
+            astava.parse2.Parser<Character, List<Node>, String> elements =
+                    whitespace
+                    // Failure within this multi is always informative for errors
+                    .ignoreThen(new Multi<>(
+                        Parsers.ref(() -> this.element)
+                    .thenIgnore(whitespace)
+                ));
+            astava.parse2.Parser<Character, Node, String> element = symbol.or(tuple);
 
-        astava.parse2.Parser<Character, Node, String> word = (CharPredicate.isLetter()
+            @Override
+            public ParseResult<Character, List<Node>, String> parse(ParseContext<String> ctx, Source<Character> source) {
+                return elements.parse(ctx, source);
+            }
+        };
+
+        String charsSource = " ( sdf  ";
+
+       /* astava.parse2.Parser<Character, Node, String> word = (CharPredicate.isLetter()
         .then(new Multi<>(CharPredicate.isLetter())).map(charThenChars -> {
             StringBuilder sb = new StringBuilder();
             sb.append(charThenChars.getFirst());
@@ -181,10 +212,9 @@ public class Main {
 
         astava.parse2.Parser<Character, ? extends Object, String> p2 =
             CharPredicate.is('(')
-            .then(CharPredicate.isLetter())
-            .then(word)
-            .then(CharPredicate.is(')'));
-        astava.parse2.ParseResult pr2 = p2.parse(new astava.parse2.CharSequenceSource(charsSource));
+            .ignoreThen(word)
+            .thenIgnore(CharPredicate.is(')'));*/
+        astava.parse2.ParseResult pr2 = p3.thenIgnore(Parsers.atEnd()).parse(new RootParseContext<>(), new astava.parse2.CharSequenceSource(charsSource));
 
         System.out.println("Input: " + charsSource);
         if(pr2.isSuccess()) {

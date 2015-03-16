@@ -1,12 +1,21 @@
 package astava.parse2;
 
-public class ParseFailure<T, R, S> implements ParseResult<T,R,S> {
-    private Source source;
-    private S value;
+public class ParseFailure<T, Success, Failure> implements ParseResult<T, Success, Failure> {
+    private ParseResult<?, ?, Failure> parent;
+    private Source<T> source;
+    private Failure value;
+    private boolean isTracked;
 
-    public ParseFailure(Source source, S value) {
+    public ParseFailure(ParseResult<?, ?, Failure> parent, Source<T> source, Failure value, boolean isTracked) {
+        this.parent = parent;
         this.source = source;
         this.value = value;
+        this.isTracked = isTracked;
+    }
+
+    @Override
+    public ParseResult<?, ?, Failure> getParent() {
+        return parent;
     }
 
     @Override
@@ -16,16 +25,34 @@ public class ParseFailure<T, R, S> implements ParseResult<T,R,S> {
 
     @Override
     public boolean isSuccess() {
-        return false;
+        return isTracked;
     }
 
     @Override
-    public R getValueIfSuccess() {
+    public Success getValueIfSuccess() {
+        if(isSuccess())
+            return (Success)parent.getValueIfSuccess();
+
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public S getValueIfFailure() {
+    public Failure getValueIfFailure() {
         return value;
+    }
+
+    @Override
+    public <T, Success> ParseResult<T, Success, Failure> success(Source<T> source, Success value) {
+        return new ParseSuccess<T, Success, Failure>(this, source, value);
+    }
+
+    @Override
+    public <T, Success> ParseResult<T, Success, Failure> trackFailure(Source<T> source, Failure value) {
+        return new ParseFailure<T, Success, Failure>(this, source, value, true);
+    }
+
+    @Override
+    public <T, Success> ParseResult<T, Success, Failure> failure(Source<T> source, Failure value) {
+        return new ParseFailure<T, Success, Failure>(this, source, value, false);
     }
 }

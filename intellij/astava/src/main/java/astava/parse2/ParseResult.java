@@ -1,6 +1,7 @@
 package astava.parse2;
 
-public interface ParseResult<T, R, S> {
+public interface ParseResult<T, Success, Failure> extends ParseContext<Failure> {
+    ParseResult<?, ?, Failure> getParent();
     Source<T> getSource();
 
     boolean isSuccess();
@@ -9,6 +10,6 @@ public interface ParseResult<T, R, S> {
         return !isSuccess();
     }
 
-    R getValueIfSuccess();
-    S getValueIfFailure();
+    Success getValueIfSuccess();
+    Failure getValueIfFailure();
 }

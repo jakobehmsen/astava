@@ -11,20 +11,26 @@ public class Multi<T, R, S> implements Parser<T, List<R>, S> {
     }
 
     @Override
-    public ParseResult<T, List<R>, S> parse(Source<T> source) {
+    public ParseResult<T, List<R>, S> parse(ParseContext<S> ctx, Source<T> source) {
         ArrayList<R> values = new ArrayList<>();
 
         while(true) {
-            ParseResult<T, R, S> result = parser.parse(source);
+            ParseResult<T, R, S> result = parser.parse(ctx, source);
 
             if(result.isSuccess()) {
                 values.add(result.getValueIfSuccess());
                 source = result.getSource();
             } else {
-                break;
+                // How to forward this failure?
+                // A multi must end in failure
+                // This failure may be important later
+
+                return ctx
+                    .success(source, values)
+                    .trackFailure(source, result.getValueIfFailure());
             }
         }
 
-        return new ParseSuccess<T, List<R>, S>(source, values);
+        //return new ParseSuccess<T, List<R>, S>(source, values);
     }
 }

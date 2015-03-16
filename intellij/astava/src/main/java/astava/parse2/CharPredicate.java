@@ -43,12 +43,26 @@ public abstract class CharPredicate<T> implements Parser<Character, Character, T
         };
     }
 
-    @Override
-    public ParseResult<Character, Character, T> parse(Source<Character> source) {
-        if(!source.atEnd() && accepts(source))
-            return new ParseSuccess(source.rest(), source.getChar());
+    public static CharPredicate<String> isWhitespace() {
+        return new CharPredicate<String>() {
+            @Override
+            protected boolean accepts(Source<Character> source) {
+                return Character.isWhitespace(source.getChar());
+            }
 
-        return new ParseFailure(source, getFailureValue());
+            @Override
+            protected String getFailureValue() {
+                return "Expected whitespace.";
+            }
+        };
+    }
+
+    @Override
+    public ParseResult<Character, Character, T> parse(ParseContext<T> ctx, Source<Character> source) {
+        if(!source.atEnd() && accepts(source))
+            return ctx.success(source.rest(), source.getChar());
+
+        return ctx.failure(source, getFailureValue());
     }
 
     protected abstract boolean accepts(Source<Character> source);
