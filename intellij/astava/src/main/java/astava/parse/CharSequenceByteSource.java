@@ -1,4 +1,4 @@
-package parse;
+package astava.parse;
 
 public class CharSequenceByteSource implements ByteSource {
     private CharSequence charSequence;

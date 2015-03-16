@@ -1,4 +1,4 @@
-package parse;
+package astava.parse;
 
 public interface Parser {
     void parse(Matcher matcher);

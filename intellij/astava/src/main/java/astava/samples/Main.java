@@ -8,7 +8,9 @@ import astava.java.*;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
-import parse.*;
+import astava.parse.*;
+import astava.parse2.CharPredicate;
+import astava.parse2.Multi;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -166,6 +168,33 @@ public class Main {
         Object result = m.invoke(null, null);
 
         System.out.println(result);*/
+
+        String charsSource = "(sdf)";
+
+        astava.parse2.Parser<Character, Node, String> word = (CharPredicate.isLetter()
+        .then(new Multi<>(CharPredicate.isLetter())).map(charThenChars -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append(charThenChars.getFirst());
+            charThenChars.getSecond().forEach(ch -> sb.append(ch));
+            return new Atom(new Symbol(sb.toString()));
+        }));
+
+        astava.parse2.Parser<Character, ? extends Object, String> p2 =
+            CharPredicate.is('(')
+            .then(CharPredicate.isLetter())
+            .then(word)
+            .then(CharPredicate.is(')'));
+        astava.parse2.ParseResult pr2 = p2.parse(new astava.parse2.CharSequenceSource(charsSource));
+
+        System.out.println("Input: " + charsSource);
+        if(pr2.isSuccess()) {
+            System.out.println("YAY, captured: " + pr2.getValueIfSuccess());
+        } else {
+            System.out.println("Bah... " + pr2.getSource() + ": " + pr2.getValueIfFailure());
+        }
+
+        if(1 != 2)
+            return ;
 
         Parser p =
             (new CharSet().add('a').add('e').add('i'))
@@ -444,7 +473,7 @@ public class Main {
         parser.parse(matcher);
 
         if(!matcher.accepted()) {
-            System.out.print("Could not parse.");
+            System.out.print("Could not astava.parse.");
         }
 
         System.out.println("Finished parsing.");

@@ -1,4 +1,4 @@
-package parse;
+package astava.parse;
 
 public class ErrorInfo {
     private int index;

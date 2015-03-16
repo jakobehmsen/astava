@@ -1,4 +1,4 @@
-package parse;
+package astava.parse;
 import astava.core.Node;
 
 import java.util.ArrayList;

@@ -1,9 +1,4 @@
-package parse;
-
-import astava.core.Atom;
-import astava.core.Node;
-
-import java.util.List;
+package astava.parse;
 
 public interface Matcher extends Collector {
     public static final int UNDETERMINED = 0;
