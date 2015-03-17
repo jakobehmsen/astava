@@ -35,6 +35,6 @@ public class CharSequenceSource implements Source<Character> {
 
     @Override
     public String toString() {
-        return "At " + index + " of " + chars;
+        return "At " + index;
     }
 }

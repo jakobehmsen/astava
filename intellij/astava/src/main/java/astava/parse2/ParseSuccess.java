@@ -1,18 +1,18 @@
 package astava.parse2;
 
 public class ParseSuccess<T, Success, Failure> implements ParseResult<T, Success, Failure> {
-    private ParseResult<?, ?, Failure> parent;
+    private ParseContext<Failure> parent;
     private Source<T> source;
     private Success value;
 
-    public ParseSuccess(ParseResult<?, ?, Failure> parent, Source<T> source, Success value) {
+    public ParseSuccess(ParseContext<Failure> parent, Source<T> source, Success value) {
         this.parent = parent;
         this.source = source;
         this.value = value;
     }
 
     @Override
-    public ParseResult<?, ?, Failure> getParent() {
+    public ParseContext<Failure> getParent() {
         return parent;
     }
 
@@ -42,12 +42,7 @@ public class ParseSuccess<T, Success, Failure> implements ParseResult<T, Success
     }
 
     @Override
-    public <T, Success> ParseResult<T, Success, Failure> trackFailure(Source<T> source, Failure value) {
-        return new ParseFailure<T, Success, Failure>(this, source, value, true);
-    }
-
-    @Override
     public <T, Success> ParseResult<T, Success, Failure> failure(Source<T> source, Failure value) {
-        return new ParseFailure<T, Success, Failure>(this, source, value, false);
+        return new ParseFailure<T, Success, Failure>(this, source, value);
     }
 }

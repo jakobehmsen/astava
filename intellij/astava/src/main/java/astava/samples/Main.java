@@ -15,8 +15,11 @@ import astava.parse2.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static astava.java.Factory.*;
 
@@ -172,7 +175,7 @@ public class Main {
         astava.parse2.Parser<Character, List<Node>, String> p3 = new astava.parse2.Parser<Character, List<Node>, String>() {
             astava.parse2.Parser<Character, List<Character>, String> whitespace =
                 // Failure within this multi is always non-informative for errors
-                new Multi<>(CharPredicate.isWhitespace());
+                new Multi<>(CharPredicate.isWhitespace()).frame("Ignore");
             astava.parse2.Parser<Character, Node, String> symbol =
                 (CharPredicate.isLetter()
                 .then(new Multi<>(CharPredicate.isLetter())).map(charThenChars -> {
@@ -214,13 +217,42 @@ public class Main {
             CharPredicate.is('(')
             .ignoreThen(word)
             .thenIgnore(CharPredicate.is(')'));*/
+
+        Consumer<ParseResult> errorPrinter = new Consumer<ParseResult>() {
+            Object frameDescription;
+
+            @Override
+            public void accept(ParseResult ctx) {
+                accept(null, ctx);
+            }
+
+            private void accept(Object frameDescription, ParseResult ctx) {
+                if(ctx instanceof ParseResult) {
+                    ParseResult<?, ?, String> pr = (ParseResult<?, ?, String>)ctx;
+
+                    if(pr.isFailure()) {
+                        System.out.println(pr.getSource() + ": " + pr.getValueIfFailure());
+                    }
+                }
+
+                if(ctx instanceof ParseFrame) {
+                    ParseFrame f = (ParseFrame)ctx;
+                    frameDescription = f.getDescription();
+                }
+
+                if (ctx.getParent() != null && ctx.getParent() instanceof ParseResult)
+                    accept(frameDescription, (ParseResult)ctx.getParent());
+            }
+        };
+
         astava.parse2.ParseResult pr2 = p3.thenIgnore(Parsers.atEnd()).parse(new RootParseContext<>(), new astava.parse2.CharSequenceSource(charsSource));
 
-        System.out.println("Input: " + charsSource);
+        System.out.println("Input: \"" + charsSource + "\"");
         if(pr2.isSuccess()) {
             System.out.println("YAY, captured: " + pr2.getValueIfSuccess());
         } else {
-            System.out.println("Bah... " + pr2.getSource() + ": " + pr2.getValueIfFailure());
+            System.out.println("Bah... ");
+            errorPrinter.accept(pr2);
         }
 
         if(1 != 2)

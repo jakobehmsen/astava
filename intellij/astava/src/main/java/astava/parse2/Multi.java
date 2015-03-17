@@ -25,9 +25,7 @@ public class Multi<T, R, S> implements Parser<T, List<R>, S> {
                 // A multi must end in failure
                 // This failure may be important later
 
-                return ctx
-                    .success(source, values)
-                    .trackFailure(source, result.getValueIfFailure());
+                return result.success(source, values);
             }
         }
 
