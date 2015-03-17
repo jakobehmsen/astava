@@ -1,8 +1,5 @@
 package astava.parse2;
 
-/**
- * Created by jakob on 17-03-15.
- */
 public class ParseFrame<T, Success, Failure> implements ParseResult<T, Success, Failure> {
     private ParseContext<Failure> parent;
     private ParseResult<T, Success, Failure> result;

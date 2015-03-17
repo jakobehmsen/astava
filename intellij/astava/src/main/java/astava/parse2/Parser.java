@@ -57,11 +57,13 @@ public interface Parser<T, Success, Failure> {
                     //return new ParseSuccess<T, Pair<Success, SuccessNext>, Failure>(nextResult.getSource(), value);
                     return selfResult.success(nextResult.getSource(), value);
                 } else {
-                    return selfResult.failure(nextResult.getSource(), nextResult.getValueIfFailure());
+                    //return selfResult.failure(nextResult.getSource(), nextResult.getValueIfFailure());
+                    return (ParseResult<T, Pair<Success, SuccessNext>, Failure>)nextResult;
                 }
             } else
                 //return (ParseResult<T, SuccessNext, Failure>)selfResult;
-                return selfResult.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                //return selfResult.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                return (ParseResult<T, Pair<Success, SuccessNext>, Failure>)selfResult;
         };
     }
 
@@ -75,7 +77,8 @@ public interface Parser<T, Success, Failure> {
                 return next.parse(selfResult, source);
             } else
                 //return new ParseFailure<T, R2, Failure>(selfResult.getSource(), selfResult.getValueIfFailure());
-                return ctx.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                //return ctx.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                return (ParseResult<T, R2, Failure>)selfResult;
         };
     }
 
@@ -88,14 +91,16 @@ public interface Parser<T, Success, Failure> {
                 source = selfResult.getSource();
                 ParseResult<T, R2, Failure> nextResult = next.parse(selfResult, source);
                 if(nextResult.isSuccess()) {
-                    Pair<Success, R2> value = new Pair<Success, R2>(selfResult.getValueIfSuccess(), nextResult.getValueIfSuccess());
-                    return selfResult.success(nextResult.getSource(), selfResult.getValueIfSuccess());
+                    Pair<Success, R2> value = new Pair<>(selfResult.getValueIfSuccess(), nextResult.getValueIfSuccess());
+                    return nextResult.success(nextResult.getSource(), selfResult.getValueIfSuccess());
                 } else {
-                    return selfResult.failure(nextResult.getSource(), nextResult.getValueIfFailure());
+                    //return nextResult.failure(nextResult.getSource(), nextResult.getValueIfFailure());
+                    return (ParseResult<T, Success, Failure>)nextResult;
                 }
             } else
                 //return new ParseFailure<T, Success, Failure>(selfResult.getSource(), selfResult.getValueIfFailure());
-                return ctx.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                //return ctx.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                return selfResult;
         };
     }
 
@@ -108,16 +113,18 @@ public interface Parser<T, Success, Failure> {
                 NewSuccess newSuccess = mapper.apply(selfResult.getValueIfSuccess());
                 return selfResult.success(selfResult.getSource(), newSuccess);
             } else
-                return ctx.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                //return ctx.failure(selfResult.getSource(), selfResult.getValueIfFailure());
+                return (ParseResult<T, NewSuccess, Failure>)selfResult;
         };
     }
 
-    default <R2> Parser<T, Success, Failure> frame(Object description) {
+    default Parser<T, Success, Failure> frame(Object description) {
         Parser<T, Success, Failure> self = this;
 
         return (ctx, source) -> {
-            ParseResult<T, Success, Failure> selfResult = self.parse(ctx, source);
-            return new ParseFrame<T, Success, Failure>(ctx, selfResult, description);
+            ParseFrameBuilder<T, Success, Failure> frameBuilder =
+                (ParseFrameBuilder<T, Success, Failure>)self.parse(new ParseFrameBuilder<>(ctx, null, description), source);
+            return frameBuilder.build();
         };
     }
 }

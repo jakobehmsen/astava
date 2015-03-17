@@ -175,7 +175,7 @@ public class Main {
         astava.parse2.Parser<Character, List<Node>, String> p3 = new astava.parse2.Parser<Character, List<Node>, String>() {
             astava.parse2.Parser<Character, List<Character>, String> whitespace =
                 // Failure within this multi is always non-informative for errors
-                new Multi<>(CharPredicate.isWhitespace()).frame("Ignore");
+                new Multi<>(CharPredicate.isWhitespace()).frame("Skip");
             astava.parse2.Parser<Character, Node, String> symbol =
                 (CharPredicate.isLetter()
                 .then(new Multi<>(CharPredicate.isLetter())).map(charThenChars -> {
@@ -203,41 +203,27 @@ public class Main {
             }
         };
 
-        String charsSource = " ( sdf  ";
-
-       /* astava.parse2.Parser<Character, Node, String> word = (CharPredicate.isLetter()
-        .then(new Multi<>(CharPredicate.isLetter())).map(charThenChars -> {
-            StringBuilder sb = new StringBuilder();
-            sb.append(charThenChars.getFirst());
-            charThenChars.getSecond().forEach(ch -> sb.append(ch));
-            return new Atom(new Symbol(sb.toString()));
-        }));
-
-        astava.parse2.Parser<Character, ? extends Object, String> p2 =
-            CharPredicate.is('(')
-            .ignoreThen(word)
-            .thenIgnore(CharPredicate.is(')'));*/
+        String charsSource = "((";
 
         Consumer<ParseResult> errorPrinter = new Consumer<ParseResult>() {
             Object frameDescription;
 
             @Override
             public void accept(ParseResult ctx) {
-                accept(null, ctx);
+                accept("Root", ctx);
             }
 
             private void accept(Object frameDescription, ParseResult ctx) {
-                if(ctx instanceof ParseResult) {
-                    ParseResult<?, ?, String> pr = (ParseResult<?, ?, String>)ctx;
-
-                    if(pr.isFailure()) {
-                        System.out.println(pr.getSource() + ": " + pr.getValueIfFailure());
-                    }
-                }
-
                 if(ctx instanceof ParseFrame) {
                     ParseFrame f = (ParseFrame)ctx;
-                    frameDescription = f.getDescription();
+                    accept(f.getDescription(), f.getResult());
+                }
+                else {
+                    ParseResult<?, ?, String> pr = (ParseResult<?, ?, String>)ctx;
+
+                    if(pr.isFailure() && !frameDescription.equals("Skip")) {
+                        System.out.println(pr.getSource() + ": " + pr.getValueIfFailure());
+                    }
                 }
 
                 if (ctx.getParent() != null && ctx.getParent() instanceof ParseResult)
@@ -245,7 +231,8 @@ public class Main {
             }
         };
 
-        astava.parse2.ParseResult pr2 = p3.thenIgnore(Parsers.atEnd()).parse(new RootParseContext<>(), new astava.parse2.CharSequenceSource(charsSource));
+        astava.parse2.ParseResult pr2 = p3.thenIgnore(Parsers.<Character, Object>atEnd().frame("Skip"))
+            .parse(new RootParseContext<>(), new astava.parse2.CharSequenceSource(charsSource));
 
         System.out.println("Input: \"" + charsSource + "\"");
         if(pr2.isSuccess()) {
@@ -253,6 +240,17 @@ public class Main {
         } else {
             System.out.println("Bah... ");
             errorPrinter.accept(pr2);
+
+            // How to traverse and report errors?
+            // Convert into Source and then process?
+
+            //pr2.stream().filter(ctx -> ctx)
+
+            /*Source<ParseResult> s = null;
+            Parser p4 = new FrameDescription(self ->
+                new InstanceOf(ParseFrame)
+                .or(IsFailure().ignoreThen(self.descriptionIs("Skip")))
+            );*/
         }
 
         if(1 != 2)
