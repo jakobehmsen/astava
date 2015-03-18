@@ -9,8 +9,12 @@ import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
 import astava.parse.*;
+import astava.parse.Matcher;
 import astava.parse.Parser;
 import astava.parse2.*;
+import astava.parse3.CharSequenceInput;
+import astava.parse3.Input;
+import astava.parse3.Parse;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -89,6 +93,62 @@ public class Main {
     }
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        String chars = "abc";
+
+        Parse.sequence(Parse.isChar('a'), Parse.isChar('b'), Parse.isChar('c')).parse(new CharSequenceInput(chars), new astava.parse3.Matcher<Character>() {
+            private Stack<Boolean> results = new Stack<>();
+
+            {
+                results.push(null);
+            }
+
+            private String getIndention() {
+                return IntStream.range(0, results.size() - 1).mapToObj(d -> "    ").collect(Collectors.joining());
+            }
+
+            @Override
+            public void visitPreInput(Input<Character> input) {
+                System.out.println(getIndention() + "Pre-input: " + input);
+            }
+
+            @Override
+            public void visitPostInput(Input<Character> input) {
+                System.out.println(getIndention() + "Post-input: " + input);
+            }
+
+            @Override
+            public void visitCaptured(Character captured) {
+                System.out.println(getIndention() + "Captured: " + captured);
+            }
+
+            @Override
+            public void visitSuccess() {
+                System.out.println(getIndention() + "Success");
+                results.set(results.size() - 1, true);
+            }
+
+            @Override
+            public void visitFailure() {
+                System.out.println(getIndention() + "Failure.");
+                results.set(results.size() - 1, false);
+            }
+
+            @Override
+            public astava.parse3.Matcher beginVisit(astava.parse3.Parser parser) {
+                System.out.println(getIndention() + "Begin parse: " + parser + "...");
+                results.push(null);
+                return this;
+            }
+
+            @Override
+            public boolean endVisit() {
+                return results.pop();
+            }
+        });
+
+        if(1 != 2)
+            return;
+
 //        Node classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(
 //            methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, "myMethod", Collections.emptyList(), "I",
 //                ret(literal(7))
@@ -203,7 +263,7 @@ public class Main {
             }
         };
 
-        String charsSource = "((";
+        String charsSource = "df (";
 
         Consumer<ParseResult> errorPrinter = new Consumer<ParseResult>() {
             Object frameDescription;
