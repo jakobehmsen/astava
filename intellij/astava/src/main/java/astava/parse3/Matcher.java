@@ -1,13 +1,16 @@
 package astava.parse3;
 
 public interface Matcher<T> {
-
-    void visitPreInput(Input<T> input);
-    void visitCaptured(T captured);
-    void visitPostInput(Input<T> input);
     void visitSuccess();
     void visitFailure();
 
-    Matcher<T> beginVisit(Parser<T> parser);
-    boolean endVisit();
+    Matcher<T> beginVisit(Parser<T> parser, Input<T> input);
+    boolean isMatch();
+
+    default void propogate(Matcher<T> matcher) {
+        if(isMatch())
+            matcher.visitSuccess();
+        else
+            matcher.visitFailure();
+    }
 }

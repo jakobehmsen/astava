@@ -12,13 +12,13 @@ import astava.parse.*;
 import astava.parse.Matcher;
 import astava.parse.Parser;
 import astava.parse2.*;
-import astava.parse3.CharSequenceInput;
-import astava.parse3.Input;
-import astava.parse3.Parse;
+import astava.parse3.*;
 
+import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -93,58 +93,73 @@ public class Main {
     }
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        String chars = "abc";
 
-        Parse.sequence(Parse.isChar('a'), Parse.isChar('b'), Parse.isChar('c')).parse(new CharSequenceInput(chars), new astava.parse3.Matcher<Character>() {
-            private Stack<Boolean> results = new Stack<>();
+        class CMatcher implements astava.parse3.CaptureMatcher<Character> {
+            private astava.parse3.Parser<Character> parser;
+            private Input<Character> input;
+            private Boolean result;
+            private int depth;
+            private Position<Character> start;
+            private Position<Character> end;
 
-            {
-                results.push(null);
+            CMatcher(astava.parse3.Parser<Character> parser, Input<Character> input, int depth) {
+                this.parser = parser;
+                this.input = input;
+                this.depth = depth;
+                start = input.position();
+                System.out.println(getIndention() + "Begin parse: " + parser + "...");
             }
 
             private String getIndention() {
-                return IntStream.range(0, results.size() - 1).mapToObj(d -> "    ").collect(Collectors.joining());
-            }
-
-            @Override
-            public void visitPreInput(Input<Character> input) {
-                System.out.println(getIndention() + "Pre-input: " + input);
-            }
-
-            @Override
-            public void visitPostInput(Input<Character> input) {
-                System.out.println(getIndention() + "Post-input: " + input);
-            }
-
-            @Override
-            public void visitCaptured(Character captured) {
-                System.out.println(getIndention() + "Captured: " + captured);
+                return IntStream.range(0, depth).mapToObj(d -> "    ").collect(Collectors.joining());
             }
 
             @Override
             public void visitSuccess() {
                 System.out.println(getIndention() + "Success");
-                results.set(results.size() - 1, true);
+                end = input.position();
+                result = true;
             }
 
             @Override
             public void visitFailure() {
                 System.out.println(getIndention() + "Failure.");
-                results.set(results.size() - 1, false);
+                end = input.position();
+                result = false;
             }
 
             @Override
-            public astava.parse3.Matcher beginVisit(astava.parse3.Parser parser) {
-                System.out.println(getIndention() + "Begin parse: " + parser + "...");
-                results.push(null);
-                return this;
+            public astava.parse3.Matcher<Character> beginVisit(astava.parse3.Parser<Character> parser, Input<Character> input) {
+                return new CMatcher(parser, input, depth + 1);
             }
 
             @Override
-            public boolean endVisit() {
-                return results.pop();
+            public boolean isMatch() {
+                return result;
             }
-        });
+
+            @Override
+            public astava.parse3.Input<Character> captured() {
+                return input.interval(start, end);
+            }
+        }
+
+        astava.parse3.Parser<Character> grammar = new DelegateParser<Character>() {
+            private astava.parse3.Parser<Character> element1 = Parse.isChar('a');
+            private astava.parse3.Parser<Character> element2 = Parse.isChar('b');
+            private astava.parse3.Parser<Character> element3 = Parse.isChar('c');
+
+            @Override
+            protected astava.parse3.Parser<Character> createParser() {
+                return
+                    Parse.ref(() -> this.element1)
+                    .or(Parse.ref(() -> this.element2))
+                    .or(Parse.ref(() -> this.element3));
+            }
+        };
+
+        String chars = "d";
+        grammar.parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0));
 
         if(1 != 2)
             return;
