@@ -9,6 +9,7 @@ import astava.java.gen.ClassGenerator;
 import astava.java.gen.CodeAnalyzer;
 import astava.macro.*;
 import astava.parse.*;
+import astava.parse.CommonMatcher;
 import astava.parse.Matcher;
 import astava.parse.Parser;
 import astava.parse2.*;
@@ -93,21 +94,43 @@ public class Main {
     }
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-
-        class CMatcher implements astava.parse3.Matcher<Character, Character> {
-            private astava.parse3.Parser<Character, Character> parser;
-            private Input<Character> input;
-            private Boolean result;
+        class FailureInfo {
+            private astava.parse3.Parser parser;
+            private astava.parse3.Input input;
+            private astava.parse3.Position position;
             private int depth;
-            private Position<Character> start;
-            private Position<Character> end;
 
-            CMatcher(astava.parse3.Parser<Character, Character> parser, Input<Character> input, int depth) {
+            FailureInfo(astava.parse3.Parser parser, astava.parse3.Input input, astava.parse3.Position position, int depth) {
+                this.parser = parser;
+                this.input = input;
+                this.position = position;
+                this.depth = depth;
+            }
+        }
+
+        class SkipParser<TIn, TOut> extends MarkerParser<TIn, TOut> {
+            public SkipParser(astava.parse3.Parser<TIn, TOut> parser) {
+                super(parser);
+            }
+        }
+
+        class CMatcher<TIn, TOut> extends astava.parse3.CommonMatcher<TIn, TOut> {
+            private astava.parse3.Parser<TIn, TOut> parser;
+            private Input<TIn> input;
+            private List<FailureInfo> failures;
+            private boolean collectFailures;
+            private int depth;
+
+            CMatcher(astava.parse3.Parser<TIn, TOut> parser, Input<TIn> input, int depth, List<FailureInfo> failures, boolean collectFailures) {
                 this.parser = parser;
                 this.input = input;
                 this.depth = depth;
-                start = input.position();
-                System.out.println(getIndention() + "Begin parse: " + parser + "...");
+                this.failures = failures;
+                this.collectFailures = collectFailures;
+                System.out.println(getIndention() + "Begin parse: " + parser + " " + input.position() + "...");
+
+                if(parser instanceof SkipParser)
+                    this.collectFailures = false;
             }
 
             private String getIndention() {
@@ -116,66 +139,89 @@ public class Main {
 
             @Override
             public void visitSuccess() {
-                System.out.println(getIndention() + "Success");
-                end = input.position();
-                result = true;
+                System.out.println(getIndention() + "Success: " + input.position());
+                super.visitSuccess();
             }
 
             @Override
             public void visitFailure() {
-                System.out.println(getIndention() + "Failure.");
-                end = input.position();
-                result = false;
-            }
-
-            private StringBuilder production = new StringBuilder();
-
-            @Override
-            public void put(Character value) {
-                production.append(value);
+                System.out.println(getIndention() + "Failure: " + input.position());
+                if(parser instanceof LeafParser && collectFailures)
+                    failures.add(new FailureInfo(parser, input, input.position(), depth));
+                super.visitFailure();
             }
 
             @Override
-            public Input<Character> production() {
-                return new CharSequenceInput(production);
-            }
-
-            @Override
-            public astava.parse3.Matcher<Character, Character> beginVisit(astava.parse3.Parser<Character, Character> parser, Input<Character> input) {
-                return new CMatcher(parser, input, depth + 1);
-            }
-
-            @Override
-            public boolean isMatch() {
-                return result;
+            public <TIn, TOut> astava.parse3.Matcher<TIn, TOut> beginVisit(astava.parse3.Parser<TIn, TOut> parser, Input<TIn> input) {
+                return new CMatcher(parser, input, depth + 1, failures, collectFailures);
             }
         }
 
-        astava.parse3.Parser<Character, Character> grammar = new DelegateParser<Character, Character>() {
-            private astava.parse3.Parser<Character, Character> element1 =
-                Parse.<Character>isChar('a').then(Parse.consume());
-            private astava.parse3.Parser<Character, Character> element2 =
-                Parse.<Character>isChar('b').then(Parse.consume());
-            private astava.parse3.Parser<Character, Character> element3 =
-                Parse.<Character>isChar('c').then(Parse.copy()).then(Parse.consume()).then(Parse.isChar('d')).then(Parse.consume());
+        astava.parse3.Parser<Character, Node> grammar = new DelegateParser<Character, Node>() {
+            private astava.parse3.Parser<Character, Node> ws =
+                new SkipParser<>(Parse.<Node>isWhitespace().then(Parse.consume()).multi());
+            private astava.parse3.Parser<Character, Node> element =
+                ref(() -> this.word)
+                .or(ref(() -> this.tree));
+            private astava.parse3.Parser<Character, Node> elements =
+                ref(() -> this.ws)
+                .then(
+                    ref(() -> this.element)
+                    .then(ref(() -> this.ws))
+                    .multi()
+                );
+            private astava.parse3.Parser<Character, Node> word =
+                Parse.<Character>isLetter().then(Parse.copy()).then(Parse.consume()).onceOrMore()
+                .pipeOut(Parse.map(chars -> {
+                    StringBuilder sb = new StringBuilder();
+                    while (!chars.atEnd()) {
+                        sb.append(chars.peek());
+                        chars.consume();
+                    }
+                    return new Atom(sb.toString());
+                }));
+            private astava.parse3.Parser<Character, Node> tree =
+                Parse.<Node>isChar('(').then(Parse.consume())
+                .then(ref(() -> this.elements))
+                .then(Parse.isChar(')')).then(Parse.consume())
+                .pipeOut(Parse.map(nodes -> {
+                    ArrayList<Node> nodesAsList = new ArrayList<>();
+                    while (!nodes.atEnd()) {
+                        nodesAsList.add(nodes.peek());
+                        nodes.consume();
+                    }
+                    return new Tuple(nodesAsList);
+                }));;
 
             @Override
-            protected astava.parse3.Parser<Character, Character> createParser() {
-                return
-                    ref(() -> this.element1)
+            protected astava.parse3.Parser<Character, Node> createParser() {
+                return ref(() -> this.elements);
+                    /*ref(() -> this.element1)
                     .or(ref(() -> this.element2))
-                    .or(ref(() -> this.element3));
+                    .or(ref(() -> this.element3))
+                    .or(ref(() -> this.word));*/
             }
         };
 
-        String chars = "cd";
-        Input<Character> production = grammar.parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0)).production();
+        ArrayList<FailureInfo> failures = new ArrayList<>();
+        String chars = "(";
+        astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
+            .parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
+        Input<Node> production = ma.production();
 
-        System.out.print("Production: ");
-        while(!production.atEnd()) {
-            System.out.print(production.peek());
-            production.consume();
+        if(ma.isMatch()) {
+            System.out.print("Success! Production: ");
+            while(!production.atEnd()) {
+                System.out.print(production.peek());
+                production.consume();
+            }
+        } else {
+            System.out.println("Failed...");
+            failures.forEach(f -> System.out.println("At " + f.position + ": Expected " + f.parser));
         }
+        //Input<Character> production = grammar.parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0)).production();
+
+
 
         if(1 != 2)
             return;

@@ -6,7 +6,7 @@ public interface Matcher<TIn, TOut> {
     void put(TOut value);
     Input<TOut> production();
 
-    Matcher<TIn, TOut> beginVisit(Parser<TIn, TOut> parser, Input<TIn> input);
+    <TIn, TOut> Matcher<TIn, TOut> beginVisit(Parser<TIn, TOut> parser, Input<TIn> input);
     boolean isMatch();
 
     default void propagate(Matcher<TIn, TOut> matcher) {
@@ -17,7 +17,7 @@ public interface Matcher<TIn, TOut> {
             matcher.visitFailure();
     }
 
-    default void propagateOutput(Matcher<TIn, TOut> matcher) {
+    default <TIn> void propagateOutput(Matcher<TIn, TOut> matcher) {
         Input<TOut> production = production();
         while(!production.atEnd()) {
             matcher.put(production.peek());

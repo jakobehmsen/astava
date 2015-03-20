@@ -1,11 +1,15 @@
 package astava.parse3;
 
+import astava.core.Node;
+
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Parse {
-    public static <TIn, TOut> Parser<TIn, TOut> consume() {
-        return new Parser<TIn, TOut>() {
+    public static <TIn, TOut> LeafParser<TIn, TOut> consume() {
+        return new LeafParser<TIn, TOut>() {
             @Override
             public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
                 if(!input.atEnd()) {
@@ -22,8 +26,8 @@ public class Parse {
         };
     }
 
-    public static <TIn> Parser<TIn, TIn> copy() {
-        return new Parser<TIn, TIn>() {
+    public static <TIn> LeafParser<TIn, TIn> copy() {
+        return new LeafParser<TIn, TIn>() {
             @Override
             public void parse(Input<TIn> input, Matcher<TIn, TIn> matcher) {
                 if(!input.atEnd()) {
@@ -37,6 +41,23 @@ public class Parse {
             @Override
             public String toString() {
                 return "^";
+            }
+        };
+    }
+
+    public static <TIn, TOut> LeafParser<TIn, TOut> atEnd() {
+        return new LeafParser<TIn, TOut>() {
+            @Override
+            public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                if(input.atEnd()) {
+                    matcher.visitSuccess();
+                } else
+                    matcher.visitFailure();
+            }
+
+            @Override
+            public String toString() {
+                return "<at-end>";
             }
         };
     }
@@ -79,7 +100,19 @@ public class Parse {
         return new IsCharSequence(chars);
     }
 
-    public static class IsChar<TOut> implements Parser<Character, TOut> {
+    public static abstract class CharPredicate<TOut> implements LeafParser<Character, TOut> {
+        @Override
+        public void parse(Input<Character> input, Matcher<Character, TOut> matcher) {
+            if(!input.atEnd() && test((char)input.peek())) {
+                matcher.visitSuccess();
+            } else
+                matcher.visitFailure();
+        }
+
+        protected abstract boolean test(char ch);
+    }
+
+    public static class IsChar<TOut> extends CharPredicate<TOut> {
         private char ch;
 
         public IsChar(char ch) {
@@ -87,11 +120,8 @@ public class Parse {
         }
 
         @Override
-        public void parse(Input<Character> input, Matcher<Character, TOut> matcher) {
-            if(!input.atEnd() && (char)input.peek() == ch) {
-                matcher.visitSuccess();
-            } else
-                matcher.visitFailure();
+        protected boolean test(char ch) {
+            return this.ch == ch;
         }
 
         @Override
@@ -99,7 +129,7 @@ public class Parse {
             if(next instanceof IsChar)
                 return new IsCharSequence("" + this.ch + ((IsChar)next).ch);
 
-            return Parser.super.then(next);
+            return super.then(next);
         }
 
         @Override
@@ -108,19 +138,144 @@ public class Parse {
         }
     }
 
-    public static <TOut> Parser<Character, TOut> isChar(char ch) {
+    public static class Pipe<TIn, TInter, TOut> implements Parser<TIn, TOut> {
+        private Parser<TIn, TInter> first;
+        private Parser<TInter, TOut> second;
+
+        public Pipe(Parser<TIn, TInter> first, Parser<TInter, TOut> second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override
+        public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+            Matcher<TIn, TInter> firstMatcher = matcher.beginVisit(first, input);
+            first.parse(input, firstMatcher);
+
+            if(firstMatcher.isMatch()) {
+                Input<TInter> secondInput = firstMatcher.production();
+                Matcher<TInter, TOut> secondMatcher = matcher.beginVisit(second, secondInput);
+                second.parse(secondInput, secondMatcher);
+
+                if(secondMatcher.isMatch()) {
+                    secondMatcher.propagateOutput(matcher);
+                    matcher.visitSuccess();
+                    return;
+                }
+            }
+
+            matcher.visitFailure();
+        }
+
+        @Override
+        public String toString() {
+            return first + ">>" + second;
+        }
+    }
+
+    public static class PipeOut<TIn, TInter, TOut> implements Parser<TIn, TOut> {
+        private Parser<TIn, TInter> first;
+        private Parser<Input<TInter>, TOut> second;
+
+        public PipeOut(Parser<TIn, TInter> first, Parser<Input<TInter>, TOut> second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override
+        public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+            Matcher<TIn, TInter> firstMatcher = matcher.beginVisit(first, input);
+            first.parse(input, firstMatcher);
+
+            if(firstMatcher.isMatch()) {
+                Input<TInter> secondInput = firstMatcher.production();
+                Input<Input<TInter>> secondInputReified = new ListInput<>(Arrays.asList(secondInput));
+                Matcher<Input<TInter>, TOut> secondMatcher = matcher.beginVisit(second, secondInputReified);
+                second.parse(secondInputReified, secondMatcher);
+
+                if(secondMatcher.isMatch()) {
+                    matcher.visitSuccess();
+                    secondMatcher.propagateOutput(matcher);
+                    matcher.visitSuccess();
+                    return;
+                }
+            }
+
+            matcher.visitFailure();
+        }
+
+        @Override
+        public String toString() {
+            return first + ">:" + second;
+        }
+    }
+
+    public static <TIn, TInter, TOut> Parser<TIn, TOut> pipe(Parser<TIn, TInter> first, Parser<TInter, TOut> second) {
+        return new Pipe(first, second);
+    }
+
+    public static <TIn, TInter, TOut> Parser<TIn, TOut> pipeOut(Parser<TIn, TInter> first, Parser<Input<TInter>, TOut> second) {
+        return new PipeOut(first, second);
+    }
+
+    public static <TOut> LeafParser<Character, TOut> isChar(char ch) {
         return new IsChar(ch);
+    }
+
+    public static <TOut> LeafParser<Character, TOut> isLetter() {
+        return new CharPredicate<TOut>() {
+            @Override
+            protected boolean test(char ch) {
+                return Character.isLetter(ch);
+            }
+
+            @Override
+            public String toString() {
+                return "<is-letter>";
+            }
+        };
+    }
+
+    public static <TOut> LeafParser<Character, TOut> isWhitespace() {
+        return new CharPredicate<TOut>() {
+            @Override
+            protected boolean test(char ch) {
+                return Character.isWhitespace(ch);
+            }
+
+            @Override
+            public String toString() {
+                return "<is-whitespace>";
+            }
+        };
+    }
+
+    public static <TOut> LeafParser<Character, TOut> isDigit() {
+        return new CharPredicate<TOut>() {
+            @Override
+            protected boolean test(char ch) {
+                return Character.isDigit(ch);
+            }
+
+            @Override
+            public String toString() {
+                return "<is-digit>";
+            }
+        };
     }
 
     public static <TIn, TOut> Parser<TIn, TOut> sequence(Parser<TIn, TOut>... parsers) {
         return new Parser<TIn, TOut>() {
             @Override
             public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                Position<TIn> start = input.position();
+
                 for(Parser<TIn, TOut> parser: parsers) {
                     Matcher<TIn, TOut> elementMatcher = matcher.beginVisit(parser, input);
                     parser.parse(input, elementMatcher);
                     if(!elementMatcher.isMatch()) {
                         matcher.visitFailure();
+                        input.setPosition(start);
                         return;
                     }
                     elementMatcher.propagateOutput(matcher);
@@ -149,13 +304,15 @@ public class Parse {
             @Override
             public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
                 for(Parser<TIn, TOut> alternative: alternatives) {
+                    Position<TIn> start = input.position();
                     Matcher<TIn, TOut> alternativeMatcher = matcher.beginVisit(alternative, input);
                     alternative.parse(input, alternativeMatcher);
                     if(alternativeMatcher.isMatch()) {
                         alternativeMatcher.propagateOutput(matcher);
                         matcher.visitSuccess();
                         return;
-                    }
+                    } else
+                        input.setPosition(start);
                 }
 
                 matcher.visitFailure();
@@ -172,6 +329,54 @@ public class Parse {
             @Override
             public String toString() {
                 return Arrays.asList(alternatives).stream().map(a -> a.toString()).collect(Collectors.joining(" | "));
+            }
+        };
+    }
+
+    public static <TIn, TOut> Parser<TIn, TOut> multi(Parser<TIn, TOut> parser) {
+        return new Parser<TIn, TOut>() {
+            @Override
+            public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                while(true) {
+                    Matcher<TIn, TOut> iterationMatcher = matcher.beginVisit(parser, input);
+                    parser.parse(input, iterationMatcher);
+
+                    if(iterationMatcher.isMatch()) {
+                        iterationMatcher.propagateOutput(matcher);
+                    } else {
+                        break;
+                    }
+                }
+
+                matcher.visitSuccess();
+            }
+
+            @Override
+            public String toString() {
+                return "(" + parser + ")*";
+            }
+        };
+    }
+
+    public static <TIn, TOut> Parser<TIn, TOut> onceOrMore(Parser<TIn, TOut> parser) {
+        return parser.then(parser.multi());
+    }
+
+    public static <TIn, TOut> LeafParser<TIn, TOut> map(Function<TIn, TOut> mapper) {
+        return new LeafParser<TIn, TOut>() {
+            @Override
+            public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                if(!input.atEnd()) {
+                    TOut value = mapper.apply(input.peek());
+                    matcher.put(value);
+                    matcher.visitSuccess();
+                } else
+                    matcher.visitFailure();
+            }
+
+            @Override
+            public String toString() {
+                return mapper.toString();
             }
         };
     }

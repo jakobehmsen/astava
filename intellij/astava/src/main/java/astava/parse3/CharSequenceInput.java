@@ -10,7 +10,7 @@ public class CharSequenceInput implements Input<Character> {
 
         @Override
         public String toString() {
-            return "At " + value + " of " + CharSequenceInput.this.chars;
+            return "" + value;
         }
     }
 
