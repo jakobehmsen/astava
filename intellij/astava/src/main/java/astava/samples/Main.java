@@ -94,15 +94,15 @@ public class Main {
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
-        class CMatcher implements astava.parse3.CaptureMatcher<Character> {
-            private astava.parse3.Parser<Character> parser;
+        class CMatcher implements astava.parse3.Matcher<Character, Character> {
+            private astava.parse3.Parser<Character, Character> parser;
             private Input<Character> input;
             private Boolean result;
             private int depth;
             private Position<Character> start;
             private Position<Character> end;
 
-            CMatcher(astava.parse3.Parser<Character> parser, Input<Character> input, int depth) {
+            CMatcher(astava.parse3.Parser<Character, Character> parser, Input<Character> input, int depth) {
                 this.parser = parser;
                 this.input = input;
                 this.depth = depth;
@@ -128,8 +128,20 @@ public class Main {
                 result = false;
             }
 
+            private StringBuilder production = new StringBuilder();
+
             @Override
-            public astava.parse3.Matcher<Character> beginVisit(astava.parse3.Parser<Character> parser, Input<Character> input) {
+            public void put(Character value) {
+                production.append(value);
+            }
+
+            @Override
+            public Input<Character> production() {
+                return new CharSequenceInput(production);
+            }
+
+            @Override
+            public astava.parse3.Matcher<Character, Character> beginVisit(astava.parse3.Parser<Character, Character> parser, Input<Character> input) {
                 return new CMatcher(parser, input, depth + 1);
             }
 
@@ -137,20 +149,18 @@ public class Main {
             public boolean isMatch() {
                 return result;
             }
-
-            @Override
-            public astava.parse3.Input<Character> captured() {
-                return input.interval(start, end);
-            }
         }
 
-        astava.parse3.Parser<Character> grammar = new DelegateParser<Character>() {
-            private astava.parse3.Parser<Character> element1 = Parse.isChar('a');
-            private astava.parse3.Parser<Character> element2 = Parse.isChar('b');
-            private astava.parse3.Parser<Character> element3 = Parse.isChar('c').then(Parse.isChar('d'));
+        astava.parse3.Parser<Character, Character> grammar = new DelegateParser<Character, Character>() {
+            private astava.parse3.Parser<Character, Character> element1 =
+                Parse.<Character>isChar('a').then(Parse.consume());
+            private astava.parse3.Parser<Character, Character> element2 =
+                Parse.<Character>isChar('b').then(Parse.consume());
+            private astava.parse3.Parser<Character, Character> element3 =
+                Parse.<Character>isChar('c').then(Parse.copy()).then(Parse.consume()).then(Parse.isChar('d')).then(Parse.consume());
 
             @Override
-            protected astava.parse3.Parser<Character> createParser() {
+            protected astava.parse3.Parser<Character, Character> createParser() {
                 return
                     ref(() -> this.element1)
                     .or(ref(() -> this.element2))
@@ -158,8 +168,14 @@ public class Main {
             }
         };
 
-        String chars = "d";
-        grammar.parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0));
+        String chars = "cd";
+        Input<Character> production = grammar.parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0)).production();
+
+        System.out.print("Production: ");
+        while(!production.atEnd()) {
+            System.out.print(production.peek());
+            production.consume();
+        }
 
         if(1 != 2)
             return;

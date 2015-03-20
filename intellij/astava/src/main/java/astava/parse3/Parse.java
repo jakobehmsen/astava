@@ -1,12 +1,47 @@
 package astava.parse3;
 
 import java.util.Arrays;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class Parse {
-    public static class IsCharSequence implements Parser<Character> {
+    public static <TIn, TOut> Parser<TIn, TOut> consume() {
+        return new Parser<TIn, TOut>() {
+            @Override
+            public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                if(!input.atEnd()) {
+                    input.consume();
+                    matcher.visitSuccess();
+                } else
+                    matcher.visitFailure();
+            }
+
+            @Override
+            public String toString() {
+                return "++";
+            }
+        };
+    }
+
+    public static <TIn> Parser<TIn, TIn> copy() {
+        return new Parser<TIn, TIn>() {
+            @Override
+            public void parse(Input<TIn> input, Matcher<TIn, TIn> matcher) {
+                if(!input.atEnd()) {
+                    TIn value = input.peek();
+                    matcher.put(value);
+                    matcher.visitSuccess();
+                } else
+                    matcher.visitFailure();
+            }
+
+            @Override
+            public String toString() {
+                return "^";
+            }
+        };
+    }
+
+    public static class IsCharSequence<TOut> implements Parser<Character, TOut> {
         private String chars;
 
         public IsCharSequence(String chars) {
@@ -14,22 +49,20 @@ public class Parse {
         }
 
         @Override
-        public <R extends Matcher<Character>> R parse(Input<Character> input, R matcher) {
+        public void parse(Input<Character> input, Matcher<Character, TOut> matcher) {
             for(int i = 0; i < chars.length(); i++) {
                 if(!input.atEnd() && (char)input.peek() == chars.charAt(i))
                     input.consume();
                 else {
                     matcher.visitFailure();
-                    return matcher;
                 }
             }
 
             matcher.visitSuccess();
-            return matcher;
         }
 
         @Override
-        public Parser<Character> then(Parser<Character> next) {
+        public Parser<Character, TOut> then(Parser<Character, TOut> next) {
             if(next instanceof IsCharSequence)
                 return new IsCharSequence(this.chars + ((IsCharSequence)next).chars);
 
@@ -42,11 +75,11 @@ public class Parse {
         }
     };
 
-    public static Parser<Character> isChars(String chars) {
+    public static <TOut> Parser<Character, TOut> isChars(String chars) {
         return new IsCharSequence(chars);
     }
 
-    public static class IsChar implements Parser<Character> {
+    public static class IsChar<TOut> implements Parser<Character, TOut> {
         private char ch;
 
         public IsChar(char ch) {
@@ -54,17 +87,15 @@ public class Parse {
         }
 
         @Override
-        public <R extends Matcher<Character>> R parse(Input<Character> input, R matcher) {
+        public void parse(Input<Character> input, Matcher<Character, TOut> matcher) {
             if(!input.atEnd() && (char)input.peek() == ch) {
-                input.consume();
                 matcher.visitSuccess();
             } else
                 matcher.visitFailure();
-            return matcher;
         }
 
         @Override
-        public Parser<Character> then(Parser<Character> next) {
+        public Parser<Character, TOut> then(Parser<Character, TOut> next) {
             if(next instanceof IsChar)
                 return new IsCharSequence("" + this.ch + ((IsChar)next).ch);
 
@@ -77,49 +108,30 @@ public class Parse {
         }
     }
 
-    public static Parser<Character> isChar(char ch) {
+    public static <TOut> Parser<Character, TOut> isChar(char ch) {
         return new IsChar(ch);
     }
 
-    public static <T> Parser<T> isPeek(Predicate<T> predicate) {
-        return new Parser<T>() {
+    public static <TIn, TOut> Parser<TIn, TOut> sequence(Parser<TIn, TOut>... parsers) {
+        return new Parser<TIn, TOut>() {
             @Override
-            public <R extends Matcher<T>> R parse(Input<T> input, R matcher) {
-                if(!input.atEnd() && predicate.test(input.peek())) {
-                    input.consume();
-                    matcher.visitSuccess();
-                } else
-                    matcher.visitFailure();
-                return matcher;
-            }
-
-            @Override
-            public String toString() {
-                return predicate.toString();
-            }
-        };
-    }
-
-    public static <T> Parser<T> sequence(Parser<T>... parsers) {
-        return new Parser<T>() {
-            @Override
-            public <R extends Matcher<T>> R parse(Input<T> input, R matcher) {
-                for(Parser<T> parser: parsers) {
-                    Matcher<T> elementMatcher = matcher.beginVisit(parser, input);
+            public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                for(Parser<TIn, TOut> parser: parsers) {
+                    Matcher<TIn, TOut> elementMatcher = matcher.beginVisit(parser, input);
                     parser.parse(input, elementMatcher);
                     if(!elementMatcher.isMatch()) {
                         matcher.visitFailure();
-                        return matcher;
+                        return;
                     }
+                    elementMatcher.propagateOutput(matcher);
                 }
 
                 matcher.visitSuccess();
-                return matcher;
             }
 
             @Override
-            public Parser<T> then(Parser<T> next) {
-                Parser<T>[] newAlternatives = (Parser<T>[])new Parser[parsers.length + 1];
+            public Parser<TIn, TOut> then(Parser<TIn, TOut> next) {
+                Parser<TIn, TOut>[] newAlternatives = (Parser<TIn, TOut>[])new Parser[parsers.length + 1];
                 System.arraycopy(parsers, 0, newAlternatives, 0, parsers.length);
                 newAlternatives[newAlternatives.length - 1] = next;
                 return sequence(newAlternatives);
@@ -132,26 +144,26 @@ public class Parse {
         };
     }
 
-    public static <T> Parser<T> decision(Parser<T>... alternatives) {
-        return new Parser<T>() {
+    public static <TIn, TOut> Parser<TIn, TOut> decision(Parser<TIn, TOut>... alternatives) {
+        return new Parser<TIn, TOut>() {
             @Override
-            public <R extends Matcher<T>> R parse(Input<T> input, R matcher) {
-                for(Parser<T> alternative: alternatives) {
-                    Matcher<T> alternativeMatcher = matcher.beginVisit(alternative, input);
+            public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+                for(Parser<TIn, TOut> alternative: alternatives) {
+                    Matcher<TIn, TOut> alternativeMatcher = matcher.beginVisit(alternative, input);
                     alternative.parse(input, alternativeMatcher);
                     if(alternativeMatcher.isMatch()) {
+                        alternativeMatcher.propagateOutput(matcher);
                         matcher.visitSuccess();
-                        return matcher;
+                        return;
                     }
                 }
 
                 matcher.visitFailure();
-                return matcher;
             }
 
             @Override
-            public Parser<T> or(Parser<T> other) {
-                Parser<T>[] newAlternatives = (Parser<T>[])new Parser[alternatives.length + 1];
+            public Parser<TIn, TOut> or(Parser<TIn, TOut> other) {
+                Parser<TIn, TOut>[] newAlternatives = (Parser<TIn, TOut>[])new Parser[alternatives.length + 1];
                 System.arraycopy(alternatives, 0, newAlternatives, 0, alternatives.length);
                 newAlternatives[newAlternatives.length - 1] = other;
                 return decision(newAlternatives);

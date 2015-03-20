@@ -7,10 +7,10 @@ import java.util.IdentityHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public abstract class DelegateParser<T> implements Parser<T> {
-    private Parser<T> parser;
+public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
+    private Parser<TIn, TOut> parser;
     private ArrayList<Ref> refs;
-    private Hashtable<String, Parser<T>> resolvedRefs;
+    private Hashtable<String, Parser<TIn, TOut>> resolvedRefs;
     private boolean initializing;
 
     public DelegateParser() {
@@ -20,23 +20,23 @@ public abstract class DelegateParser<T> implements Parser<T> {
         initializing = false;
     }
 
-    protected abstract Parser<T> createParser();
+    protected abstract Parser<TIn, TOut> createParser();
 
     @Override
-    public <R extends Matcher<T>> R parse(Input<T> input, R matcher) {
-        return parser.parse(input, matcher);
+    public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+        parser.parse(input, matcher);
     }
 
     private void ensureRefsProcessed() {
         if(resolvedRefs == null) {
             resolvedRefs = new Hashtable();
 
-            IdentityHashMap<Parser<T>, String> refFieldToNameMap = new IdentityHashMap<>();
+            IdentityHashMap<Parser<TIn, TOut>, String> refFieldToNameMap = new IdentityHashMap<>();
             try {
                 for(Field f: getClass().getDeclaredFields()) {
                     if(Parser.class.isAssignableFrom(f.getType())) {
                         f.setAccessible(true);
-                        Parser<T> value = (Parser<T>) f.get(this);
+                        Parser<TIn, TOut> value = (Parser<TIn, TOut>) f.get(this);
                         if(value != null) {
                             refFieldToNameMap.put(value, f.getName());
                         }
@@ -47,7 +47,7 @@ public abstract class DelegateParser<T> implements Parser<T> {
             }
 
             refs.forEach(r -> {
-                Parser<T> p = r.parserSupplier.get();
+                Parser<TIn, TOut> p = r.parserSupplier.get();
                 String name = refFieldToNameMap.get(p);
                 if (name != null) {
                     resolvedRefs.put(name, p);
@@ -71,21 +71,20 @@ public abstract class DelegateParser<T> implements Parser<T> {
             return "Initializing...";
     }
 
-    private class Ref implements Parser<T> {
-        private Supplier<Parser<T>> parserSupplier;
+    private class Ref implements Parser<TIn, TOut> {
+        private Supplier<Parser<TIn, TOut>> parserSupplier;
         private String name;
 
-        private Ref(Supplier<Parser<T>> parserSupplier) {
+        private Ref(Supplier<Parser<TIn, TOut>> parserSupplier) {
             this.parserSupplier = parserSupplier;
         }
 
         @Override
-        public <R extends Matcher<T>> R parse(Input<T> input, R matcher) {
-            Parser<T> parser = parserSupplier.get();
-            R refMatcher = (R)matcher.beginVisit(parser, input);
+        public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+            Parser<TIn, TOut> parser = parserSupplier.get();
+            Matcher<TIn, TOut> refMatcher = matcher.beginVisit(parser, input);
             parser.parse(input, refMatcher);
             refMatcher.propagate(matcher);
-            return matcher;
         }
 
         @Override
@@ -94,7 +93,7 @@ public abstract class DelegateParser<T> implements Parser<T> {
         }
     }
 
-    protected Parser<T> ref(Supplier<Parser<T>> parserSupplier) {
+    protected Parser<TIn, TOut> ref(Supplier<Parser<TIn, TOut>> parserSupplier) {
         Ref r = new Ref(parserSupplier);
         refs.add(r);
         return r;
