@@ -13,4 +13,8 @@ public interface Parser<T> {
     default Parser<T> or(Parser<T> other) {
         return Parse.decision(this, other);
     }
+
+    default Parser<T> then(Parser<T> next) {
+        return Parse.sequence(this, next);
+    }
 }

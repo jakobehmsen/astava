@@ -7,7 +7,7 @@ public interface Matcher<T> {
     Matcher<T> beginVisit(Parser<T> parser, Input<T> input);
     boolean isMatch();
 
-    default void propogate(Matcher<T> matcher) {
+    default void propagate(Matcher<T> matcher) {
         if(isMatch())
             matcher.visitSuccess();
         else

@@ -147,14 +147,14 @@ public class Main {
         astava.parse3.Parser<Character> grammar = new DelegateParser<Character>() {
             private astava.parse3.Parser<Character> element1 = Parse.isChar('a');
             private astava.parse3.Parser<Character> element2 = Parse.isChar('b');
-            private astava.parse3.Parser<Character> element3 = Parse.isChar('c');
+            private astava.parse3.Parser<Character> element3 = Parse.isChar('c').then(Parse.isChar('d'));
 
             @Override
             protected astava.parse3.Parser<Character> createParser() {
                 return
-                    Parse.ref(() -> this.element1)
-                    .or(Parse.ref(() -> this.element2))
-                    .or(Parse.ref(() -> this.element3));
+                    ref(() -> this.element1)
+                    .or(ref(() -> this.element2))
+                    .or(ref(() -> this.element3));
             }
         };
 
