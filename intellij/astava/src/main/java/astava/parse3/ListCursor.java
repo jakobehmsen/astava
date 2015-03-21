@@ -23,20 +23,32 @@ public class ListCursor<TIn> implements Cursor<TIn> {
         this.list = list;
     }
 
+    private class ListState implements State {
+        private int index;
+
+        private ListState(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public void restore() {
+            ListCursor.this.index = index;
+        }
+
+        @Override
+        public int compareTo(State o) {
+            return index - ((ListState)o).index;
+        }
+
+        @Override
+        public String toString() {
+            return "" + index;
+        }
+    }
+
     @Override
     public State state() {
-        int index = this.index;
-        return new State() {
-            @Override
-            public void restore() {
-                ListCursor.this.index = index;
-            }
-
-            @Override
-            public String toString() {
-                return "" + index;
-            }
-        };
+        return new ListState(index);
     }
 
     @Override

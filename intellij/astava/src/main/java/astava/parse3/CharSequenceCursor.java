@@ -1,6 +1,6 @@
 package astava.parse3;
 
-public class CharSequenceInput implements Cursor<Character> {
+public class CharSequenceCursor implements Cursor<Character> {
     /*private class IndexHolder implements Position<Character> {
         public final int value;
 
@@ -17,24 +17,36 @@ public class CharSequenceInput implements Cursor<Character> {
     private CharSequence chars;
     private int index;
 
-    public CharSequenceInput(CharSequence chars) {
+    public CharSequenceCursor(CharSequence chars) {
         this.chars = chars;
+    }
+
+    private class CharSequenceState implements State {
+        private int index;
+
+        private CharSequenceState(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public void restore() {
+            CharSequenceCursor.this.index = index;
+        }
+
+        @Override
+        public int compareTo(State o) {
+            return index - ((CharSequenceState)o).index;
+        }
+
+        @Override
+        public String toString() {
+            return "" + index;
+        }
     }
 
     @Override
     public State state() {
-        int index = this.index;
-        return new State() {
-            @Override
-            public void restore() {
-                CharSequenceInput.this.index = index;
-            }
-
-            @Override
-            public String toString() {
-                return "" + index;
-            }
-        };
+        return new CharSequenceState(index);
     }
 
     /*@Override

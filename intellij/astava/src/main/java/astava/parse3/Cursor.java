@@ -1,7 +1,9 @@
 package astava.parse3;
 
+import java.util.Comparator;
+
 public interface Cursor<T>  {
-    public interface State {
+    public interface State extends Comparable<State> {
         void restore();
     }
 
