@@ -150,7 +150,7 @@ public class Parse {
             first.parse(cursor, firstMatcher);
 
             if(firstMatcher.isMatch()) {
-                Cursor<TInter> secondCursor = firstMatcher.production();
+                Cursor<TInter> secondCursor = firstMatcher.production().cursor();
                 Matcher<TInter, TOut> secondMatcher = matcher.beginVisit(second, secondCursor);
                 second.parse(secondCursor, secondMatcher);
 
@@ -172,9 +172,9 @@ public class Parse {
 
     public static class PipeOut<TIn, TInter, TOut> implements Parser<TIn, TOut> {
         private Parser<TIn, TInter> first;
-        private Parser<Cursor<TInter>, TOut> second;
+        private Parser<Input<TInter>, TOut> second;
 
-        public PipeOut(Parser<TIn, TInter> first, Parser<Cursor<TInter>, TOut> second) {
+        public PipeOut(Parser<TIn, TInter> first, Parser<Input<TInter>, TOut> second) {
             this.first = first;
             this.second = second;
         }
@@ -185,10 +185,10 @@ public class Parse {
             first.parse(cursor, firstMatcher);
 
             if(firstMatcher.isMatch()) {
-                Cursor<TInter> secondCursor = firstMatcher.production();
-                Cursor<Cursor<TInter>> secondCursorReified = new ListInput<>(Arrays.asList(secondCursor));
-                Matcher<Cursor<TInter>, TOut> secondMatcher = matcher.beginVisit(second, secondCursorReified);
-                second.parse(secondCursorReified, secondMatcher);
+                Input<TInter> secondInput = firstMatcher.production();
+                Cursor<Input<TInter>> secondInputReified = new ListCursor<>(Arrays.asList(secondInput));
+                Matcher<Input<TInter>, TOut> secondMatcher = matcher.beginVisit(second, secondInputReified);
+                second.parse(secondInputReified, secondMatcher);
 
                 if(secondMatcher.isMatch()) {
                     matcher.visitSuccess();
@@ -211,7 +211,7 @@ public class Parse {
         return new Pipe(first, second);
     }
 
-    public static <TIn, TInter, TOut> Parser<TIn, TOut> pipeOut(Parser<TIn, TInter> first, Parser<Cursor<TInter>, TOut> second) {
+    public static <TIn, TInter, TOut> Parser<TIn, TOut> pipeOut(Parser<TIn, TInter> first, Parser<Input<TInter>, TOut> second) {
         return new PipeOut(first, second);
     }
 

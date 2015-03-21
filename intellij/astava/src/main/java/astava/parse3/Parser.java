@@ -22,7 +22,7 @@ public interface Parser<TIn, TOut> {
         return Parse.pipe(this, next);
     }
 
-    default <TOut2> Parser<TIn, TOut2> pipeOut(Parser<Cursor<TOut>, TOut2> next) {
+    default <TOut2> Parser<TIn, TOut2> pipeOut(Parser<Input<TOut>, TOut2> next) {
         return Parse.pipeOut(this, next);
     }
 

@@ -23,7 +23,7 @@ public class CommonMatcher<TIn, TOut> implements Matcher<TIn, TOut> {
     }
 
     @Override
-    public Cursor<TOut> production() {
+    public Input<TOut> production() {
         return new ListInput<>(production);
     }
 

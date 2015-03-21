@@ -173,41 +173,29 @@ public class Main {
             private astava.parse3.Parser<Character, Node> word =
                 Parse.<Character>isLetter().then(Parse.copy()).then(Parse.consume()).onceOrMore()
                 .pipeOut(Parse.map(chars -> {
-                    StringBuilder sb = new StringBuilder();
-                    while (!chars.atEnd()) {
-                        sb.append(chars.peek());
-                        chars.consume();
-                    }
-                    return new Atom(sb.toString());
+                    String value = chars.stream().map(c -> "" + c).collect(Collectors.joining());
+                    return new Atom(value);
                 }));
             private astava.parse3.Parser<Character, Node> tree =
                 Parse.<Node>isChar('(').then(Parse.consume())
                 .then(ref(() -> this.elements))
                 .then(Parse.isChar(')')).then(Parse.consume())
                 .pipeOut(Parse.map(nodes -> {
-                    ArrayList<Node> nodesAsList = new ArrayList<>();
-                    while (!nodes.atEnd()) {
-                        nodesAsList.add(nodes.peek());
-                        nodes.consume();
-                    }
+                    List<Node> nodesAsList = nodes.stream().collect(Collectors.toList());
                     return new Tuple(nodesAsList);
                 }));;
 
             @Override
             protected astava.parse3.Parser<Character, Node> createParser() {
                 return ref(() -> this.elements);
-                    /*ref(() -> this.element1)
-                    .or(ref(() -> this.element2))
-                    .or(ref(() -> this.element3))
-                    .or(ref(() -> this.word));*/
             }
         };
 
         ArrayList<FailureInfo> failures = new ArrayList<>();
-        String chars = "(";
+        String chars = "(sdf (x dfg g) sdfg )";
         astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
             .parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
-        Cursor<Node> production = ma.production();
+        Cursor<Node> production = ma.production().cursor();
 
         if(ma.isMatch()) {
             System.out.print("Success! Production: ");
