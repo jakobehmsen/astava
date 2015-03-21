@@ -23,12 +23,12 @@ public class CommonMatcher<TIn, TOut> implements Matcher<TIn, TOut> {
     }
 
     @Override
-    public Input<TOut> production() {
+    public Cursor<TOut> production() {
         return new ListInput<>(production);
     }
 
     @Override
-    public <TIn, TOut> Matcher<TIn, TOut> beginVisit(Parser<TIn, TOut> parser, Input<TIn> input) {
+    public <TIn, TOut> Matcher<TIn, TOut> beginVisit(Parser<TIn, TOut> parser, Cursor<TIn> cursor) {
         return new CommonMatcher();
     }
 

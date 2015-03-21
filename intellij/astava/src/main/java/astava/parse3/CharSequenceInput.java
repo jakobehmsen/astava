@@ -1,7 +1,7 @@
 package astava.parse3;
 
-public class CharSequenceInput implements Input<Character> {
-    private class IndexHolder implements Position<Character> {
+public class CharSequenceInput implements Cursor<Character> {
+    /*private class IndexHolder implements Position<Character> {
         public final int value;
 
         private IndexHolder(int value) {
@@ -12,7 +12,7 @@ public class CharSequenceInput implements Input<Character> {
         public String toString() {
             return "" + value;
         }
-    }
+    }*/
 
     private CharSequence chars;
     private int index;
@@ -22,16 +22,32 @@ public class CharSequenceInput implements Input<Character> {
     }
 
     @Override
+    public State state() {
+        int index = this.index;
+        return new State() {
+            @Override
+            public void restore() {
+                CharSequenceInput.this.index = index;
+            }
+
+            @Override
+            public String toString() {
+                return "" + index;
+            }
+        };
+    }
+
+    /*@Override
     public Position<Character> position() {
         return new IndexHolder(index);
     }
 
     @Override
-    public Input<Character> interval(Position<Character> start, Position<Character> end) {
+    public Cursor<Character> interval(Position<Character> start, Position<Character> end) {
         return new CharSequenceInput(chars.subSequence(
             ((IndexHolder)start).value, ((IndexHolder)end).value
         ));
-    }
+    }*/
 
     @Override
     public Character peek() {
@@ -53,8 +69,8 @@ public class CharSequenceInput implements Input<Character> {
         return chars.toString();
     }
 
-    @Override
+    /*@Override
     public void setPosition(Position<Character> position) {
         index = ((IndexHolder)position).value;
-    }
+    }*/
 }

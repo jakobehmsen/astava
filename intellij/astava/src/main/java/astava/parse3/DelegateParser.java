@@ -23,8 +23,8 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
     protected abstract Parser<TIn, TOut> createParser();
 
     @Override
-    public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
-        parser.parse(input, matcher);
+    public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+        parser.parse(cursor, matcher);
     }
 
     private void ensureRefsProcessed() {
@@ -80,10 +80,10 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         }
 
         @Override
-        public void parse(Input<TIn> input, Matcher<TIn, TOut> matcher) {
+        public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
             Parser<TIn, TOut> parser = parserSupplier.get();
-            Matcher<TIn, TOut> refMatcher = matcher.beginVisit(parser, input);
-            parser.parse(input, refMatcher);
+            Matcher<TIn, TOut> refMatcher = matcher.beginVisit(parser, cursor);
+            parser.parse(cursor, refMatcher);
             refMatcher.propagate(matcher);
         }
 

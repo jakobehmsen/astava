@@ -1,13 +1,12 @@
 package astava.parse3;
 
-import java.util.List;
 import java.util.function.BiFunction;
 
 public interface Parser<TIn, TOut> {
-    void parse(Input<TIn> input, Matcher<TIn, TOut> matcher);
-    default Matcher<TIn, TOut> parseInit(Input<TIn> input, BiFunction<Parser<TIn, TOut>, Input<TIn>, Matcher<TIn, TOut>> matcherFunction) {
-        Matcher<TIn, TOut> matcher = matcherFunction.apply(this, input);
-        parse(input, matcher);
+    void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher);
+    default Matcher<TIn, TOut> parseInit(Cursor<TIn> cursor, BiFunction<Parser<TIn, TOut>, Cursor<TIn>, Matcher<TIn, TOut>> matcherFunction) {
+        Matcher<TIn, TOut> matcher = matcherFunction.apply(this, cursor);
+        parse(cursor, matcher);
         return matcher;
     }
 
@@ -23,7 +22,7 @@ public interface Parser<TIn, TOut> {
         return Parse.pipe(this, next);
     }
 
-    default <TOut2> Parser<TIn, TOut2> pipeOut(Parser<Input<TOut>, TOut2> next) {
+    default <TOut2> Parser<TIn, TOut2> pipeOut(Parser<Cursor<TOut>, TOut2> next) {
         return Parse.pipeOut(this, next);
     }
 

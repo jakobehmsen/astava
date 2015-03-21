@@ -2,8 +2,8 @@ package astava.parse3;
 
 import java.util.List;
 
-public class ListInput<TIn> implements Input<TIn> {
-    private class IndexHolder implements Position<TIn> {
+public class ListInput<TIn> implements Cursor<TIn> {
+    /*private class IndexHolder implements Position<TIn> {
         public final int value;
 
         private IndexHolder(int value) {
@@ -14,7 +14,7 @@ public class ListInput<TIn> implements Input<TIn> {
         public String toString() {
             return "At " + value + " of " + ListInput.this.list;
         }
-    }
+    }*/
 
     private List<TIn> list;
     private int index;
@@ -24,16 +24,19 @@ public class ListInput<TIn> implements Input<TIn> {
     }
 
     @Override
-    public Position<TIn> position() {
-        return new IndexHolder(index);
-    }
+    public State state() {
+        int index = this.index;
+        return new State() {
+            @Override
+            public void restore() {
+                ListInput.this.index = index;
+            }
 
-    @Override
-    public Input<TIn> interval(Position<TIn> start, Position<TIn> end) {
-        /*return new CharSequenceInput(chars.subSequence(
-                ((IndexHolder)start).value, ((IndexHolder)end).value
-        ));*/
-        return null;
+            @Override
+            public String toString() {
+                return "" + index;
+            }
+        };
     }
 
     @Override
@@ -54,10 +57,5 @@ public class ListInput<TIn> implements Input<TIn> {
     @Override
     public String toString() {
         return list.toString();
-    }
-
-    @Override
-    public void setPosition(Position<TIn> position) {
-        index = ((IndexHolder)position).value;
     }
 }
