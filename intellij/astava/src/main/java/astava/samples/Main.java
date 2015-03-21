@@ -114,23 +114,16 @@ public class Main {
             }
         }
 
-        class CMatcher<TIn, TOut> extends astava.parse3.CommonMatcher<TIn, TOut> {
+        class TraceMatcher<TIn, TOut> extends astava.parse3.AbstractMatcher<TIn, TOut> {
             private astava.parse3.Parser<TIn, TOut> parser;
             private Cursor<TIn> input;
-            private List<FailureInfo> failures;
-            private boolean collectFailures;
             private int depth;
 
-            CMatcher(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth, List<FailureInfo> failures, boolean collectFailures) {
+            TraceMatcher(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth) {
                 this.parser = parser;
                 this.input = input;
                 this.depth = depth;
-                this.failures = failures;
-                this.collectFailures = collectFailures;
                 System.out.println(getIndention() + "Begin parse: " + parser + " " + input.state() + "...");
-
-                if(parser instanceof SkipParser)
-                    this.collectFailures = false;
             }
 
             private String getIndention() {
@@ -140,20 +133,46 @@ public class Main {
             @Override
             public void visitSuccess() {
                 System.out.println(getIndention() + "Success: " + input.state());
-                super.visitSuccess();
             }
 
             @Override
             public void visitFailure() {
                 System.out.println(getIndention() + "Failure: " + input.state());
-                if(parser instanceof LeafParser && collectFailures)
-                    failures.add(new FailureInfo(parser, input, input.state(), depth));
-                super.visitFailure();
             }
 
             @Override
             public <TIn, TOut> astava.parse3.Matcher<TIn, TOut> beginVisit(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input) {
-                return new CMatcher(parser, input, depth + 1, failures, collectFailures);
+                return new TraceMatcher(parser, input, depth + 1);
+            }
+        }
+
+        class FailureCollector<TIn, TOut> extends astava.parse3.AbstractMatcher<TIn, TOut> {
+            private astava.parse3.Parser<TIn, TOut> parser;
+            private Cursor<TIn> input;
+            private List<FailureInfo> failures;
+            private boolean collectFailures;
+            private int depth;
+
+            FailureCollector(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth, List<FailureInfo> failures, boolean collectFailures) {
+                this.parser = parser;
+                this.input = input;
+                this.depth = depth;
+                this.failures = failures;
+                this.collectFailures = collectFailures;
+
+                if(parser instanceof SkipParser)
+                    this.collectFailures = false;
+            }
+
+            @Override
+            public void visitFailure() {
+                if(parser instanceof LeafParser && collectFailures)
+                    failures.add(new FailureInfo(parser, input, input.state(), depth));
+            }
+
+            @Override
+            public <TIn, TOut> astava.parse3.Matcher<TIn, TOut> beginVisit(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input) {
+                return new FailureCollector(parser, input, depth + 1, failures, collectFailures);
             }
         }
 
@@ -192,9 +211,13 @@ public class Main {
         };
 
         ArrayList<FailureInfo> failures = new ArrayList<>();
-        String chars = "(sdf (x dfg g) sdfg )";
-        astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
-            .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
+        String chars = "(sdf (x dfg g) sdfg ";
+        //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
+        //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
+
+        astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd())).parseInit(new CharSequenceCursor(chars), (p, i) ->
+            new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
+
         Cursor<Node> production = ma.production().cursor();
 
         if(ma.isMatch()) {
