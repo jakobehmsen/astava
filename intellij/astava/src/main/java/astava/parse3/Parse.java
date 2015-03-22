@@ -1,6 +1,9 @@
 package astava.parse3;
 
 import java.util.Arrays;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -57,6 +60,10 @@ public class Parse {
                 return "<at-end>";
             }
         };
+    }
+
+    public static <TIn, TInter, TOut> Parser<TIn, TOut> wrap(Parser<TIn, TInter> parser, BiFunction<Cursor<TIn>, Matcher<TIn, TOut>, Consumer<Input<TInter>>> wrapper) {
+        return new ParserWrapper<>(parser, wrapper);
     }
 
     public static class IsCharSequence<TOut> implements Parser<Character, TOut> {

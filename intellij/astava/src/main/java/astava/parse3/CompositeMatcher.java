@@ -53,7 +53,8 @@ public class CompositeMatcher<TIn, TOut> implements Matcher<TIn, TOut> {
 
     @Override
     public <TIn, TOut> Matcher<TIn, TOut> beginVisit(Parser<TIn, TOut> parser, Cursor<TIn> cursor) {
-        return new CompositeMatcher<TIn, TOut>(matchers.stream().map(m -> m.beginVisit(parser, cursor)).collect(Collectors.toList()));
+        return new CompositeMatcher<>(matchers.stream().map(m ->
+            m.beginVisit(parser, cursor)).collect(Collectors.toList()));
     }
 
     @Override

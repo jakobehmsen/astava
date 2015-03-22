@@ -20,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -191,18 +192,40 @@ public class Main {
                 );
             private astava.parse3.Parser<Character, Node> word =
                 Parse.<Character>isLetter().then(Parse.copy()).then(Parse.consume()).onceOrMore()
-                .pipeOut(Parse.map(chars -> {
-                    String value = chars.stream().map(c -> "" + c).collect(Collectors.joining());
-                    return new Atom(value);
-                }));
-            private astava.parse3.Parser<Character, Node> tree =
+                .wrap((cursor, matcher) -> {
+                    CursorState start = cursor.state();
+
+                    return production -> {
+                        CursorState end = cursor.state();
+                        System.out.println("Matched atom from " + start + " to " + end + ".");
+                        String value = production.stream().map(c -> "" + c).collect(Collectors.joining());
+                        matcher.put(new Atom(value));
+                    };
+                });
+            private astava.parse3.Parser<Character, Node> tree2 =
                 Parse.<Node>isChar('(').then(Parse.consume())
                 .then(ref(() -> this.elements))
                 .then(Parse.isChar(')')).then(Parse.consume())
                 .pipeOut(Parse.map(nodes -> {
                     List<Node> nodesAsList = nodes.stream().collect(Collectors.toList());
                     return new Tuple(nodesAsList);
-                }));;
+                }));
+
+            private astava.parse3.Parser<Character, Node> tree =
+                Parse.<Node>isChar('(').then(Parse.consume())
+                .then(ref(() -> this.elements))
+                .then(Parse.isChar(')')).then(Parse.consume())
+                .wrap((cursor, matcher) -> {
+                    CursorState start = cursor.state();
+
+                    return production -> {
+                        CursorState end = cursor.state();
+                        System.out.println("Matched tuple from " + start + " to " + end + ".");
+
+                        List<Node> nodesAsList = production.stream().collect(Collectors.toList());
+                        matcher.put(new Tuple(nodesAsList));
+                    };
+                });
 
             @Override
             protected astava.parse3.Parser<Character, Node> createParser() {
@@ -213,27 +236,33 @@ public class Main {
         ArrayList<FailureInfo> failures = new ArrayList<>();
         String chars =
             "(sdf (x dfg g) sdfg " + "\n" +
-            ") " + "\n" +
+            "   ) " + "\n" +
             "(sdf (x dfg g) sdfg " + "\n" +
-            "" + "\n" +
+            " )" + "\n" +
             "";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
 
         CharSequenceCursor cursor = new CharSequenceCursor(chars, new LineColumnCursorStateFactory());
-        astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd())).parseInit(cursor, (p, i) ->
-            new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
+        astava.parse3.Parser<Character, Node> grammar1 = grammar.then(new SkipParser<>(Parse.atEnd()));
+        astava.parse3.Matcher<Character, Node> ma = grammar1.parseInit(cursor, (p, i) ->
+                new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
+
+        System.out.println("Matching input:");
+        System.out.println(chars);
+        System.out.println("against parser:");
+        System.out.println(grammar1);
 
         Cursor<Node> production = ma.production().cursor();
 
         if(ma.isMatch()) {
-            System.out.print("Success! Production: ");
+            System.out.println("Success:");
             while(!production.atEnd()) {
                 System.out.print(production.peek());
                 production.consume();
             }
         } else {
-            System.out.println("Failed...");
+            System.out.println("Failed:");
             failures.stream().collect(Collectors.groupingBy(f -> f.state)).entrySet().stream().sorted((x, y) -> y.getKey().compareTo(x.getKey())).limit(5).forEach(e -> {
                 System.out.println("At " + e.getKey() + ", expected:");
                 e.getValue().stream().sorted((x, y) -> x.depth - y.depth).forEach(f -> System.out.println(f.parser));

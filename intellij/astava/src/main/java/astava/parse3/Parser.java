@@ -1,6 +1,8 @@
 package astava.parse3;
 
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 public interface Parser<TIn, TOut> {
     void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher);
@@ -32,5 +34,9 @@ public interface Parser<TIn, TOut> {
 
     default Parser<TIn, TOut> onceOrMore() {
         return Parse.onceOrMore(this);
+    }
+
+    default <TOut2> Parser<TIn, TOut2> wrap(BiFunction<Cursor<TIn>, Matcher<TIn, TOut2>, Consumer<Input<TOut>>> wrapper) {
+        return Parse.wrap(this, wrapper);
     }
 }
