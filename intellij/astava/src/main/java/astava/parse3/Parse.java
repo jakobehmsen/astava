@@ -265,7 +265,7 @@ public class Parse {
         return new Parser<TIn, TOut>() {
             @Override
             public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
-                Cursor.State start = cursor.state();
+                CursorState start = cursor.state();
 
                 for(Parser<TIn, TOut> parser: parsers) {
                     Matcher<TIn, TOut> elementMatcher = matcher.beginVisit(parser, cursor);
@@ -301,7 +301,7 @@ public class Parse {
             @Override
             public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
                 for(Parser<TIn, TOut> alternative: alternatives) {
-                    Cursor.State start = cursor.state();
+                    CursorState start = cursor.state();
                     Matcher<TIn, TOut> alternativeMatcher = matcher.beginVisit(alternative, cursor);
                     alternative.parse(cursor, alternativeMatcher);
                     if(alternativeMatcher.isMatch()) {

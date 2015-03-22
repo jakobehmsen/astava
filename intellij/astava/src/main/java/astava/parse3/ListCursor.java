@@ -23,7 +23,7 @@ public class ListCursor<TIn> implements Cursor<TIn> {
         this.list = list;
     }
 
-    private class ListState implements State {
+    private class ListState implements CursorState {
         private int index;
 
         private ListState(int index) {
@@ -36,7 +36,7 @@ public class ListCursor<TIn> implements Cursor<TIn> {
         }
 
         @Override
-        public int compareTo(State o) {
+        public int compareTo(CursorState o) {
             return index - ((ListState)o).index;
         }
 
@@ -47,7 +47,7 @@ public class ListCursor<TIn> implements Cursor<TIn> {
     }
 
     @Override
-    public State state() {
+    public CursorState state() {
         return new ListState(index);
     }
 

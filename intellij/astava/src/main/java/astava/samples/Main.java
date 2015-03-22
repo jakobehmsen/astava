@@ -97,10 +97,10 @@ public class Main {
         class FailureInfo {
             private astava.parse3.Parser parser;
             private Cursor input;
-            private astava.parse3.Cursor.State state;
+            private CursorState state;
             private int depth;
 
-            FailureInfo(astava.parse3.Parser parser, Cursor input, astava.parse3.Cursor.State position, int depth) {
+            FailureInfo(astava.parse3.Parser parser, Cursor input, CursorState position, int depth) {
                 this.parser = parser;
                 this.input = input;
                 this.state = position;
@@ -211,11 +211,17 @@ public class Main {
         };
 
         ArrayList<FailureInfo> failures = new ArrayList<>();
-        String chars = "(sdf (x dfg g) sdfg ";
+        String chars =
+            "(sdf (x dfg g) sdfg " + "\n" +
+            ") " + "\n" +
+            "(sdf (x dfg g) sdfg " + "\n" +
+            "" + "\n" +
+            "";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
 
-        astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd())).parseInit(new CharSequenceCursor(chars), (p, i) ->
+        CharSequenceCursor cursor = new CharSequenceCursor(chars, new LineColumnCursorStateFactory());
+        astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd())).parseInit(cursor, (p, i) ->
             new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
 
         Cursor<Node> production = ma.production().cursor();
@@ -228,9 +234,10 @@ public class Main {
             }
         } else {
             System.out.println("Failed...");
-            Cursor.State maxState = failures.stream().map(x -> x.state).max(Comparator.<Cursor.State>naturalOrder()).orElse(null);
-            failures.stream().filter(x -> x.state.compareTo(maxState) == 0).forEach(f ->
-                System.out.println("At " + f.state + ": Expected " + f.parser));
+            failures.stream().collect(Collectors.groupingBy(f -> f.state)).entrySet().stream().sorted((x, y) -> y.getKey().compareTo(x.getKey())).limit(5).forEach(e -> {
+                System.out.println("At " + e.getKey() + ", expected:");
+                e.getValue().stream().sorted((x, y) -> x.depth - y.depth).forEach(f -> System.out.println(f.parser));
+            });
         }
         //Input<Character> production = grammar.parseInit(new CharSequenceInput(chars), (p, i) -> new CMatcher(p, i, 0)).production();
 

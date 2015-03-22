@@ -16,25 +16,60 @@ public class CharSequenceCursor implements Cursor<Character> {
 
     private CharSequence chars;
     private int index;
+    private CursorStateFactory<Character, CharSequenceCursor> stateStrategy;
 
     public CharSequenceCursor(CharSequence chars) {
-        this.chars = chars;
+        this(chars, new CharSequenceStateStrategy());
     }
 
-    private class CharSequenceState implements State {
+    public void setStateStrategy(CursorStateFactory<Character, CharSequenceCursor> stateStrategy) {
+        this.stateStrategy = stateStrategy;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public CharSequenceCursor(CharSequence chars, CursorStateFactory<Character, CharSequenceCursor> stateStrategy) {
+        this.chars = chars;
+        this.stateStrategy = stateStrategy;
+    }
+
+    private static class CharSequenceStateStrategy implements CursorStateFactory<Character, CharSequenceCursor> {
+        @Override
+        public void consume(java.lang.Character value) {
+            consume(value.charValue());
+        }
+
+        @Override
+        public CursorState getState(CharSequenceCursor cursor) {
+            return new CharSequenceState(cursor, cursor.index);
+        }
+
+        @Override
+        public void consume(char ch) { }
+    }
+
+    private static class CharSequenceState implements CursorState {
+        private CharSequenceCursor cursor;
         private int index;
 
-        private CharSequenceState(int index) {
+        private CharSequenceState(CharSequenceCursor cursor, int index) {
+            this.cursor = cursor;
             this.index = index;
         }
 
         @Override
         public void restore() {
-            CharSequenceCursor.this.index = index;
+            cursor.index = index;
         }
 
         @Override
-        public int compareTo(State o) {
+        public int compareTo(CursorState o) {
             return index - ((CharSequenceState)o).index;
         }
 
@@ -42,11 +77,22 @@ public class CharSequenceCursor implements Cursor<Character> {
         public String toString() {
             return "" + index;
         }
+
+        @Override
+        public int hashCode() {
+            return index;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof CharSequenceState && index == ((CharSequenceState)obj).index;
+        }
     }
 
     @Override
-    public State state() {
-        return new CharSequenceState(index);
+    public CursorState state() {
+        //return new CharSequenceState(index);
+        return stateStrategy.getState(this);
     }
 
     /*@Override
@@ -69,6 +115,7 @@ public class CharSequenceCursor implements Cursor<Character> {
     @Override
     public void consume() {
         index++;
+        stateStrategy.consume(chars.charAt(index - 1));
     }
 
     @Override
