@@ -182,7 +182,8 @@ public class Main {
                 new SkipParser<>(Parse.<Node>isWhitespace().then(Parse.consume()).multi());
             private astava.parse3.Parser<Character, Node> element =
                 ref(() -> this.word)
-                .or(ref(() -> this.tree));
+                .or(ref(() -> this.tree))
+                .or(ref(() -> this.dyn));
             private astava.parse3.Parser<Character, Node> elements =
                 ref(() -> this.ws)
                 .then(
@@ -227,6 +228,30 @@ public class Main {
                     };
                 });
 
+            private astava.parse3.Parser<Character, Node> dyn =
+                Parse.<Character>isChar('$').then(Parse.consume())
+                .then(
+                    Parse.<Character>isLetter().then(Parse.copy()).then(Parse.consume()).onceOrMore()
+                ).then(Parse.<Character>isChar(':').then(Parse.consume()))
+                .wrap((cursor, matcher) -> {
+                    return production -> {
+                        String parserName = production.stream().map(c -> "" + c).collect(Collectors.joining());
+                        String parserClassName = "astava.samples." + parserName + "Parser";
+                        try {
+                            Class<? extends astava.parse3.Parser<Character, Node>> parserClass =
+                                (Class<? extends astava.parse3.Parser<Character, Node>>) Class.forName(parserClassName);
+                            astava.parse3.Parser<Character, Node> parser = parserClass.newInstance();
+                            parser.parse(cursor, matcher);
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        } catch (InstantiationException e) {
+                            e.printStackTrace();
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                    };
+                });
+
             @Override
             protected astava.parse3.Parser<Character, Node> createParser() {
                 return ref(() -> this.elements);
@@ -235,11 +260,7 @@ public class Main {
 
         ArrayList<FailureInfo> failures = new ArrayList<>();
         String chars =
-            "(sdf (x dfg g) sdfg " + "\n" +
-            "   ) " + "\n" +
-            "(sdf (x dfg g) sdfg " + "\n" +
-            " )" + "\n" +
-            "";
+            "(add $Number:187 kj)" + "\n";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
 
