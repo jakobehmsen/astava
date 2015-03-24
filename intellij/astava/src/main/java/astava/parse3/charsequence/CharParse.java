@@ -128,23 +128,4 @@ public class CharParse {
             }
         };
     }
-
-    public static <TIn, TOut> LeafParser<TIn, TOut> map(Function<TIn, TOut> mapper) {
-        return new LeafParser<TIn, TOut>() {
-            @Override
-            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
-                if(!cursor.atEnd()) {
-                    TOut value = mapper.apply(cursor.peek());
-                    matcher.put(value);
-                    matcher.visitSuccess();
-                } else
-                    matcher.visitFailure();
-            }
-
-            @Override
-            public String toString() {
-                return mapper.toString();
-            }
-        };
-    }
 }

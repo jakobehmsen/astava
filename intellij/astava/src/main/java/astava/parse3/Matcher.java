@@ -9,6 +9,11 @@ public interface Matcher<TIn, TOut> {
     <TIn, TOut> Matcher<TIn, TOut> beginVisit(Parser<TIn, TOut> parser, Cursor<TIn> cursor);
     boolean isMatch();
 
+    default void visitSuccess(TOut value) {
+        put(value);
+        visitSuccess();
+    }
+
     default void propagate(Matcher<TIn, TOut> matcher) {
         if(isMatch()) {
             matcher.visitSuccess();

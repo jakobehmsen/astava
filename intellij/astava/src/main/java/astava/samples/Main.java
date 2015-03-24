@@ -17,6 +17,7 @@ import astava.parse3.Cursor;
 import astava.parse3.charsequence.CharSequenceCursor;
 import astava.parse3.charsequence.LineColumnCursorStateFactory;
 import astava.parse3.charsequence.CharParse;
+import astava.parse3.tree.OpRouter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -200,14 +201,14 @@ public class Main {
                         CursorState end = cursor.state();
                         System.out.println("Matched atom from " + start + " to " + end + ".");
                         String value = production.stream().map(c -> "" + c).collect(Collectors.joining());
-                        matcher.put(new Atom(value));
+                        matcher.put(new Atom(new Symbol(value)));
                     };
                 });
             private astava.parse3.Parser<Character, Node> tree2 =
                 CharParse.<Node>isChar('(').then(Parse.consume())
                 .then(ref(() -> this.elements))
                 .then(CharParse.isChar(')')).then(Parse.consume())
-                .pipeOut(CharParse.map(nodes -> {
+                .pipeOut(Parse.map(nodes -> {
                     List<Node> nodesAsList = nodes.stream().collect(Collectors.toList());
                     return new Tuple(nodesAsList);
                 }));
@@ -260,27 +261,88 @@ public class Main {
 
         ArrayList<FailureInfo> failures = new ArrayList<>();
         String chars =
-            "(add $Number:187 kj)" + "\n";
+            "(byte $Number:56)" + "\n" +
+            "$Number:56" + "\n" +
+            "(add $Number:57 $Number:58)" + "\n" +
+            "(whatever whichever)" + "\n" +
+            "";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
 
         CharSequenceCursor cursor = new CharSequenceCursor(chars, new LineColumnCursorStateFactory());
         astava.parse3.Parser<Character, Node> grammar1 = grammar.then(new SkipParser<>(Parse.atEnd()));
         astava.parse3.Matcher<Character, Node> ma = grammar1.parseInit(cursor, (p, i) ->
-                new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
+            new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
 
         System.out.println("Matching input:");
         System.out.println(chars);
         System.out.println("against parser:");
         System.out.println(grammar1);
 
-        Cursor<Node> production = ma.production().cursor();
+        Cursor<Node> frontProduction = ma.production().cursor();
 
         if(ma.isMatch()) {
             System.out.println("Success:");
-            while(!production.atEnd()) {
-                System.out.print(production.peek());
-                production.consume();
+
+            astava.parse3.Parser<Node, Node> macroParser = new DelegateParser<Node, Node>() {
+                @Override
+                protected astava.parse3.Parser<Node, Node> createParser() {
+                    astava.parse3.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
+                    OpRouter primitivePassOn = new OpRouter()
+                        .put(new Symbol("boolean"), passOn)
+                        .put(new Symbol("byte"), passOn)
+                        .put(new Symbol("short"), passOn)
+                        .put(new Symbol("int"), passOn)
+                        .put(new Symbol("long"), passOn)
+                        .put(new Symbol("float"), passOn)
+                        .put(new Symbol("double"), passOn);
+
+                    return
+                        (
+                            (Parse.<Node, Tuple>cast(Tuple.class).pipe(primitivePassOn))
+                            .or(
+                                Parse.<Node, Tuple>cast(Tuple.class)
+                                .pipe(
+                                    Parse.<Tuple, Node, Node, Node>descent(
+                                        tuple -> new ListInput(tuple),
+                                        nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
+                                        ref(() -> this)
+                                    )
+                                )
+                            )
+                            .or(Parse.<Node, Atom>cast(Atom.class).pipe(
+                                Parse.<Atom, Node>test(a -> a.getValue() instanceof Boolean).then(Parse.map(a ->
+                                    new Tuple(new Atom(new Symbol("boolean")), a)))
+                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Byte).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("byte")), a))))
+                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Short).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("short")), a))))
+                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Integer).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("int")), a))))
+                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Long).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("long")), a))))
+                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Float).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("float")), a))))
+                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Double).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("double")), a))))
+                            )
+                            ).or(Parse.<Node, Node>copy())
+                        )
+                        .then(Parse.consume())
+                        .multi();
+                }
+            };
+
+            astava.parse3.Matcher<Node, Node> macroMatcher = macroParser.parseInit(frontProduction, (p, i) ->
+                new astava.parse3.CommonMatcher<>());
+
+            if(macroMatcher.isMatch()) {
+                Cursor<Node> middleProduction = macroMatcher.production().cursor();
+
+                while (!middleProduction.atEnd()) {
+                    System.out.print(middleProduction.peek());
+                    middleProduction.consume();
+                }
             }
         } else {
             System.out.println("Failed:");
@@ -290,8 +352,6 @@ public class Main {
             });
         }
 
-        if(1 != 2)
-            return;
 
         if(1 != 2)
             return;
