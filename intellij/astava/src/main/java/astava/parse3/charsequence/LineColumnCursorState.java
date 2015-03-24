@@ -1,4 +1,6 @@
-package astava.parse3;
+package astava.parse3.charsequence;
+
+import astava.parse3.CursorState;
 
 public class LineColumnCursorState implements CursorState {
     private CharSequenceCursor cursor;
