@@ -2,17 +2,16 @@ package astava.parse3.tree;
 
 import astava.core.Node;
 import astava.core.Tuple;
-import astava.parse3.Cursor;
-import astava.parse3.Matcher;
-import astava.parse3.Parser;
+import astava.parse3.*;
+
+import java.util.stream.Collectors;
 
 public class NodeParse {
-    public static <TIn> Parser<Tuple, Tuple> descent(Parser<TIn, Tuple> parser, Parser<Node, Node> elementParser) {
-        return new Parser<Tuple, Tuple>() {
-            @Override
-            public void parse(Cursor<Tuple> cursor, Matcher<Tuple, Tuple> matcher) {
-
-            }
-        };
+    public static Parser<Tuple, Node> descent(Parser<Node, Node> elementParser) {
+        return Parse.<Tuple, Node, Node, Node>descent(
+            tuple -> new ListInput(tuple),
+            nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
+            elementParser
+        );
     }
 }

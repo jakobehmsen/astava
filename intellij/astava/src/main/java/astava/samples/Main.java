@@ -17,6 +17,7 @@ import astava.parse3.Cursor;
 import astava.parse3.charsequence.CharSequenceCursor;
 import astava.parse3.charsequence.LineColumnCursorStateFactory;
 import astava.parse3.charsequence.CharParse;
+import astava.parse3.tree.NodeParse;
 import astava.parse3.tree.OpRouter;
 
 import java.lang.reflect.InvocationTargetException;
@@ -25,6 +26,7 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -261,10 +263,11 @@ public class Main {
 
         ArrayList<FailureInfo> failures = new ArrayList<>();
         String chars =
-            "(byte $Number:56)" + "\n" +
-            "$Number:56" + "\n" +
-            "(add $Number:57 $Number:58)" + "\n" +
-            "(whatever whichever)" + "\n" +
+            //"(byte $Number:56)" + "\n" +
+            //"$Number:56" + "\n" +
+            //"(add $Number:57 $Number:58)" + "\n" +
+            //"(whatever whichever)" + "\n" +
+            "(labelScope (scopedLabel lbl))" +
             "";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
@@ -285,8 +288,99 @@ public class Main {
             System.out.println("Success:");
 
             astava.parse3.Parser<Node, Node> macroParser = new DelegateParser<Node, Node>() {
-                @Override
-                protected astava.parse3.Parser<Node, Node> createParser() {
+                private astava.parse3.Parser<Node, Node> createLabelScopeProcessor() {
+                    return new DelegateParser<Node, Node>() {
+                        // Can scopeCount be part of a matcher instead somehow?
+                        int scopeCount;
+                        Supplier<astava.parse3.Parser<Node, Node>> labelScopeParserSupplier = () ->
+                            createParser();
+
+                        @Override
+                        public void parse(Cursor<Node> cursor, astava.parse3.Matcher<Node, Node> matcher) {
+                            super.parse(cursor, matcher);
+                        }
+
+                        @Override
+                        protected astava.parse3.Parser<Node, Node> createParser() {
+                            int id = scopeCount++;
+
+                            return new DelegateParser<Node, Node>() {
+                                @Override
+                                protected astava.parse3.Parser<Node, Node> createParser() {
+                                    OpRouter labelParser = new OpRouter()
+                                        .put(new Symbol("scopedLabel"),
+                                            NodeParse.descent(
+                                                Parse.<Node, Node>map(a -> new Atom(new Symbol("label")))
+                                                    .then(Parse.consume())
+                                                    .then(Parse.<Node, Atom>cast(Atom.class).<Node>pipe(Parse.<Atom, Node>map(a ->
+                                                        new Atom(id + ((Symbol) a.getValue()).str))))
+                                                    .then(Parse.consume())
+                                            )
+                                        )
+                                        .put(new Symbol("scopedGoTo"),
+                                            NodeParse.descent(
+                                                Parse.<Node, Node>map(a -> new Atom(new Symbol("goTo")))
+                                                .then(Parse.consume())
+                                                .then(Parse.<Node, Atom>cast(Atom.class).<Node>pipe(Parse.<Atom, Node>map(a ->
+                                                    new Atom(id + ((Symbol) a.getValue()).str))))
+                                                .then(Parse.consume())
+                                            )
+                                        )
+                                        .put(new Symbol("labelScope"), Parse.<Tuple, Node>success().wrap((cursor, matcher) -> {
+                                            return production -> {
+                                                Parse.<Tuple, Node, Node, Node>descent(
+                                                    tuple -> new ListInput(tuple),
+                                                    nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
+                                                    Parse.<Node, Node>consume().then(labelScopeParserSupplier.get())
+                                                ).parse(cursor, matcher);
+
+                                                //Parse.<Tuple, Node>cast(Node.class).pipe(Parse.<Node, Node>consume().then(createParser())).parse(cursor, matcher);
+                                            };
+                                        }));
+                                    return
+                                    (
+                                        (Parse.<Node, Tuple>cast(Tuple.class).pipe(
+                                            labelParser
+                                                .or(
+                                                    Parse.<Tuple, Node, Node, Node>descent(
+                                                        tuple -> new ListInput(tuple),
+                                                        nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
+                                                        // Pass operator as is, then parse each operand
+                                                        Parse.<Node, Node>copy().then(Parse.consume()).then(ref(
+                                                            () ->
+                                                                this
+                                                        ))
+                                                    )
+                                                )
+                                        ))
+                                        .or(Parse.<Node, Node>copy())
+                                    )
+                                    .then(Parse.consume())
+                                    .multi();
+                                }
+                            };
+
+                            /*return new SelfProcessor(self -> {
+                                Processor nameProcessor = new AtomProcessor<Symbol, Symbol>(name -> new Symbol(id + name.str));
+
+                                MapProcessor mapProcessor = new MapProcessor();
+
+                                return mapProcessor
+                                    .put(new Symbol("scopedLabel"), forOperands(new IndexProcessor()
+                                        .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
+                                        .set(1, nameProcessor)))
+                                    .put(new Symbol("scopedGoTo"), forOperands(new IndexProcessor()
+                                        .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
+                                        .set(1, nameProcessor)))
+                                        // Process the first operand of the labelScope form
+                                    .put(new Symbol("labelScope"), code -> createProcessor().process(((Tuple) code).get(1)))
+                                    .or(createFallbackProcessor(n -> self.process(n)));
+                            });*/
+                        }
+                    };
+                }
+
+                private astava.parse3.Parser<Node, Node> createLiteralExpander() {
                     astava.parse3.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
                     OpRouter primitivePassOn = new OpRouter()
                         .put(new Symbol("boolean"), passOn)
@@ -299,37 +393,49 @@ public class Main {
 
                     return
                         (
-                            (Parse.<Node, Tuple>cast(Tuple.class).pipe(primitivePassOn))
-                            .or(
-                                Parse.<Node, Tuple>cast(Tuple.class)
-                                .pipe(
-                                    Parse.<Tuple, Node, Node, Node>descent(
-                                        tuple -> new ListInput(tuple),
-                                        nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
-                                        ref(() -> this)
-                                    )
+                            (Parse.<Node, Tuple>cast(Tuple.class).pipe(
+                                primitivePassOn
+                                .or(
+                                    NodeParse.descent(ref(() -> this))
                                 )
-                            )
+                            ))
                             .or(Parse.<Node, Atom>cast(Atom.class).pipe(
-                                Parse.<Atom, Node>test(a -> a.getValue() instanceof Boolean).then(Parse.map(a ->
-                                    new Tuple(new Atom(new Symbol("boolean")), a)))
-                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Byte).then(Parse.map(a ->
-                                        new Tuple(new Atom(new Symbol("byte")), a))))
-                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Short).then(Parse.map(a ->
-                                        new Tuple(new Atom(new Symbol("short")), a))))
-                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Integer).then(Parse.map(a ->
-                                        new Tuple(new Atom(new Symbol("int")), a))))
-                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Long).then(Parse.map(a ->
-                                        new Tuple(new Atom(new Symbol("long")), a))))
-                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Float).then(Parse.map(a ->
-                                        new Tuple(new Atom(new Symbol("float")), a))))
-                                    .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Double).then(Parse.map(a ->
-                                        new Tuple(new Atom(new Symbol("double")), a))))
-                            )
+                                    Parse.<Atom, Node>test(a -> a.getValue() instanceof Boolean).then(Parse.map(a ->
+                                        new Tuple(new Atom(new Symbol("boolean")), a)))
+                                        .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Byte).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("byte")), a))))
+                                        .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Short).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("short")), a))))
+                                        .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Integer).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("int")), a))))
+                                        .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Long).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("long")), a))))
+                                        .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Float).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("float")), a))))
+                                        .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Double).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("double")), a))))
+                                )
                             ).or(Parse.<Node, Node>copy())
                         )
                         .then(Parse.consume())
                         .multi();
+                }
+
+                @Override
+                protected astava.parse3.Parser<Node, Node> createParser() {
+                    return
+                        /*createLiteralExpander()
+                        .wrap((cursor, matcher) -> {
+                            return production -> {
+                                production.toString();
+                            };
+                        });*/
+
+                        createLiteralExpander()
+                        .pipe(createLabelScopeProcessor());
+
+                        //createLiteralExpander();
+                        //createLabelScopeProcessor();
                 }
             };
 
