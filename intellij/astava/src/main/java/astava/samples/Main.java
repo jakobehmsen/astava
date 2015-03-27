@@ -24,9 +24,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -267,7 +265,7 @@ public class Main {
             //"$Number:56" + "\n" +
             //"(add $Number:57 $Number:58)" + "\n" +
             //"(whatever whichever)" + "\n" +
-            "(labelScope (scopedLabel lbl))" +
+            "(scopedLabel lbl) (labelScope (scopedLabel lbl)) (scopedLabel lbl)" +
             "";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
@@ -333,8 +331,6 @@ public class Main {
                                                     nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
                                                     Parse.<Node, Node>consume().then(labelScopeParserSupplier.get())
                                                 ).parse(cursor, matcher);
-
-                                                //Parse.<Tuple, Node>cast(Node.class).pipe(Parse.<Node, Node>consume().then(createParser())).parse(cursor, matcher);
                                             };
                                         }));
                                     return
@@ -347,8 +343,7 @@ public class Main {
                                                         nodes -> new Tuple(nodes.stream().collect(Collectors.toList())),
                                                         // Pass operator as is, then parse each operand
                                                         Parse.<Node, Node>copy().then(Parse.consume()).then(ref(
-                                                            () ->
-                                                                this
+                                                            () -> this
                                                         ))
                                                     )
                                                 )
@@ -359,29 +354,56 @@ public class Main {
                                     .multi();
                                 }
                             };
-
-                            /*return new SelfProcessor(self -> {
-                                Processor nameProcessor = new AtomProcessor<Symbol, Symbol>(name -> new Symbol(id + name.str));
-
-                                MapProcessor mapProcessor = new MapProcessor();
-
-                                return mapProcessor
-                                    .put(new Symbol("scopedLabel"), forOperands(new IndexProcessor()
-                                        .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("label")))
-                                        .set(1, nameProcessor)))
-                                    .put(new Symbol("scopedGoTo"), forOperands(new IndexProcessor()
-                                        .set(0, new AtomProcessor<Symbol, Symbol>(operator -> new Symbol("goTo")))
-                                        .set(1, nameProcessor)))
-                                        // Process the first operand of the labelScope form
-                                    .put(new Symbol("labelScope"), code -> createProcessor().process(((Tuple) code).get(1)))
-                                    .or(createFallbackProcessor(n -> self.process(n)));
-                            });*/
                         }
                     };
                 }
 
                 private astava.parse3.Parser<Node, Node> createLiteralExpander() {
-                    astava.parse3.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
+                    return new DelegateParser<Node, Node>() {
+                        @Override
+                        protected astava.parse3.Parser<Node, Node> createParser() {
+                            astava.parse3.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
+                            OpRouter primitivePassOn = new OpRouter()
+                                .put(new Symbol("boolean"), passOn)
+                                .put(new Symbol("byte"), passOn)
+                                .put(new Symbol("short"), passOn)
+                                .put(new Symbol("int"), passOn)
+                                .put(new Symbol("long"), passOn)
+                                .put(new Symbol("float"), passOn)
+                                .put(new Symbol("double"), passOn);
+
+                            return
+                                (
+                                    (Parse.<Node, Tuple>cast(Tuple.class).pipe(
+                                        primitivePassOn
+                                        .or(
+                                            NodeParse.descent(ref(() -> this))
+                                        )
+                                    ))
+                                    .or(Parse.<Node, Atom>cast(Atom.class).pipe(
+                                        Parse.<Atom, Node>test(a -> a.getValue() instanceof Boolean).then(Parse.map(a ->
+                                            new Tuple(new Atom(new Symbol("boolean")), a)))
+                                            .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Byte).then(Parse.map(a ->
+                                                new Tuple(new Atom(new Symbol("byte")), a))))
+                                            .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Short).then(Parse.map(a ->
+                                                new Tuple(new Atom(new Symbol("short")), a))))
+                                            .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Integer).then(Parse.map(a ->
+                                                new Tuple(new Atom(new Symbol("int")), a))))
+                                            .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Long).then(Parse.map(a ->
+                                                new Tuple(new Atom(new Symbol("long")), a))))
+                                            .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Float).then(Parse.map(a ->
+                                                new Tuple(new Atom(new Symbol("float")), a))))
+                                            .or(Parse.<Atom, Node>test(a -> a.getValue() instanceof Double).then(Parse.map(a ->
+                                                new Tuple(new Atom(new Symbol("double")), a))))
+                                        )
+                                    ).or(Parse.<Node, Node>copy())
+                                )
+                                .then(Parse.consume())
+                                .multi();
+                        }
+                    };
+
+                    /*astava.parse3.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
                     OpRouter primitivePassOn = new OpRouter()
                         .put(new Symbol("boolean"), passOn)
                         .put(new Symbol("byte"), passOn)
@@ -418,7 +440,7 @@ public class Main {
                             ).or(Parse.<Node, Node>copy())
                         )
                         .then(Parse.consume())
-                        .multi();
+                        .multi();*/
                 }
 
                 @Override
@@ -427,8 +449,20 @@ public class Main {
                         /*createLiteralExpander()
                         .wrap((cursor, matcher) -> {
                             return production -> {
+                                System.out.println("@wrap");
                                 production.toString();
                             };
+                        });*/
+
+                        /*createLiteralExpander()
+                        .wrap(new BiFunction<Cursor<Node>, astava.parse3.Matcher<Node, Node>, Consumer<Input<Node>>>() {
+                            @Override
+                            public Consumer<Input<Node>> apply(Cursor<Node> nodeCursor, astava.parse3.Matcher<Node, Node> nodeObjectMatcher) {
+                                return production -> {
+                                    System.out.println("wrap@" + this);
+                                    production.toString();
+                                };
+                            }
                         });*/
 
                         createLiteralExpander()
