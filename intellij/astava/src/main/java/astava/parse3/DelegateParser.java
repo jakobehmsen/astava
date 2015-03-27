@@ -17,7 +17,7 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         parser = createParser();
     }
 
-    protected abstract Parser<TIn, TOut> createParser();
+    public abstract Parser<TIn, TOut> createParser();
 
     @Override
     public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class NumberParser extends astava.parse3.DelegateParser<Character, Node> {
     @Override
-    protected astava.parse3.Parser<Character, Node> createParser() {
+    public astava.parse3.Parser<Character, Node> createParser() {
         return CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore().wrap((cursor, matcher) -> {
             return production -> {
                 String strValue = production.stream().map(c -> "" + c).collect(Collectors.joining());

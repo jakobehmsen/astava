@@ -23,10 +23,19 @@ public interface Matcher<TIn, TOut> {
     }
 
     default <TIn> void propagateOutput(Matcher<TIn, TOut> matcher) {
-        Cursor<TOut> production = production().cursor();
+        matcher.put(production());
+        /*Cursor<TOut> production = production().cursor();
         while(!production.atEnd()) {
             matcher.put(production.peek());
             production.consume();
+        }*/
+    }
+
+    default void put(Input<TOut> input) {
+        Cursor<TOut> productionCursor = input.cursor();
+        while(!productionCursor.atEnd()) {
+            put(productionCursor.peek());
+            productionCursor.consume();
         }
     }
 }
