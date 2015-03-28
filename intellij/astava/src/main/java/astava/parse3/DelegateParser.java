@@ -88,4 +88,8 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         refs.add(r);
         return r;
     }
+
+    protected Parser<TIn, TOut> self() {
+        return ref(() -> this);
+    }
 }

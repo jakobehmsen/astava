@@ -372,31 +372,6 @@ public class Parse {
     }
 
     public static <TIn, TElementIn, TElementOut, TOut> LeafParser<TIn, TOut> descentReduce(Function<TIn, Input<TElementIn>> expander, Function<Input<TElementOut>, TOut> reducer, Parser<TElementIn, TElementOut> elementParser) {
-        /*return new LeafParser<TIn, TOut>() {
-            @Override
-            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
-                if(!cursor.atEnd()) {
-                    Input<TElementIn> elementsIn = expander.apply(cursor.peek());
-                    Cursor<TElementIn> elementsInCursor = elementsIn.cursor();
-                    Matcher<TElementIn, TElementOut> elementsMatcher = matcher.beginVisit(elementParser, elementsInCursor);
-                    elementParser.parse(elementsInCursor, elementsMatcher);
-
-                    if(elementsMatcher.isMatch()) {
-                        TOut reduction = reducer.apply(elementsMatcher.production());
-                        matcher.put(reduction);
-                        matcher.visitSuccess();
-                    } else
-                        matcher.visitFailure();
-                } else
-                    matcher.visitFailure();
-            }
-
-            @Override
-            public String toString() {
-                return expander + " :>> " + elementParser + " >>: " + reducer;
-            }
-        };*/
-
         return descentProduce(expander, (production, matcher) -> {
             TOut reduction = reducer.apply(production);
             matcher.put(reduction);

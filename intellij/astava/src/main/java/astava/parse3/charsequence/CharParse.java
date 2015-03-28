@@ -81,8 +81,6 @@ public class CharParse {
         }
     }
 
-
-
     public static <TOut> LeafParser<Character, TOut> isChar(char ch) {
         return new IsChar(ch);
     }
@@ -125,6 +123,20 @@ public class CharParse {
             @Override
             public String toString() {
                 return "<is-digit>";
+            }
+        };
+    }
+
+    public static <TOut> Parser<Character, TOut> isEither(String charSet) {
+        return new CharPredicate<TOut>() {
+            @Override
+            protected boolean test(char ch) {
+                return charSet.indexOf(ch) != -1;
+            }
+
+            @Override
+            public String toString() {
+                return "<is-either: '" + charSet + "'>";
             }
         };
     }

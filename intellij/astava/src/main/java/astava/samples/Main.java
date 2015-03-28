@@ -193,7 +193,7 @@ public class Main {
                     .multi()
                 );
             private astava.parse3.Parser<Character, Node> word =
-                CharParse.<Character>isLetter().then(Parse.copy()).then(Parse.consume()).onceOrMore()
+                (CharParse.<Character>isLetter().or(CharParse.isEither("+-"))).then(Parse.copy()).then(Parse.consume()).onceOrMore()
                 .wrap((cursor, matcher) -> {
                     CursorState start = cursor.state();
 
@@ -265,7 +265,8 @@ public class Main {
             //"$Number:56" + "\n" +
             //"(add $Number:57 $Number:58)" + "\n" +
             //"(whatever whichever)" + "\n" +
-            "(scopedLabel lbl) (labelScope (scopedLabel lbl) (labelScope (scopedLabel lbl))) (scopedLabel lbl) (labelScope (scopedLabel lbl))" +
+            //"(scopedLabel lbl) (labelScope (scopedLabel lbl) (labelScope (scopedLabel lbl))) (scopedLabel lbl) (labelScope (scopedLabel lbl))" +
+            "(+ $Number:56 $Number:56)" + "\n" +
             "";
         //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
@@ -286,75 +287,6 @@ public class Main {
             System.out.println("Success:");
 
             astava.parse3.Parser<Node, Node> macroParser = new DelegateParser<Node, Node>() {
-                private astava.parse3.Parser<Node, Node> createLabelScopeProcessor() {
-                    return new DelegateParser<Node, Node>() {
-                        // Can scopeCount be part of a matcher instead somehow?
-                        int scopeCount;
-                        //Supplier<astava.parse3.Parser<Node, Node>> labelScopeParserSupplier = () ->
-                        //    createParser();
-
-                        @Override
-                        public void parse(Cursor<Node> cursor, astava.parse3.Matcher<Node, Node> matcher) {
-                            super.parse(cursor, matcher);
-                        }
-
-                        @Override
-                        public astava.parse3.Parser<Node, Node> createParser() {
-                            DelegateParser<Node, Node> labelScopeParser = this;
-
-                            int id = scopeCount++;
-
-                            return new DelegateParser<Node, Node>() {
-                                @Override
-                                public astava.parse3.Parser<Node, Node> createParser() {
-                                    OpRouter labelParser = new OpRouter()
-                                        .put(new Symbol("scopedLabel"),
-                                            NodeParse.descentReduce(
-                                                Parse.<Node, Node>map(a -> new Atom(new Symbol("label")))
-                                                .then(Parse.consume())
-                                                .then(Parse.<Node, Atom>cast(Atom.class).<Node>pipe(Parse.<Atom, Node>map(a ->
-                                                    new Atom(id + ((Symbol) a.getValue()).str))))
-                                                .then(Parse.consume())
-                                            )
-                                        )
-                                        .put(new Symbol("scopedGoTo"),
-                                            NodeParse.descentReduce(
-                                                Parse.<Node, Node>map(a -> new Atom(new Symbol("goTo")))
-                                                .then(Parse.consume())
-                                                .then(Parse.<Node, Atom>cast(Atom.class).<Node>pipe(Parse.<Atom, Node>map(a ->
-                                                    new Atom(id + ((Symbol) a.getValue()).str))))
-                                                .then(Parse.consume())
-                                            )
-                                        )
-                                        .put(new Symbol("labelScope"), Parse.<Tuple, Node, Node, Node>descentProduce(
-                                            tuple -> new ListInput(tuple),
-                                            (nodes, m) -> m.put(nodes),
-                                            Parse.<Node, Node>consume().then(ref(() ->
-                                                labelScopeParser.createParser()))
-                                        ));
-                                    return
-                                    (
-                                        (Parse.<Node, Tuple>cast(Tuple.class).pipe(
-                                            labelParser
-                                            .or(
-                                                NodeParse.descentReduce(
-                                                    // Pass operator as is, then parse each operand
-                                                    Parse.<Node, Node>copy().then(Parse.consume()).then(ref(
-                                                        () -> this
-                                                    ))
-                                                )
-                                            )
-                                        ))
-                                        .or(Parse.<Node, Node>copy())
-                                    )
-                                    .then(Parse.consume())
-                                    .multi();
-                                }
-                            };
-                        }
-                    };
-                }
-
                 private astava.parse3.Parser<Node, Node> createLiteralExpander() {
                     return new DelegateParser<Node, Node>() {
                         @Override
@@ -401,11 +333,246 @@ public class Main {
                     };
                 }
 
+                private astava.parse3.Parser<Node, Node> createLabelScopeProcessor() {
+                    return new DelegateParser<Node, Node>() {
+                        // Can scopeCount be part of a matcher instead somehow?
+                        int scopeCount;
+                        //Supplier<astava.parse3.Parser<Node, Node>> labelScopeParserSupplier = () ->
+                        //    createParser();
+
+                        @Override
+                        public void parse(Cursor<Node> cursor, astava.parse3.Matcher<Node, Node> matcher) {
+                            super.parse(cursor, matcher);
+                        }
+
+                        @Override
+                        public astava.parse3.Parser<Node, Node> createParser() {
+                            DelegateParser<Node, Node> labelScopeParser = this;
+
+                            int id = scopeCount++;
+
+                            return new DelegateParser<Node, Node>() {
+                                @Override
+                                public astava.parse3.Parser<Node, Node> createParser() {
+                                    OpRouter labelParser = new OpRouter()
+                                        .put(new Symbol("scopedLabel"),
+                                            NodeParse.descentReduce(
+                                                Parse.<Node, Node>map(a -> new Atom(new Symbol("label")))
+                                                    .then(Parse.consume())
+                                                    .then(Parse.<Node, Atom>cast(Atom.class).<Node>pipe(Parse.<Atom, Node>map(a ->
+                                                        new Atom(id + ((Symbol) a.getValue()).str))))
+                                                    .then(Parse.consume())
+                                            )
+                                        )
+                                        .put(new Symbol("scopedGoTo"),
+                                            NodeParse.descentReduce(
+                                                Parse.<Node, Node>map(a -> new Atom(new Symbol("goTo")))
+                                                    .then(Parse.consume())
+                                                    .then(Parse.<Node, Atom>cast(Atom.class).<Node>pipe(Parse.<Atom, Node>map(a ->
+                                                        new Atom(id + ((Symbol) a.getValue()).str))))
+                                                    .then(Parse.consume())
+                                            )
+                                        )
+                                        .put(new Symbol("labelScope"), Parse.<Tuple, Node, Node, Node>descentProduce(
+                                            tuple -> new ListInput(tuple),
+                                            (nodes, m) -> m.put(nodes),
+                                            Parse.<Node, Node>consume().then(ref(() ->
+                                                labelScopeParser.createParser()))
+                                        ));
+                                    return
+                                        (
+                                            (Parse.<Node, Tuple>cast(Tuple.class).pipe(
+                                                labelParser
+                                                    .or(
+                                                        NodeParse.descentReduce(
+                                                            // Pass operator as is, then parse each operand
+                                                            Parse.<Node, Node>copy().then(Parse.consume()).then(ref(
+                                                                () -> this
+                                                            ))
+                                                        )
+                                                    )
+                                            ))
+                                            .or(Parse.<Node, Node>copy())
+                                        )
+                                        .then(Parse.consume())
+                                        .multi();
+                                }
+                            };
+                        }
+                    };
+                }
+
+                private astava.parse3.Parser<Node, Node> createOperatorToBuiltinProcessor() {
+                    return new DelegateParser<Node, Node>() {
+                        private astava.parse3.Parser<Tuple, Node> arithmeticParser(int arithmeticOperator) {
+                            return NodeParse.descentReduce(self(), nodes -> {
+                                List<Node> listNodes = nodes.stream().collect(Collectors.toList());
+                                return arithmetic((Tuple) listNodes.get(1), (Tuple) listNodes.get(2), arithmeticOperator);
+                            });
+                        }
+
+                        private astava.parse3.Parser<Tuple, Node> createLiteralParser(Function<Number, Node> literalFunction) {
+                            return NodeParse.descentReduce(self(), nodes -> {
+                                List<Node> listNodes = nodes.stream().collect(Collectors.toList());
+                                Number number = (Number) ((Atom) listNodes.get(1)).getValue();
+                                return literalFunction.apply(number);
+                            });
+                        }
+
+                        @Override
+                        public astava.parse3.Parser<Node, Node> createParser() {
+                            OpRouter mp = new OpRouter()
+                                .put(new Symbol("+"), arithmeticParser(ArithmeticOperator.ADD))
+                                .put(new Symbol("-"), arithmeticParser(ArithmeticOperator.SUB))
+                                .put(new Symbol("*"), arithmeticParser(ArithmeticOperator.MUL))
+                                .put(new Symbol("/"), arithmeticParser(ArithmeticOperator.DIV))
+                                .put(new Symbol("%"), arithmeticParser(ArithmeticOperator.REM))
+
+                                .put(new Symbol("byte"), createLiteralParser(number -> literal(number.byteValue())))
+                                .put(new Symbol("short"), createLiteralParser(number -> literal(number.shortValue())))
+                                .put(new Symbol("int"), createLiteralParser(number -> literal(number.intValue())))
+                                .put(new Symbol("long"), createLiteralParser(number -> literal(number.longValue())))
+                                .put(new Symbol("float"), createLiteralParser(number -> literal(number.floatValue())))
+                                .put(new Symbol("double"), createLiteralParser(number -> literal(number.doubleValue())))
+                                ;
+
+                            return (
+                                (Parse.<Node, Tuple>cast(Tuple.class).pipe(
+                                    mp
+                                    .or(
+                                        NodeParse.descentReduce(
+                                            Parse.<Node, Node>copy().then(Parse.consume()).then(self()),
+                                            nodes -> {
+                                                List<Node> listNodes = nodes.stream().collect(Collectors.toList());
+                                                return block(listNodes);
+                                            }
+                                        )
+                                    )
+                                ))
+                                .or(Parse.<Node, Node>copy())
+                            )
+                            .then(Parse.consume())
+                            .multi();
+                        }
+                    }.wrap((cursor, matcher) -> {
+                        return nodes -> {
+                            List<Node> listNodes = nodes.stream().collect(Collectors.toList());
+                            matcher.put(block(listNodes));
+                        };
+                    });
+
+
+
+                    /*return new DelegateProcessor() {
+                        private Processor createLiteralParser(Function<Number, Node> literalFunction) {
+                            return n -> {
+                                Number number = (Number) ((Atom) ((Tuple) n).get(1)).getValue();
+                                return literalFunction.apply(number);
+                            };
+                        }
+
+                        private Processor arithmeticProcessor(int arithmeticOperator) {
+                            return forOperands(n ->
+                                arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
+                        }
+
+                        private Processor shiftProcessor(int shiftOperator) {
+                            return forOperands(n ->
+                                shift((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), shiftOperator));
+                        }
+
+                        private Processor logicalProcessor(int logicalOperator) {
+                            return forOperands(n ->
+                                logical((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), logicalOperator));
+                        }
+
+                        private Processor compareProcessor(int compareOperator) {
+                            return forOperands(n ->
+                                compare((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), compareOperator));
+                        }
+
+                        private Node processDeclareVar(Node n) {
+                            Tuple t = (Tuple)n;
+                            String type = (String)((Atom)t.get(1)).getValue();
+                            String name = (String)((Atom)t.get(2)).getValue();
+                            return declareVar(type, name);
+                        }
+
+                        private Node processAssignVar(Node n) {
+                            Tuple t = (Tuple)n;
+                            String name = (String)((Atom)t.get(1)).getValue();
+                            Tuple value = (Tuple)process(t.get(2));
+                            return assignVar(name, value);
+                        }
+
+                        private Node processAccessVar(Node n) {
+                            Tuple t = (Tuple)n;
+                            String name = (String)((Atom)t.get(1)).getValue();
+                            return accessVar(name);
+                        }
+
+                        @Override
+                        protected Processor createProcessor() {
+                            MapProcessor mp = new MapProcessor()
+                                .put(new Symbol("+"), arithmeticProcessor(ArithmeticOperator.ADD))
+                                .put(new Symbol("-"), arithmeticProcessor(ArithmeticOperator.SUB))
+                                .put(new Symbol("*"), arithmeticProcessor(ArithmeticOperator.MUL))
+                                .put(new Symbol("/"), arithmeticProcessor(ArithmeticOperator.DIV))
+                                .put(new Symbol("%"), arithmeticProcessor(ArithmeticOperator.REM))
+
+                                .put(new Symbol("<<"), shiftProcessor(ShiftOperator.SHL))
+                                .put(new Symbol(">>"), shiftProcessor(ShiftOperator.SHR))
+                                .put(new Symbol(">>>"), shiftProcessor(ShiftOperator.USHR))
+
+                                .put(new Symbol("&&"), logicalProcessor(LogicalOperator.AND))
+                                .put(new Symbol("||"), logicalProcessor(LogicalOperator.OR))
+
+                                .put(new Symbol("<"), compareProcessor(RelationalOperator.LT))
+                                .put(new Symbol("<="), compareProcessor(RelationalOperator.LE))
+                                .put(new Symbol(">"), compareProcessor(RelationalOperator.GT))
+                                .put(new Symbol(">="), compareProcessor(RelationalOperator.GE))
+                                .put(new Symbol("=="), compareProcessor(RelationalOperator.EQ))
+                                .put(new Symbol("!="), compareProcessor(RelationalOperator.NE))
+
+                                .put(new Symbol("byte"), createLiteralParser(number -> literal(number.byteValue())))
+                                .put(new Symbol("short"), createLiteralParser(number -> literal(number.shortValue())))
+                                .put(new Symbol("int"), createLiteralParser(number -> literal(number.intValue())))
+                                .put(new Symbol("long"), createLiteralParser(number -> literal(number.longValue())))
+                                .put(new Symbol("float"), createLiteralParser(number -> literal(number.floatValue())))
+                                .put(new Symbol("double"), createLiteralParser(number -> literal(number.doubleValue())))
+
+                                .put(new Symbol("declareVar"), n -> processDeclareVar(n))
+                                .put(new Symbol("assignVar"), n -> processAssignVar(n))
+                                .put(new Symbol("accessVar"), n -> processAccessVar(n))
+                                ;
+
+                            Processor stringLiteralProcessor = n ->
+                                n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
+                            Processor booleanLiteralProcessor = n ->
+                                n instanceof Atom && ((Atom)n).getValue() instanceof Boolean ? literal((boolean)((Atom)n).getValue()) : null;
+
+                            Processor fallbackProcessor =
+                                new OperandsProcessor(n ->
+                                    this.process(n))
+                                    // Generate non-operator tuples as blocks
+                                    .or(new TupleProcessor(
+                                        n ->
+                                            this.process(n),
+                                        newElements ->
+                                            block(newElements)))
+                                    .or(n -> n);
+
+                            return mp.or(stringLiteralProcessor).or(booleanLiteralProcessor).or(fallbackProcessor);
+                        }
+                    };*/
+                }
+
                 @Override
                 public astava.parse3.Parser<Node, Node> createParser() {
                     return
                         createLiteralExpander()
-                        .pipe(createLabelScopeProcessor());
+                        .pipe(createLabelScopeProcessor())
+                        .pipe(createOperatorToBuiltinProcessor());
                 }
             };
 
