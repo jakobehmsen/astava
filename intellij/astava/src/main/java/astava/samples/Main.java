@@ -96,6 +96,15 @@ public class Main {
     }
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Hashtable<String, Object> variables = new Hashtable<>();
+        Impava impava = new Impava(variables);
+        impava.parseInit(new CharSequenceCursor("i = 768 jk = 'A string'"), (p, c) -> new astava.parse3.CommonMatcher<Character, Object>());
+
+        System.out.println(variables);
+
+        if(1 != 2)
+            return;
+
         class FailureInfo {
             private astava.parse3.Parser parser;
             private Cursor input;

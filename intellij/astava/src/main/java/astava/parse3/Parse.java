@@ -1,5 +1,8 @@
 package astava.parse3;
 
+import astava.core.Atom;
+import astava.core.Node;
+
 import java.util.Arrays;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -130,6 +133,47 @@ public class Parse {
 
     public static <TIn, TInter, TOut> Parser<TIn, TOut> wrap(Parser<TIn, TInter> parser, BiFunction<Cursor<TIn>, Matcher<TIn, TOut>, Consumer<Input<TInter>>> wrapper) {
         return new ParserWrapper<>(parser, wrapper);
+    }
+
+    public static <TIn, TOut> Parser<TIn, TOut> not(Parser parser) {
+        return new Parser<TIn, TOut>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+                Matcher<TIn, TOut> notMatcher = matcher.beginVisit(parser, cursor);
+                parser.parse(cursor, notMatcher);
+
+                if(notMatcher.isMatch())
+                    matcher.visitFailure();
+                else {
+                    notMatcher.propagateOutput(matcher);
+                    matcher.visitSuccess();
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "not(" + parser + ")";
+            }
+        };
+    }
+
+    public static <TIn, TOut> Parser<TIn, TOut> maybe(Parser parser) {
+        return new Parser<TIn, TOut>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+                Matcher<TIn, TOut> maybeMatcher = matcher.beginVisit(parser, cursor);
+                parser.parse(cursor, maybeMatcher);
+
+                if(maybeMatcher.isMatch())
+                    maybeMatcher.propagateOutput(matcher);
+                matcher.visitSuccess();
+            }
+
+            @Override
+            public String toString() {
+                return "(" + parser + ")?";
+            }
+        };
     }
 
     public static class PipeIn<TIn, TInter, TOut> implements Parser<TIn, TOut> {
@@ -403,5 +447,16 @@ public class Parse {
                 return expander + " :>> " + elementParser + " >>: " + producer;
             }
         };
+    }
+
+    public static <TOut> Parser<Character, TOut> reduceString(Parser<Character, Character> parser, Function<String, TOut> reducer) {
+        return parser.reduce(characters -> {
+            String str = characters.stream().map(c -> "" + c).collect(Collectors.joining());
+            return reducer.apply(str);
+        });
+    }
+
+    public static <TOut> Parser<Character, TOut> reduceInt(Parser<Character, Character> parser, Function<Integer, TOut> reducer) {
+        return reduceString(parser, str -> reducer.apply(Integer.parseInt(str)));
     }
 }

@@ -1,5 +1,6 @@
 package astava.parse3.tree;
 
+import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
 import astava.parse3.*;
