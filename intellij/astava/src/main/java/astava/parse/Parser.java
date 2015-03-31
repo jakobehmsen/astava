@@ -1,14 +1,9 @@
-package astava.parse3;
-
-import astava.core.Atom;
-import astava.core.Node;
-import astava.parse3.tree.OpRouter;
+package astava.parse;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public interface Parser<TIn, TOut> {
     void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher);

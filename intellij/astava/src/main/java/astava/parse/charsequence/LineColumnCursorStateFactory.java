@@ -1,7 +1,7 @@
-package astava.parse3.charsequence;
+package astava.parse.charsequence;
 
-import astava.parse3.CursorState;
-import astava.parse3.CursorStateFactory;
+import astava.parse.CursorState;
+import astava.parse.CursorStateFactory;
 
 public class LineColumnCursorStateFactory implements CursorStateFactory<Character, CharSequenceCursor> {
     private int line;

@@ -1,9 +1,8 @@
-package astava.parse3.tree;
+package astava.parse.tree;
 
-import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
-import astava.parse3.*;
+import astava.parse.*;
 
 import java.util.function.Function;
 import java.util.stream.Collectors;

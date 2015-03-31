@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 public interface CursorState extends Comparable<CursorState> {
     void restore();

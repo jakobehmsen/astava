@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

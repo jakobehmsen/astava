@@ -1,8 +1,6 @@
-package astava.parse3.charsequence;
+package astava.parse.charsequence;
 
-import astava.parse3.*;
-
-import java.util.function.Function;
+import astava.parse.*;
 
 public class CharParse {
     public static class IsCharSequence<TOut> implements Parser<Character, TOut> {

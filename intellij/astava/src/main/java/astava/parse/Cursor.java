@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 public interface Cursor<T>  {
 

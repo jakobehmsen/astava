@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 public class MarkerParser<TIn, TOut> implements Parser<TIn, TOut> {
     private Parser<TIn, TOut> parser;

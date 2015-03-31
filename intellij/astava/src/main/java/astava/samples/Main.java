@@ -5,13 +5,13 @@ import astava.core.Node;
 
 import astava.core.Tuple;
 import astava.java.*;
-import astava.parse3.*;
-import astava.parse3.Cursor;
-import astava.parse3.charsequence.CharSequenceCursor;
-import astava.parse3.charsequence.LineColumnCursorStateFactory;
-import astava.parse3.charsequence.CharParse;
-import astava.parse3.tree.NodeParse;
-import astava.parse3.tree.OpRouter;
+import astava.parse.*;
+import astava.parse.Cursor;
+import astava.parse.charsequence.CharSequenceCursor;
+import astava.parse.charsequence.LineColumnCursorStateFactory;
+import astava.parse.charsequence.CharParse;
+import astava.parse.tree.NodeParse;
+import astava.parse.tree.OpRouter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -26,7 +26,7 @@ public class Main {
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Hashtable<String, Object> variables = new Hashtable<>();
         Impava impava = new Impava(variables);
-        impava.parseInit(new CharSequenceCursor("i = 768 jk = 'A string'"), (p, c) -> new astava.parse3.CommonMatcher<Character, Object>());
+        impava.parseInit(new CharSequenceCursor("i = 768 jk = 'A string'"), (p, c) -> new astava.parse.CommonMatcher<Character, Object>());
 
         System.out.println(variables);
 
@@ -34,12 +34,12 @@ public class Main {
             return;
 
         class FailureInfo {
-            private astava.parse3.Parser parser;
+            private astava.parse.Parser parser;
             private Cursor input;
             private CursorState state;
             private int depth;
 
-            FailureInfo(astava.parse3.Parser parser, Cursor input, CursorState position, int depth) {
+            FailureInfo(astava.parse.Parser parser, Cursor input, CursorState position, int depth) {
                 this.parser = parser;
                 this.input = input;
                 this.state = position;
@@ -48,17 +48,17 @@ public class Main {
         }
 
         class SkipParser<TIn, TOut> extends MarkerParser<TIn, TOut> {
-            public SkipParser(astava.parse3.Parser<TIn, TOut> parser) {
+            public SkipParser(astava.parse.Parser<TIn, TOut> parser) {
                 super(parser);
             }
         }
 
-        class TraceMatcher<TIn, TOut> extends astava.parse3.AbstractMatcher<TIn, TOut> {
-            private astava.parse3.Parser<TIn, TOut> parser;
+        class TraceMatcher<TIn, TOut> extends astava.parse.AbstractMatcher<TIn, TOut> {
+            private astava.parse.Parser<TIn, TOut> parser;
             private Cursor<TIn> input;
             private int depth;
 
-            TraceMatcher(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth) {
+            TraceMatcher(astava.parse.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth) {
                 this.parser = parser;
                 this.input = input;
                 this.depth = depth;
@@ -80,19 +80,19 @@ public class Main {
             }
 
             @Override
-            public <TIn, TOut> astava.parse3.Matcher<TIn, TOut> beginVisit(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input) {
+            public <TIn, TOut> astava.parse.Matcher<TIn, TOut> beginVisit(astava.parse.Parser<TIn, TOut> parser, Cursor<TIn> input) {
                 return new TraceMatcher(parser, input, depth + 1);
             }
         }
 
-        class FailureCollector<TIn, TOut> extends astava.parse3.AbstractMatcher<TIn, TOut> {
-            private astava.parse3.Parser<TIn, TOut> parser;
+        class FailureCollector<TIn, TOut> extends astava.parse.AbstractMatcher<TIn, TOut> {
+            private astava.parse.Parser<TIn, TOut> parser;
             private Cursor<TIn> input;
             private List<FailureInfo> failures;
             private boolean collectFailures;
             private int depth;
 
-            FailureCollector(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth, List<FailureInfo> failures, boolean collectFailures) {
+            FailureCollector(astava.parse.Parser<TIn, TOut> parser, Cursor<TIn> input, int depth, List<FailureInfo> failures, boolean collectFailures) {
                 this.parser = parser;
                 this.input = input;
                 this.depth = depth;
@@ -110,26 +110,26 @@ public class Main {
             }
 
             @Override
-            public <TIn, TOut> astava.parse3.Matcher<TIn, TOut> beginVisit(astava.parse3.Parser<TIn, TOut> parser, Cursor<TIn> input) {
+            public <TIn, TOut> astava.parse.Matcher<TIn, TOut> beginVisit(astava.parse.Parser<TIn, TOut> parser, Cursor<TIn> input) {
                 return new FailureCollector(parser, input, depth + 1, failures, collectFailures);
             }
         }
 
-        astava.parse3.Parser<Character, Node> grammar = new DelegateParser<Character, Node>() {
-            private astava.parse3.Parser<Character, Node> ws =
+        astava.parse.Parser<Character, Node> grammar = new DelegateParser<Character, Node>() {
+            private astava.parse.Parser<Character, Node> ws =
                 new SkipParser<>(CharParse.<Node>isWhitespace().then(Parse.consume()).multi());
-            private astava.parse3.Parser<Character, Node> element =
+            private astava.parse.Parser<Character, Node> element =
                 ref(() -> this.word)
                 .or(ref(() -> this.tree))
                 .or(ref(() -> this.dyn));
-            private astava.parse3.Parser<Character, Node> elements =
+            private astava.parse.Parser<Character, Node> elements =
                 ref(() -> this.ws)
                 .then(
                     ref(() -> this.element)
                     .then(ref(() -> this.ws))
                     .multi()
                 );
-            private astava.parse3.Parser<Character, Node> word =
+            private astava.parse.Parser<Character, Node> word =
                 (CharParse.<Character>isLetter().or(CharParse.isEither("+-"))).then(Parse.copy()).then(Parse.consume()).onceOrMore()
                 .wrap((cursor, matcher) -> {
                     CursorState start = cursor.state();
@@ -141,7 +141,7 @@ public class Main {
                         matcher.put(new Atom(new Symbol(value)));
                     };
                 });
-            private astava.parse3.Parser<Character, Node> tree2 =
+            private astava.parse.Parser<Character, Node> tree2 =
                 CharParse.<Node>isChar('(').then(Parse.consume())
                 .then(ref(() -> this.elements))
                 .then(CharParse.isChar(')')).then(Parse.consume())
@@ -150,7 +150,7 @@ public class Main {
                     return new Tuple(nodesAsList);
                 }));
 
-            private astava.parse3.Parser<Character, Node> tree =
+            private astava.parse.Parser<Character, Node> tree =
                 CharParse.<Node>isChar('(').then(Parse.consume())
                 .then(ref(() -> this.elements))
                 .then(CharParse.isChar(')')).then(Parse.consume())
@@ -166,7 +166,7 @@ public class Main {
                     };
                 });
 
-            private astava.parse3.Parser<Character, Node> dyn =
+            private astava.parse.Parser<Character, Node> dyn =
                 CharParse.<Character>isChar('$').then(Parse.consume())
                 .then(
                     CharParse.<Character>isLetter().then(Parse.copy()).then(Parse.consume()).onceOrMore()
@@ -176,9 +176,9 @@ public class Main {
                         String parserName = production.stream().map(c -> "" + c).collect(Collectors.joining());
                         String parserClassName = "astava.samples." + parserName + "Parser";
                         try {
-                            Class<? extends astava.parse3.Parser<Character, Node>> parserClass =
-                                (Class<? extends astava.parse3.Parser<Character, Node>>) Class.forName(parserClassName);
-                            astava.parse3.Parser<Character, Node> parser = parserClass.newInstance();
+                            Class<? extends astava.parse.Parser<Character, Node>> parserClass =
+                                (Class<? extends astava.parse.Parser<Character, Node>>) Class.forName(parserClassName);
+                            astava.parse.Parser<Character, Node> parser = parserClass.newInstance();
                             parser.parse(cursor, matcher);
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
@@ -191,7 +191,7 @@ public class Main {
                 });
 
             @Override
-            public astava.parse3.Parser<Character, Node> createParser() {
+            public astava.parse.Parser<Character, Node> createParser() {
                 return ref(() -> this.elements);
             }
         };
@@ -205,13 +205,13 @@ public class Main {
             //"(scopedLabel lbl) (labelScope (scopedLabel lbl) (labelScope (scopedLabel lbl))) (scopedLabel lbl) (labelScope (scopedLabel lbl))" +
             "(+ $Number:56 $Number:56)" + "\n" +
             "";
-        //astava.parse3.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
+        //astava.parse.Matcher<Character, Node> ma = grammar.then(new SkipParser<>(Parse.atEnd()))
         //    .parseInit(new CharSequenceCursor(chars), (p, i) -> new CMatcher(p, i, 0, failures, true));
 
         CharSequenceCursor cursor = new CharSequenceCursor(chars, new LineColumnCursorStateFactory());
-        astava.parse3.Parser<Character, Node> grammar1 = grammar.then(new SkipParser<>(Parse.atEnd()));
-        astava.parse3.Matcher<Character, Node> ma = grammar1.parseInit(cursor, (p, i) ->
-            new CompositeMatcher<>(Arrays.asList(new astava.parse3.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
+        astava.parse.Parser<Character, Node> grammar1 = grammar.then(new SkipParser<>(Parse.atEnd()));
+        astava.parse.Matcher<Character, Node> ma = grammar1.parseInit(cursor, (p, i) ->
+            new CompositeMatcher<>(Arrays.asList(new astava.parse.CommonMatcher<>(), new FailureCollector<>(p, i, 0, failures, true))));
 
         System.out.println("Matching input:");
         System.out.println(chars);
@@ -223,12 +223,12 @@ public class Main {
         if(ma.isMatch()) {
             System.out.println("Success:");
 
-            astava.parse3.Parser<Node, Node> macroParser = new DelegateParser<Node, Node>() {
-                private astava.parse3.Parser<Node, Node> createLiteralExpander() {
+            astava.parse.Parser<Node, Node> macroParser = new DelegateParser<Node, Node>() {
+                private astava.parse.Parser<Node, Node> createLiteralExpander() {
                     return new DelegateParser<Node, Node>() {
                         @Override
-                        public astava.parse3.Parser<Node, Node> createParser() {
-                            astava.parse3.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
+                        public astava.parse.Parser<Node, Node> createParser() {
+                            astava.parse.Parser<Tuple, Node> passOn = Parse.<Tuple, Node>copy().then(Parse.consume());
                             OpRouter primitivePassOn = new OpRouter()
                                 .put(new Symbol("boolean"), passOn)
                                 .put(new Symbol("byte"), passOn)
@@ -270,27 +270,27 @@ public class Main {
                     };
                 }
 
-                private astava.parse3.Parser<Node, Node> createLabelScopeProcessor() {
+                private astava.parse.Parser<Node, Node> createLabelScopeProcessor() {
                     return new DelegateParser<Node, Node>() {
                         // Can scopeCount be part of a matcher instead somehow?
                         int scopeCount;
-                        //Supplier<astava.parse3.Parser<Node, Node>> labelScopeParserSupplier = () ->
+                        //Supplier<astava.parse.Parser<Node, Node>> labelScopeParserSupplier = () ->
                         //    createParser();
 
                         @Override
-                        public void parse(Cursor<Node> cursor, astava.parse3.Matcher<Node, Node> matcher) {
+                        public void parse(Cursor<Node> cursor, astava.parse.Matcher<Node, Node> matcher) {
                             super.parse(cursor, matcher);
                         }
 
                         @Override
-                        public astava.parse3.Parser<Node, Node> createParser() {
+                        public astava.parse.Parser<Node, Node> createParser() {
                             DelegateParser<Node, Node> labelScopeParser = this;
 
                             int id = scopeCount++;
 
                             return new DelegateParser<Node, Node>() {
                                 @Override
-                                public astava.parse3.Parser<Node, Node> createParser() {
+                                public astava.parse.Parser<Node, Node> createParser() {
                                     OpRouter labelParser = new OpRouter()
                                         .put(new Symbol("scopedLabel"),
                                             NodeParse.descentReduce(
@@ -339,16 +339,16 @@ public class Main {
                     };
                 }
 
-                private astava.parse3.Parser<Node, Node> createOperatorToBuiltinProcessor() {
+                private astava.parse.Parser<Node, Node> createOperatorToBuiltinProcessor() {
                     return new DelegateParser<Node, Node>() {
-                        private astava.parse3.Parser<Tuple, Node> arithmeticParser(int arithmeticOperator) {
+                        private astava.parse.Parser<Tuple, Node> arithmeticParser(int arithmeticOperator) {
                             return NodeParse.descentReduce(self(), nodes -> {
                                 List<Node> listNodes = nodes.stream().collect(Collectors.toList());
                                 return arithmetic((Tuple) listNodes.get(1), (Tuple) listNodes.get(2), arithmeticOperator);
                             });
                         }
 
-                        private astava.parse3.Parser<Tuple, Node> createLiteralParser(Function<Number, Node> literalFunction) {
+                        private astava.parse.Parser<Tuple, Node> createLiteralParser(Function<Number, Node> literalFunction) {
                             return NodeParse.descentReduce(self(), nodes -> {
                                 List<Node> listNodes = nodes.stream().collect(Collectors.toList());
                                 Number number = (Number) ((Atom) listNodes.get(1)).getValue();
@@ -357,7 +357,7 @@ public class Main {
                         }
 
                         @Override
-                        public astava.parse3.Parser<Node, Node> createParser() {
+                        public astava.parse.Parser<Node, Node> createParser() {
                             OpRouter mp = new OpRouter()
                                 .put(new Symbol("+"), arithmeticParser(ArithmeticOperator.ADD))
                                 .put(new Symbol("-"), arithmeticParser(ArithmeticOperator.SUB))
@@ -505,7 +505,7 @@ public class Main {
                 }
 
                 @Override
-                public astava.parse3.Parser<Node, Node> createParser() {
+                public astava.parse.Parser<Node, Node> createParser() {
                     return
                         createLiteralExpander()
                         .pipe(createLabelScopeProcessor())
@@ -513,8 +513,8 @@ public class Main {
                 }
             };
 
-            astava.parse3.Matcher<Node, Node> macroMatcher = macroParser.parseInit(frontProduction, (p, i) ->
-                new astava.parse3.CommonMatcher<>());
+            astava.parse.Matcher<Node, Node> macroMatcher = macroParser.parseInit(frontProduction, (p, i) ->
+                new astava.parse.CommonMatcher<>());
 
             if(macroMatcher.isMatch()) {
                 Cursor<Node> middleProduction = macroMatcher.production().cursor();

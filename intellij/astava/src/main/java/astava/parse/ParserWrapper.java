@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 import java.util.function.BiFunction;
 import java.util.function.Consumer;

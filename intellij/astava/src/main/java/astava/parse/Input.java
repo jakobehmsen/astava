@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 import java.util.Iterator;
 import java.util.stream.Stream;

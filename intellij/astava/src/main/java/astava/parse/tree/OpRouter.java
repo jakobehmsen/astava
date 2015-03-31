@@ -1,14 +1,13 @@
-package astava.parse3.tree;
+package astava.parse.tree;
 
 import astava.core.Atom;
 import astava.core.Node;
 import astava.core.Tuple;
-import astava.parse3.Cursor;
-import astava.parse3.Matcher;
-import astava.parse3.Parser;
+import astava.parse.Cursor;
+import astava.parse.Matcher;
+import astava.parse.Parser;
 
 import java.util.Hashtable;
-import java.util.List;
 
 public class OpRouter implements Parser<Tuple, Node> {
     private Hashtable<Object, Parser<Tuple, Node>> map = new Hashtable<>();

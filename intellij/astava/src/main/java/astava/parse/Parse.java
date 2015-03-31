@@ -1,7 +1,4 @@
-package astava.parse3;
-
-import astava.core.Atom;
-import astava.core.Node;
+package astava.parse;
 
 import java.util.Arrays;
 import java.util.function.*;

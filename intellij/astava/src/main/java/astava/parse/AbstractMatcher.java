@@ -1,4 +1,4 @@
-package astava.parse3;
+package astava.parse;
 
 public class AbstractMatcher<TIn, TOut> implements Matcher<TIn, TOut> {
     @Override

@@ -1,8 +1,8 @@
-package astava.parse3.charsequence;
+package astava.parse.charsequence;
 
-import astava.parse3.Cursor;
-import astava.parse3.CursorState;
-import astava.parse3.CursorStateFactory;
+import astava.parse.Cursor;
+import astava.parse.CursorState;
+import astava.parse.CursorStateFactory;
 
 public class CharSequenceCursor implements Cursor<Character> {
     /*private class IndexHolder implements Position<Character> {
