@@ -47,12 +47,6 @@ public class Main {
             }
         }
 
-        class SkipParser<TIn, TOut> extends MarkerParser<TIn, TOut> {
-            public SkipParser(astava.parse.Parser<TIn, TOut> parser) {
-                super(parser);
-            }
-        }
-
         class TraceMatcher<TIn, TOut> extends astava.parse.AbstractMatcher<TIn, TOut> {
             private astava.parse.Parser<TIn, TOut> parser;
             private Cursor<TIn> input;

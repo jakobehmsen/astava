@@ -1,9 +1,6 @@
 package astava.samples.misc;
 
-import astava.parse.DelegateParser;
-import astava.parse.MarkerParser;
-import astava.parse.Parse;
-import astava.parse.Parser;
+import astava.parse.*;
 import astava.parse.charsequence.CharParse;
 
 import java.util.Map;
@@ -17,12 +14,6 @@ public class Impava extends DelegateParser<Character, Object> {
 
     public Impava(Map<String, Object> variables) {
         this.variables = variables;
-    }
-
-    private class SkipParser<TIn, TOut> extends MarkerParser<TIn, TOut> {
-        public SkipParser(astava.parse.Parser<TIn, TOut> parser) {
-            super(parser);
-        }
     }
 
     private astava.parse.Parser<Character, Object> ws =
