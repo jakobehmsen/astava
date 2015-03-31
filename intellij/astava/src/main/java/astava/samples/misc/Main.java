@@ -1,4 +1,4 @@
-package astava.samples;
+package astava.samples.misc;
 
 import astava.tree.Atom;
 import astava.tree.Node;

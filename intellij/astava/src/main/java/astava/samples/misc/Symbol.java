@@ -1,4 +1,4 @@
-package astava.samples;
+package astava.samples.misc;
 
 public class Symbol {
     public final String str;

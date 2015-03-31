@@ -1,4 +1,4 @@
-package astava.samples;
+package astava.samples.misc;
 
 import astava.parse.DelegateParser;
 import astava.parse.MarkerParser;
