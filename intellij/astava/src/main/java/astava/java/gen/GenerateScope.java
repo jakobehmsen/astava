@@ -1,6 +1,5 @@
 package astava.java.gen;
 
-import astava.core.Tuple;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 

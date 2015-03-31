@@ -1,9 +1,9 @@
 package astava.samples;
 
-import astava.core.Atom;
-import astava.core.Node;
+import astava.tree.Atom;
+import astava.tree.Node;
 
-import astava.core.Tuple;
+import astava.tree.Tuple;
 import astava.java.*;
 import astava.parse.*;
 import astava.parse.Cursor;

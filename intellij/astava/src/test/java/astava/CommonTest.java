@@ -1,7 +1,7 @@
 package astava;
 
-import astava.core.Node;
-import astava.core.Tuple;
+import astava.tree.Node;
+import astava.tree.Tuple;
 import astava.java.gen.ClassGenerator;
 
 import java.lang.reflect.InvocationTargetException;

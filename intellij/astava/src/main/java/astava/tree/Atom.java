@@ -1,4 +1,4 @@
-package astava.core;
+package astava.tree;
 
 public class Atom implements Node {
     private Object value;

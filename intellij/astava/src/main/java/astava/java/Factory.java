@@ -1,8 +1,8 @@
 package astava.java;
 
-import astava.core.Atom;
-import astava.core.Node;
-import astava.core.Tuple;
+import astava.tree.Atom;
+import astava.tree.Node;
+import astava.tree.Tuple;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.core.Tuple;
+import astava.tree.Tuple;
 import astava.java.Descriptor;
 import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;

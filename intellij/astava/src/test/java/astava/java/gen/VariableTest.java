@@ -1,7 +1,7 @@
 package astava.java.gen;
 
 import astava.CommonTest;
-import astava.core.Tuple;
+import astava.tree.Tuple;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

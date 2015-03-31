@@ -1,7 +1,7 @@
 package astava.java.gen;
 
-import astava.core.Node;
-import astava.core.Tuple;
+import astava.tree.Node;
+import astava.tree.Tuple;
 import astava.debug.Debug;
 import astava.java.*;
 import org.objectweb.asm.*;

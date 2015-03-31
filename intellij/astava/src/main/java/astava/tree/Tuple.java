@@ -1,4 +1,4 @@
-package astava.core;
+package astava.tree;
 
 import java.util.Arrays;
 import java.util.List;
