@@ -1,5 +1,7 @@
 package astava.parse;
 
+import astava.samples.virela.Expression;
+
 import java.util.Arrays;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -15,6 +17,37 @@ public class Parse {
             @Override
             public String toString() {
                 return "T";
+            }
+        };
+    }
+
+    public static <TIn, TOut> LeafParser<TIn, TOut> reify(BiConsumer<Cursor<TIn>, Matcher<TIn, TOut>> consumer) {
+        return new LeafParser<TIn, TOut>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+                consumer.accept(cursor, matcher);
+            }
+
+            @Override
+            public String toString() {
+                return consumer.toString();
+            }
+        };
+    }
+
+    public static <TIn, TIn2, TOut> LeafParser<TIn, TOut> merge(Cursor<TIn2> newCursor, Function<Cursor<TIn>, Parser<TIn2, TOut>> consumer) {
+        return new LeafParser<TIn, TOut>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+                Parser<TIn2, TOut> p = consumer.apply(cursor);
+                Matcher<TIn2, TOut> me = matcher.beginVisit(p, newCursor);
+                p.parse(newCursor, me);
+                me.propagateIsMatch(matcher);
+            }
+
+            @Override
+            public String toString() {
+                return "from(" + newCursor + ", " + consumer + ")";
             }
         };
     }
@@ -330,6 +363,35 @@ public class Parse {
         };
     }
 
+    public static <TIn, TOut1, TOut2> Parser<TIn, Pair<Input<TOut1>, Input<TOut2>>> compose(Parser<TIn, TOut1> first, Parser<TIn, TOut2> second) {
+        return new Parser<TIn, Pair<Input<TOut1>, Input<TOut2>>>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, Pair<Input<TOut1>, Input<TOut2>>> matcher) {
+                Matcher<TIn, TOut1> firstMatcher = matcher.beginVisit(first, cursor);
+                first.parse(cursor, firstMatcher);
+
+                if(firstMatcher.isMatch()) {
+                    Matcher<TIn, TOut2> secondMatcher = matcher.beginVisit(second, cursor);
+                    second.parse(cursor, secondMatcher);
+
+                    if(secondMatcher.isMatch()) {
+                        matcher.put(new Pair<Input<TOut1>, Input<TOut2>>(firstMatcher.production(), secondMatcher.production()));
+
+                        matcher.visitSuccess();
+                        return;
+                    }
+                }
+
+                matcher.visitFailure();
+            }
+
+            @Override
+            public String toString() {
+                return first + " . " + second;
+            }
+        };
+    }
+
     public static <TIn, TOut> Parser<TIn, TOut> decision(Parser<TIn, TOut>... alternatives) {
         return new Parser<TIn, TOut>() {
             @Override
@@ -408,6 +470,24 @@ public class Parse {
             @Override
             public String toString() {
                 return mapper.toString();
+            }
+        };
+    }
+
+    public static <TIn, TOut> LeafParser<TIn, TOut> put(TOut value) {
+        return new LeafParser<TIn, TOut>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+                if(!cursor.atEnd()) {
+                    matcher.put(value);
+                    matcher.visitSuccess();
+                } else
+                    matcher.visitFailure();
+            }
+
+            @Override
+            public String toString() {
+                return "^" + value;
             }
         };
     }

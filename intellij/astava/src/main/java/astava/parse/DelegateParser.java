@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 
 public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
     private Parser<TIn, TOut> parser;
-    private ArrayList<Ref> refs;
-    private Hashtable<String, Parser<TIn, TOut>> resolvedRefs;
+    private ArrayList<Ref<?, ?>> refs;
+    private Hashtable<String, Parser<?, ?>> resolvedRefs;
 
     public DelegateParser() {
         refs = new ArrayList<>();
@@ -24,8 +24,8 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         parser.parse(cursor, matcher);
     }
 
-    private Hashtable<String, Parser<TIn, TOut>> resolvedRefs() {
-        Hashtable<String, Parser<TIn, TOut>> resolvedRefs = new Hashtable();
+    private Hashtable<String, Parser<?, ?>> resolvedRefs() {
+        Hashtable<String, Parser<?, ?>> resolvedRefs = new Hashtable();
 
         IdentityHashMap<Parser<TIn, TOut>, String> refFieldToNameMap = new IdentityHashMap<>();
         try {
@@ -43,7 +43,7 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         }
 
         refs.forEach(r -> {
-            Parser<TIn, TOut> p = r.parserSupplier.get();
+            Parser<?, ?> p = r.parserSupplier.get();
             String name = refFieldToNameMap.get(p);
             if (name != null) {
                 resolvedRefs.put(name, p);
@@ -61,7 +61,7 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         return parser.toString() + " where \n" + str;
     }
 
-    private class Ref implements Parser<TIn, TOut> {
+    private static class Ref<TIn, TOut> implements Parser<TIn, TOut> {
         private Supplier<Parser<TIn, TOut>> parserSupplier;
         private String name;
 
@@ -83,8 +83,8 @@ public abstract class DelegateParser<TIn, TOut> implements Parser<TIn, TOut> {
         }
     }
 
-    protected Parser<TIn, TOut> ref(Supplier<Parser<TIn, TOut>> parserSupplier) {
-        Ref r = new Ref(parserSupplier);
+    protected <TIn, TOut> Parser<TIn, TOut> ref(Supplier<Parser<TIn, TOut>> parserSupplier) {
+        Ref<TIn, TOut> r = new Ref(parserSupplier);
         refs.add(r);
         return r;
     }

@@ -22,6 +22,13 @@ public interface Matcher<TIn, TOut> {
             matcher.visitFailure();
     }
 
+    default <TIn, TOut> void propagateIsMatch(Matcher<TIn, TOut> matcher) {
+        if(isMatch()) {
+            matcher.visitSuccess();
+        } else
+            matcher.visitFailure();
+    }
+
     default <TIn> void propagateOutput(Matcher<TIn, TOut> matcher) {
         matcher.put(production());
         /*Cursor<TOut> production = production().cursor();

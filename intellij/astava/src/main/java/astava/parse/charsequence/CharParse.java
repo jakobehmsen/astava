@@ -12,15 +12,22 @@ public class CharParse {
 
         @Override
         public void parse(Cursor<Character> cursor, Matcher<Character, TOut> matcher) {
-            for(int i = 0; i < chars.length(); i++) {
-                if(!cursor.atEnd() && (char) cursor.peek() == chars.charAt(i))
-                    cursor.consume();
-                else {
-                    matcher.visitFailure();
-                }
-            }
+            if(!cursor.atEnd()) {
+                CursorState state = cursor.state();
 
-            matcher.visitSuccess();
+                for (int i = 0; i < chars.length(); i++) {
+                    if (!cursor.atEnd() && (char) cursor.peek() == chars.charAt(i))
+                        cursor.consume();
+                    else {
+                        state.restore();
+                        matcher.visitFailure();
+                        return;
+                    }
+                }
+
+                matcher.visitSuccess();
+            } else
+                matcher.visitFailure();
         }
 
         @Override
