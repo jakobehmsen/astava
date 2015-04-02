@@ -13,6 +13,12 @@ public interface Parser<TIn, TOut> {
         return matcher;
     }
 
+    default <TIn2> void parseFrom(Cursor<TIn> cursor, Matcher<TIn2, TOut> matcher) {
+        Matcher<TIn, TOut> m = matcher.beginVisit(this, cursor);
+        this.parse(cursor, m);
+        m.propagate(matcher);
+    }
+
     default Parser<TIn, TOut> or(Parser<TIn, TOut> other) {
         return Parse.decision(this, other);
     }

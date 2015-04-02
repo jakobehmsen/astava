@@ -14,7 +14,7 @@ public interface Matcher<TIn, TOut> {
         visitSuccess();
     }
 
-    default void propagate(Matcher<TIn, TOut> matcher) {
+    default <TIn> void propagate(Matcher<TIn, TOut> matcher) {
         if(isMatch()) {
             matcher.visitSuccess();
             propagateOutput(matcher);

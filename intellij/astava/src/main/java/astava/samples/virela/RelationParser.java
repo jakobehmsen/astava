@@ -31,27 +31,13 @@ public class RelationParser extends DelegateParser<Character, Relation> {
             .or(CharParse.<Integer>isChar('/').then(Parse.put(ExpressionVisitor.BINARY_OPERATOR_DIV)))
         ).then(Parse.consume());
     private void multOperation(Expression lhs, Cursor<Character> cursor, Matcher<Character, Expression> matcher) {
-        /*this.<Integer>ws().then(this.multOperator).pipe(Parse.<Integer, Character, Expression>merge(cursor, c1 -> {
-            int operator = c1.peek();
-
-            return ws.then(this.leafExpression).pipe1To(rhs -> {
-                Expression operation = v -> v.visitBinary(operator, lhs, rhs);
-                multOperation(operation, cursor, matcher);
-            });
-        })
-        .or(Parse.put(lhs))
-        .parse(cursor, matcher);*/
-
         this.<Integer>ws().then(this.multOperator).pipe(Parse.<Integer, Expression>reify((c1, m1) -> {
             int operator = c1.peek();
 
-            Parser<Character, Expression> p = ws.then(this.leafExpression).pipe1To(rhs -> {
+            ws.then(this.leafExpression).pipe1To(rhs -> {
                 Expression operation = v -> v.visitBinary(operator, lhs, rhs);
                 multOperation(operation, cursor, matcher);
-            });
-            Matcher<Character, Expression> me = m1.beginVisit(p, cursor);
-            p.parse(cursor, me);
-            me.propagateIsMatch(m1);
+            }).parseFrom(cursor, m1);
         }))
         .or(Parse.put(lhs))
         .parse(cursor, matcher);
