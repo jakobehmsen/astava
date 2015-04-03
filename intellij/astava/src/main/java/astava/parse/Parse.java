@@ -1,7 +1,5 @@
 package astava.parse;
 
-import astava.samples.virela.Expression;
-
 import java.util.Arrays;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -17,6 +15,21 @@ public class Parse {
             @Override
             public String toString() {
                 return "T";
+            }
+        };
+    }
+
+    public static <TIn, TOut> LeafParser<TIn, TOut> success(Runnable r) {
+        return new LeafParser<TIn, TOut>() {
+            @Override
+            public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
+                r.run();
+                matcher.visitSuccess();
+            }
+
+            @Override
+            public String toString() {
+                return r.toString();
             }
         };
     }
@@ -478,11 +491,8 @@ public class Parse {
         return new LeafParser<TIn, TOut>() {
             @Override
             public void parse(Cursor<TIn> cursor, Matcher<TIn, TOut> matcher) {
-                if(!cursor.atEnd()) {
-                    matcher.put(value);
-                    matcher.visitSuccess();
-                } else
-                    matcher.visitFailure();
+                matcher.put(value);
+                matcher.visitSuccess();
             }
 
             @Override
