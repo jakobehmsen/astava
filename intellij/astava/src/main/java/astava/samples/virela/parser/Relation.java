@@ -1,4 +1,4 @@
-package astava.samples.virela;
+package astava.samples.virela.parser;
 
 public class Relation {
     private String id;

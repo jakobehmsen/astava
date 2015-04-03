@@ -1,4 +1,4 @@
-package astava.samples.virela;
+package astava.samples.virela.parser;
 
 import astava.parse.*;
 import astava.parse.charsequence.CharParse;
@@ -39,7 +39,9 @@ public class RelationParser extends DelegateParser<Character, Relation> {
                 multOperation(operation, cursor, matcher);
             }).parseFrom(cursor, m1);
         }))
-        .or(Parse.put(lhs))
+        .or(Parse.<Character, Expression>success(() -> {
+            new String();
+        }).then(Parse.put(lhs)))
         .parse(cursor, matcher);
     }
 

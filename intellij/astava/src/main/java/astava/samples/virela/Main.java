@@ -3,9 +3,26 @@ package astava.samples.virela;
 import astava.parse.CommonMatcher;
 import astava.parse.Matcher;
 import astava.parse.charsequence.CharSequenceCursor;
+import astava.samples.virela.parser.Expression;
+import astava.samples.virela.parser.ExpressionVisitor;
+import astava.samples.virela.parser.Relation;
+import astava.samples.virela.parser.RelationParser;
+import astava.samples.virela.view.RelationSetView;
+
+import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
+        JFrame frame = new JFrame();
+
+        frame.getContentPane().add(new RelationSetView());
+
+        frame.setSize(800, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        /*
         String strInput =
             "sat = int\n" +
             "sbt = sat / 2\n" +
@@ -24,6 +41,7 @@ public class Main {
         } else {
             System.out.print("Failure");
         }
+        */
     }
 
     private static void print(Relation relation) {
@@ -49,10 +67,10 @@ public class Main {
                 lhs.accept(this);
                 System.out.print(" ");
                 switch (operator) {
-                    case ExpressionVisitor.BINARY_OPERATOR_MUL:
+                    case BINARY_OPERATOR_MUL:
                         System.out.print("*");
                         break;
-                    case ExpressionVisitor.BINARY_OPERATOR_DIV:
+                    case BINARY_OPERATOR_DIV:
                         System.out.print("/");
                         break;
                 }
