@@ -19,19 +19,20 @@ public class RelationParser extends DelegateParser<Character, Relation> {
     );
     private Parser<Character, Expression> intStream =
         CharParse.<Expression>isChars("int").then(Parse.put(v -> v.visitIntStream()));
+
     private Parser<Character, Expression> mulExpression =
         ref(() -> this.leafExpression).wrap((cursor, matcher) -> leProduction -> {
             Expression leafExpression = leProduction.cursor().peek();
 
             multOperation(leafExpression, cursor, matcher);
         });
-    private Parser<Character, Integer> multOperator =
+    private Parser<Character, Integer> mulOperator =
         (
             CharParse.<Integer>isChar('*').then(Parse.put(ExpressionVisitor.BINARY_OPERATOR_MUL))
             .or(CharParse.<Integer>isChar('/').then(Parse.put(ExpressionVisitor.BINARY_OPERATOR_DIV)))
         ).then(Parse.consume());
     private void multOperation(Expression lhs, Cursor<Character> cursor, Matcher<Character, Expression> matcher) {
-        this.<Integer>ws().then(this.multOperator).pipe(Parse.<Integer, Expression>reify((c1, m1) -> {
+        this.<Integer>ws().then(this.mulOperator).pipe(Parse.<Integer, Expression>reify((c1, m1) -> {
             int operator = c1.peek();
 
             ws.then(this.leafExpression).pipe1To(rhs -> {
@@ -39,15 +40,37 @@ public class RelationParser extends DelegateParser<Character, Relation> {
                 multOperation(operation, cursor, matcher);
             }).parseFrom(cursor, m1);
         }))
-        .or(Parse.<Character, Expression>success(() -> {
-            new String();
-        }).then(Parse.put(lhs)))
+        .or(Parse.put(lhs))
+        .parse(cursor, matcher);
+    }
+
+    private Parser<Character, Expression> addExpression =
+        ref(() -> this.mulExpression).wrap((cursor, matcher) -> leProduction -> {
+            Expression leafExpression = leProduction.cursor().peek();
+
+            addOperation(leafExpression, cursor, matcher);
+        });
+    private Parser<Character, Integer> addOperator =
+        (
+            CharParse.<Integer>isChar('+').then(Parse.put(ExpressionVisitor.BINARY_OPERATOR_ADD))
+            .or(CharParse.<Integer>isChar('-').then(Parse.put(ExpressionVisitor.BINARY_OPERATOR_SUB)))
+        ).then(Parse.consume());
+    private void addOperation(Expression lhs, Cursor<Character> cursor, Matcher<Character, Expression> matcher) {
+        this.<Integer>ws().then(this.addOperator).pipe(Parse.<Integer, Expression>reify((c1, m1) -> {
+            int operator = c1.peek();
+
+            ws.then(this.mulExpression).pipe1To(rhs -> {
+                Expression operation = v -> v.visitBinary(operator, lhs, rhs);
+                addOperation(operation, cursor, matcher);
+            }).parseFrom(cursor, m1);
+        }))
+        .or(Parse.put(lhs))
         .parse(cursor, matcher);
     }
 
     private Parser<Character, Expression> leafExpression = intStream.or(intValue).or(ref(() -> this.id));
 
-    private Parser<Character, Expression> expression = mulExpression;
+    private Parser<Character, Expression> expression = addExpression;
 
     private <TOut> Parser<Character, TOut> idPattern(Function<String, TOut> reducer) {
         return Parse.reduceString(

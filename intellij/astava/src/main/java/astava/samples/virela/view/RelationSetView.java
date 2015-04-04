@@ -315,10 +315,16 @@ public class RelationSetView extends JPanel {
                         if(lhsValue != null && rhsValue != null) {
                             System.out.println("update");
 
-                            Integer next = lhsValue.intValue() + rhsValue.intValue();
+                            Integer next = null;
 
                             try {
                                 switch (operator) {
+                                    case ExpressionVisitor.BINARY_OPERATOR_ADD:
+                                        next = lhsValue.intValue() + rhsValue.intValue();
+                                        break;
+                                    case ExpressionVisitor.BINARY_OPERATOR_SUB:
+                                        next = lhsValue.intValue() - rhsValue.intValue();
+                                        break;
                                     case ExpressionVisitor.BINARY_OPERATOR_MUL:
                                         next = lhsValue.intValue() * rhsValue.intValue();
                                         break;
