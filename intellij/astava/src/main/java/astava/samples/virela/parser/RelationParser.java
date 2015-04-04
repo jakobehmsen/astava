@@ -74,6 +74,6 @@ public class RelationParser extends DelegateParser<Character, Relation> {
 
     @Override
     public Parser<Character, Relation> createParser() {
-        return ref(() -> this.body);
+        return ref(() -> this.body).then(Parse.atEnd());
     }
 }
