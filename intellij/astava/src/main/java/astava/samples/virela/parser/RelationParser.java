@@ -70,7 +70,7 @@ public class RelationParser extends DelegateParser<Character, Relation> {
 
     private Parser<Character, Relation> statement = assign;
     private Parser<Character, Relation> statements = statement.then(this.<Relation>ws().then(statement).multi());
-    private Parser<Character, Relation> body = this.<Relation>ws().then(statements).then(this.<Relation>ws());
+    private Parser<Character, Relation> body = this.<Relation>ws().then(statements.then(this.<Relation>ws()).maybe());
 
     @Override
     public Parser<Character, Relation> createParser() {
