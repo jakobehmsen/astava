@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class RelationSetView extends JPanel {
-    private Hashtable<String, Cell<?>> relationSet = new Hashtable<>();
+    private Map<String, Cell<?>> relationSet;
     private JPanel contentView = new JPanel();
 
     private ScheduledExecutorService parseExecutor = Executors.newScheduledThreadPool(1);
@@ -60,10 +60,15 @@ public class RelationSetView extends JPanel {
                         //relationSet.values().forEach(x -> contentView.remove(x));
 
                         java.util.List<Relation> newRelations = matcher.production().stream().collect(Collectors.toList());
-                        Map<String, Expression> newRelationSet = matcher.production().stream().collect(Collectors.toMap(r -> r.getId(), r -> r.getValue()));
+                        relationSet = new Hashtable<>();
+
+                        //relationSet = matcher.production().stream().collect(
+                        //    Collectors.toMap(r -> r.getId(), r -> expressionToView(r.getValue())));
 
                         System.out.println("Ids: " + newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
                         System.out.println("Components count: " + contentView.getComponentCount());
+
+                        //java.util.List<Cell<?>> newCells = newRelations.stream().map(r -> expressionToView(r.getValue())).collect(Collectors.toList());
 
                         newRelations.forEach(r -> {
                             // Insertion/update
@@ -79,6 +84,7 @@ public class RelationSetView extends JPanel {
                             //relationIdView.setVerticalAlignment(JLabel.TOP);
                             //relationIdView.setVerticalTextPosition(JLabel.TOP);
                             Cell<?> cell = expressionToView(r.getValue());
+                            //Cell<?> cell = relationSet.get(r.getId());
                             JComponent relationValueView = cell.getView();
                             relationValueView.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
@@ -89,8 +95,8 @@ public class RelationSetView extends JPanel {
                             relationView.add(topView, BorderLayout.WEST);
                             relationView.add(relationValueView);
 
-                            relationSet.put(r.getId(), cell);
                             contentView.add(relationView);
+                            relationSet.put(r.getId(), cell);
 
                             /*if (!relationSet.containsKey(r.getId())) {
                                 // Insertion
@@ -112,13 +118,13 @@ public class RelationSetView extends JPanel {
                             }*/
                         });
 
-                        // Deletions
-                        relationSet.keySet().retainAll(newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
+                        //// Deletions
+                        //relationSet.keySet().retainAll(newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
 
                         contentView.revalidate();
                         contentView.repaint();
 
-                        System.out.println("Success, relation set size = " + newRelationSet.size());
+                        System.out.println("Success, relation set size = " + relationSet.size());
                     } else {
                         System.out.println("Failure");
                     }
@@ -143,6 +149,7 @@ public class RelationSetView extends JPanel {
                             public void stateChanged(ChangeEvent e) {
                                 Number currentValue = (Number)((JSpinner)getView()).getValue();
                                 propogateNext(currentValue.intValue());
+                                System.out.println("stateChanged");
                             }
                         });
 
@@ -156,6 +163,7 @@ public class RelationSetView extends JPanel {
                     }
 
                     private void propogateNext(Integer next) {
+                        System.out.println("propogateNext: " + next);
                         buffer.add(next);
                         ArrayList<CellConsumer<Integer>> currentConsumers = new ArrayList<CellConsumer<Integer>>(consumers);
                         ArrayList<CellConsumer<Integer>> nextConsumers = new ArrayList<CellConsumer<Integer>>();
@@ -164,6 +172,7 @@ public class RelationSetView extends JPanel {
                             c.next(next, nc -> nextConsumers.add(nc));
 
                         consumers = nextConsumers;
+                        System.out.println("nextConsumers=" + nextConsumers);
                     }
 
                     private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
@@ -184,16 +193,13 @@ public class RelationSetView extends JPanel {
                 if(relationSet.containsKey(id)) {
                     JLabel label = new JLabel(id);
 
-                    ((Cell<Object>)relationSet.get(id)).consume(new CellConsumer<Object>() {
+                    ((Cell<Object>)relationSet.get(id)).consume(new CellConsumer.Infinite<Object>() {
                         @Override
-                        public void next(Object value, Consumer<CellConsumer> remain) {
+                        public void next(Object value) {
                             label.setText(value.toString());
-                            remain.accept(this);
-                        }
-
-                        @Override
-                        public void atEnd() {
-
+                            label.revalidate();
+                            label.repaint();
+                            System.out.println("text=" + label.getText());
                         }
                     });
 
@@ -222,7 +228,84 @@ public class RelationSetView extends JPanel {
 
             @Override
             public void visitBinary(int operator, Expression lhs, Expression rhs) {
-                new String();
+                Cell<Integer> lhsCell = (Cell<Integer>)expressionToView(lhs);
+                Cell<Integer> rhsCell = (Cell<Integer>)expressionToView(rhs);
+
+                JLabel label = new JLabel();
+
+                reduceTo(new Cell<Integer>(label) {
+                    private Number lhsValue;
+                    private Number rhsValue;
+
+                    private ArrayList<Integer> buffer = new ArrayList<Integer>();
+                    private ArrayList<CellConsumer<Integer>> consumers = new ArrayList<CellConsumer<Integer>>();
+
+                    {
+                        lhsCell.consume(new CellConsumer.Infinite<Integer>() {
+                            @Override
+                            public void next(Integer value) {
+                                lhsValue = value;
+                                update();
+                            }
+                        });
+                        rhsCell.consume(new CellConsumer.Infinite<Integer>() {
+                            @Override
+                            public void next(Integer value) {
+                                rhsValue = value;
+                                update();
+                            }
+                        });
+                    }
+
+                    private void update() {
+                        if(lhsValue != null && rhsValue != null) {
+                            System.out.println("update");
+
+                            Integer next = lhsValue.intValue() + rhsValue.intValue();
+
+                            switch(operator) {
+                            case ExpressionVisitor.BINARY_OPERATOR_MUL:
+                                next = lhsValue.intValue() * rhsValue.intValue();
+                                break;
+                            case ExpressionVisitor.BINARY_OPERATOR_DIV:
+                                next = lhsValue.intValue() / rhsValue.intValue();
+                                break;
+                            }
+
+                            label.setText(next.toString());
+
+                            propogateNext(next);
+                        }
+                    }
+
+                    @Override
+                    public void consume(CellConsumer<Integer> consumer) {
+                        propogateBuffer(0, consumer);
+                    }
+
+                    private void propogateNext(Integer next) {
+                        System.out.println("propogateNext");
+                        buffer.add(next);
+                        ArrayList<CellConsumer<Integer>> currentConsumers = new ArrayList<CellConsumer<Integer>>(consumers);
+                        ArrayList<CellConsumer<Integer>> nextConsumers = new ArrayList<CellConsumer<Integer>>();
+
+                        for(CellConsumer<Integer> c : currentConsumers)
+                            c.next(next, nc -> nextConsumers.add(nc));
+
+                        consumers = nextConsumers;
+                    }
+
+                    private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
+                        if(index < buffer.size())
+                            consumer.next(buffer.get(0), nc -> propogateBuffer(index + 1, nc));
+                        else
+                            consumers.add(consumer);
+                    }
+
+                    private void next(Integer value) {
+                        buffer.add(value);
+                    }
+                });
             }
         });
     }
