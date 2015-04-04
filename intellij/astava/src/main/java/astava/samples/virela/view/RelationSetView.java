@@ -4,20 +4,17 @@ import astava.parse.CommonMatcher;
 import astava.parse.Matcher;
 import astava.parse.charsequence.CharSequenceCursor;
 import astava.samples.virela.parser.*;
+import javafx.scene.text.*;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.lang.reflect.Array;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class RelationSetView extends JPanel {
@@ -26,6 +23,9 @@ public class RelationSetView extends JPanel {
 
     private ScheduledExecutorService parseExecutor = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> parseFuture;
+    private Map<String, Object> relationSetStates = new Hashtable<>();
+
+    private ExecutorService propogator = Executors.newSingleThreadExecutor();
 
     public RelationSetView() {
         setLayout(new BorderLayout());
@@ -41,8 +41,9 @@ public class RelationSetView extends JPanel {
                 }
 
                 parseFuture = parseExecutor.schedule(() -> {
-                    String source = scriptView.getText();
-                    System.out.println("Source:\n" + source);
+                    try {
+                        String source = scriptView.getText();
+                        System.out.println("Source:\n" + source);
 
                     /*
 
@@ -52,51 +53,71 @@ public class RelationSetView extends JPanel {
 
                     */
 
-                    RelationParser parser = new RelationParser();
-                    Matcher<Character, Relation> matcher = parser.parseInit(new CharSequenceCursor(source), (p, c) -> new CommonMatcher<>());
+                        RelationParser parser = new RelationParser();
+                        Matcher<Character, Relation> matcher = parser.parseInit(new CharSequenceCursor(source), (p, c) -> new CommonMatcher<>());
 
-                    if (matcher.isMatch()) {
-                        contentView.removeAll();
-                        //relationSet.values().forEach(x -> contentView.remove(x));
+                        if (matcher.isMatch()) {
+                            contentView.removeAll();
+                            //relationSet.values().forEach(x -> contentView.remove(x));
 
-                        java.util.List<Relation> newRelations = matcher.production().stream().collect(Collectors.toList());
-                        relationSet = new Hashtable<>();
+                            if(relationSet != null) {
+                                /*if(relationSet.entrySet().stream().filter(x -> x.getKey() == null || x.getValue() == null).count() > 0) {
+                                    new String();
+                                }*/
 
-                        //relationSet = matcher.production().stream().collect(
-                        //    Collectors.toMap(r -> r.getId(), r -> expressionToView(r.getValue())));
+                                relationSetStates.putAll(
+                                    relationSet.entrySet().stream().filter(x -> x.getValue().getState() != null).collect(Collectors.toMap(x ->
+                                        x.getKey(), x ->
+                                        x.getValue().getState()))
+                                );
+                            }
 
-                        System.out.println("Ids: " + newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
-                        System.out.println("Components count: " + contentView.getComponentCount());
+                            java.util.List<Relation> newRelations = matcher.production().stream().collect(Collectors.toList());
 
-                        //java.util.List<Cell<?>> newCells = newRelations.stream().map(r -> expressionToView(r.getValue())).collect(Collectors.toList());
+                            relationSet = new Hashtable<>();
 
-                        newRelations.forEach(r -> {
-                            // Insertion/update
-                            // View should be dependent on expression:
-                            // E.g. int stream should be numeric up down
 
-                            JLabel relationIdView = new JLabel(r.getId());
-                            relationIdView.setFont(new Font(Font.MONOSPACED, Font.ITALIC | Font.BOLD, 12));
-                            relationIdView.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 5));
-                            JPanel topView = new JPanel(new BorderLayout());
-                            topView.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.BLACK));
-                            topView.add(relationIdView, BorderLayout.NORTH);
-                            //relationIdView.setVerticalAlignment(JLabel.TOP);
-                            //relationIdView.setVerticalTextPosition(JLabel.TOP);
-                            Cell<?> cell = expressionToView(r.getValue());
-                            //Cell<?> cell = relationSet.get(r.getId());
-                            JComponent relationValueView = cell.getView();
-                            relationValueView.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                            //relationSet = matcher.production().stream().collect(
+                            //    Collectors.toMap(r -> r.getId(), r -> expressionToView(r.getValue())));
 
-                            JPanel relationView = new JPanel(new BorderLayout());
-                            relationView.setBackground(Color.WHITE);
-                            relationView.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+                            System.out.println("Ids: " + newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
+                            System.out.println("Components count: " + contentView.getComponentCount());
 
-                            relationView.add(topView, BorderLayout.WEST);
-                            relationView.add(relationValueView);
+                            //java.util.List<Cell<?>> newCells = newRelations.stream().map(r -> expressionToView(r.getValue())).collect(Collectors.toList());
 
-                            contentView.add(relationView);
-                            relationSet.put(r.getId(), cell);
+                            newRelations.forEach(r -> {
+                                // Insertion/update
+                                // View should be dependent on expression:
+                                // E.g. int stream should be numeric up down
+
+                                JLabel relationIdView = new JLabel(r.getId());
+                                relationIdView.setFont(new Font(Font.MONOSPACED, Font.ITALIC | Font.BOLD, 12));
+                                relationIdView.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 5));
+                                JPanel topView = new JPanel(new BorderLayout());
+                                topView.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.BLACK));
+                                topView.add(relationIdView, BorderLayout.NORTH);
+                                //relationIdView.setVerticalAlignment(JLabel.TOP);
+                                //relationIdView.setVerticalTextPosition(JLabel.TOP);
+                                Cell<?> cell = expressionToView(r.getValue());
+                                //Cell<?> cell = relationSet.get(r.getId());
+                                JComponent relationValueView = cell.getView();
+                                relationValueView.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+                                JPanel relationView = new JPanel(new BorderLayout());
+                                relationView.setBackground(Color.WHITE);
+                                relationView.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+                                relationView.add(topView, BorderLayout.WEST);
+                                relationView.add(relationValueView);
+
+                                contentView.add(relationView);
+                                relationSet.put(r.getId(), cell);
+
+                                if (relationSetStates.containsKey(r.getId())) {
+                                    Object cellState = relationSetStates.get(r.getId());
+
+                                    cell.loadState(cellState);
+                                }
 
                             /*if (!relationSet.containsKey(r.getId())) {
                                 // Insertion
@@ -116,21 +137,26 @@ public class RelationSetView extends JPanel {
                                 JComponent relationView = relationSet.get(r.getId());
                                 contentView.add(relationView);
                             }*/
-                        });
+                            });
 
-                        //// Deletions
-                        //relationSet.keySet().retainAll(newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
+                            //// Deletions
+                            //relationSet.keySet().retainAll(newRelations.stream().map(r -> r.getId()).collect(Collectors.toSet()));
 
-                        contentView.revalidate();
-                        contentView.repaint();
+                            contentView.revalidate();
+                            contentView.repaint();
 
-                        System.out.println("Success, relation set size = " + relationSet.size());
-                    } else {
-                        System.out.println("Failure");
+                            System.out.println("Success, relation set size = " + relationSet.size());
+                        } else {
+                            System.out.println("Failure");
+                        }
+                    } catch(Exception ex) {
+                        System.out.println("Unexpected error occured during parse: ");
+                        ex.printStackTrace();
                     }
                 }, 150, TimeUnit.MILLISECONDS);
             }
         });
+        scriptView.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
         scriptView.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK));
         add(scriptView, BorderLayout.SOUTH);
     }
@@ -149,7 +175,7 @@ public class RelationSetView extends JPanel {
                             public void stateChanged(ChangeEvent e) {
                                 Number currentValue = (Number)((JSpinner)getView()).getValue();
                                 propogateNext(currentValue.intValue());
-                                System.out.println("stateChanged");
+                                System.out.println("stateChanged: " + currentValue.intValue());
                             }
                         });
 
@@ -159,16 +185,36 @@ public class RelationSetView extends JPanel {
 
                     @Override
                     public void consume(CellConsumer<Integer> consumer) {
+                        System.out.println("IntStream.consume: " + this);
+                        System.out.println("buffer: " + buffer);
                         propogateBuffer(0, consumer);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "int: " + ((JSpinner)getView()).getValue();
+                    }
+
+                    @Override
+                    public Object getState() {
+                        return (Number)((JSpinner)getView()).getValue();
+                    }
+
+                    @Override
+                    public void loadState(Object state) {
+                        if(state != null && state instanceof Number) {
+                            ((JSpinner)getView()).setValue(state);
+                        }
                     }
 
                     private void propogateNext(Integer next) {
                         System.out.println("propogateNext: " + next);
+                        System.out.println("buffer: " + buffer);
                         buffer.add(next);
                         ArrayList<CellConsumer<Integer>> currentConsumers = new ArrayList<CellConsumer<Integer>>(consumers);
                         ArrayList<CellConsumer<Integer>> nextConsumers = new ArrayList<CellConsumer<Integer>>();
 
-                        for(CellConsumer<Integer> c : currentConsumers)
+                        for (CellConsumer<Integer> c : currentConsumers)
                             c.next(next, nc -> nextConsumers.add(nc));
 
                         consumers = nextConsumers;
@@ -177,13 +223,9 @@ public class RelationSetView extends JPanel {
 
                     private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
                         if(index < buffer.size())
-                            consumer.next(buffer.get(0), nc -> propogateBuffer(index + 1, nc));
+                            consumer.next(buffer.get(index), nc -> propogateBuffer(index + 1, nc));
                         else
                             consumers.add(consumer);
-                    }
-
-                    private void next(Integer value) {
-                        buffer.add(value);
                     }
                 });
             }
@@ -192,6 +234,11 @@ public class RelationSetView extends JPanel {
             public void visitId(String id) {
                 if(relationSet.containsKey(id)) {
                     JLabel label = new JLabel(id);
+
+                    if(id.equals("x")) {
+                        System.out.println(relationSet);
+                        new String();
+                    }
 
                     ((Cell<Object>)relationSet.get(id)).consume(new CellConsumer.Infinite<Object>() {
                         @Override
@@ -213,6 +260,13 @@ public class RelationSetView extends JPanel {
                     });
                 } else {
                     JLabel label = new JLabel("Undefined");
+
+                    reduceTo(new Cell<Object>(label) {
+                        @Override
+                        public void consume(CellConsumer<Object> consumer) {
+
+                        }
+                    });
                 }
             }
 
@@ -263,18 +317,22 @@ public class RelationSetView extends JPanel {
 
                             Integer next = lhsValue.intValue() + rhsValue.intValue();
 
-                            switch(operator) {
-                            case ExpressionVisitor.BINARY_OPERATOR_MUL:
-                                next = lhsValue.intValue() * rhsValue.intValue();
-                                break;
-                            case ExpressionVisitor.BINARY_OPERATOR_DIV:
-                                next = lhsValue.intValue() / rhsValue.intValue();
-                                break;
+                            try {
+                                switch (operator) {
+                                    case ExpressionVisitor.BINARY_OPERATOR_MUL:
+                                        next = lhsValue.intValue() * rhsValue.intValue();
+                                        break;
+                                    case ExpressionVisitor.BINARY_OPERATOR_DIV:
+                                        next = lhsValue.intValue() / rhsValue.intValue();
+                                        break;
+                                }
+
+                                label.setText(next.toString());
+
+                                propogateNext(next);
+                            } catch(ArithmeticException e) {
+                                label.setText("NAN");
                             }
-
-                            label.setText(next.toString());
-
-                            propogateNext(next);
                         }
                     }
 
@@ -289,7 +347,7 @@ public class RelationSetView extends JPanel {
                         ArrayList<CellConsumer<Integer>> currentConsumers = new ArrayList<CellConsumer<Integer>>(consumers);
                         ArrayList<CellConsumer<Integer>> nextConsumers = new ArrayList<CellConsumer<Integer>>();
 
-                        for(CellConsumer<Integer> c : currentConsumers)
+                        for (CellConsumer<Integer> c : currentConsumers)
                             c.next(next, nc -> nextConsumers.add(nc));
 
                         consumers = nextConsumers;
@@ -297,13 +355,9 @@ public class RelationSetView extends JPanel {
 
                     private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
                         if(index < buffer.size())
-                            consumer.next(buffer.get(0), nc -> propogateBuffer(index + 1, nc));
+                            consumer.next(buffer.get(index), nc -> propogateBuffer(index + 1, nc));
                         else
                             consumers.add(consumer);
-                    }
-
-                    private void next(Integer value) {
-                        buffer.add(value);
                     }
                 });
             }

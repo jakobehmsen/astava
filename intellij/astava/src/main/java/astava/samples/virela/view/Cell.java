@@ -14,4 +14,12 @@ public abstract class Cell<T> {
     }
 
     public abstract void consume(CellConsumer<T> consumer);
+
+    public Object getState() {
+        return  null;
+    }
+
+    public void loadState(Object state) {
+
+    }
 }
