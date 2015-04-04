@@ -3,11 +3,10 @@ package astava.samples.virela.view;
 import astava.parse.CommonMatcher;
 import astava.parse.Matcher;
 import astava.parse.charsequence.CharSequenceCursor;
-import astava.samples.virela.parser.Expression;
-import astava.samples.virela.parser.Relation;
-import astava.samples.virela.parser.RelationParser;
+import astava.samples.virela.parser.*;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -43,6 +42,14 @@ public class RelationSetView extends JPanel {
                     String source = scriptView.getText();
                     System.out.println("Source:\n" + source);
 
+                    /*
+
+                    x = int
+                    y = x + int // Makes sense?
+                    // Should int be root level only expressions? Not subexpression?
+
+                    */
+
                     RelationParser parser = new RelationParser();
                     Matcher<Character, Relation> matcher = parser.parseInit(new CharSequenceCursor(source), (p, c) -> new CommonMatcher<>());
 
@@ -57,19 +64,49 @@ public class RelationSetView extends JPanel {
                         System.out.println("Components count: " + contentView.getComponentCount());
 
                         newRelations.forEach(r -> {
-                            if (!relationSet.containsKey(r.getId())) {
+                            // Insertion/update
+                            // View should be dependent on expression:
+                            // E.g. int stream should be numeric up down
+
+                            JLabel relationIdView = new JLabel(r.getId());
+                            relationIdView.setFont(new Font(Font.MONOSPACED, Font.ITALIC | Font.BOLD, 12));
+                            relationIdView.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 5));
+                            JPanel topView = new JPanel(new BorderLayout());
+                            topView.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.BLACK));
+                            topView.add(relationIdView, BorderLayout.NORTH);
+                            //relationIdView.setVerticalAlignment(JLabel.TOP);
+                            //relationIdView.setVerticalTextPosition(JLabel.TOP);
+                            JComponent relationValueView = expressionToView(r.getValue());
+                            relationValueView.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+                            JPanel relationView = new JPanel(new BorderLayout());
+                            relationView.setBackground(Color.WHITE);
+                            relationView.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+                            relationView.add(topView, BorderLayout.WEST);
+                            relationView.add(relationValueView);
+
+                            relationSet.put(r.getId(), relationView);
+                            contentView.add(relationView);
+
+                            /*if (!relationSet.containsKey(r.getId())) {
                                 // Insertion
                                 // View should be dependent on expression:
                                 // E.g. int stream should be numeric up down
-                                JTextArea relationView = new JTextArea(r.getId());
+
+                                JLabel relationIdView = new JLabel(r.getId());
+                                JComponent relationValueView = expressionToView(r.getValue());
+
+                                JPanel relationView = new JPanel();
+                                relationView.add(relationIdView);
+
                                 relationSet.put(r.getId(), relationView);
                                 contentView.add(relationView);
-                            }
-                            {
+                            } else {
                                 // Update
                                 JComponent relationView = relationSet.get(r.getId());
                                 contentView.add(relationView);
-                            }
+                            }*/
                         });
 
                         // Deletions
@@ -87,5 +124,31 @@ public class RelationSetView extends JPanel {
         });
         scriptView.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK));
         add(scriptView, BorderLayout.SOUTH);
+    }
+
+    private JComponent expressionToView(Expression expression) {
+        return expression.reduce(new ExpressionReducer<JComponent>() {
+            @Override
+            public void visitIntStream() {
+                reduceTo(new JSpinner());
+            }
+
+            @Override
+            public void visitId(String id) {
+                JLabel label = new JLabel(id);
+                label.setFont(new Font(Font.MONOSPACED,  Font.BOLD, 14));
+                reduceTo(label);
+            }
+
+            @Override
+            public void visitIntLiteral(int value) {
+                reduceTo(new JLabel("" + value));
+            }
+
+            @Override
+            public void visitBinary(int operator, Expression lhs, Expression rhs) {
+                new String();
+            }
+        });
     }
 }
