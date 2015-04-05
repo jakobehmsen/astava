@@ -68,7 +68,11 @@ public class RelationParser extends DelegateParser<Character, Relation> {
         .parse(cursor, matcher);
     }
 
-    private Parser<Character, Expression> leafExpression = intStream.or(intValue).or(ref(() -> this.id));
+    private Parser<Character, Expression> leafExpression =
+        intStream
+        .or(intValue)
+        .or(ref(() -> this.id))
+        .or(CharParse.<Expression>isChar('(').then(Parse.consume()).then(ws).then(ref(() -> this.expression)).then(ws).then(CharParse.isChar(')')).then(Parse.consume()));
 
     private Parser<Character, Expression> expression = addExpression;
 

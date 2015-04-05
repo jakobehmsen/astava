@@ -13,6 +13,25 @@ import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
+        /*String strInput =
+            "sat = (7)"
+            ;
+
+        RelationParser parser = new RelationParser();
+        Matcher<Character, Relation> matcher = parser.parseInit(new CharSequenceCursor(strInput), (p, c) -> new CommonMatcher<>());
+
+        if(matcher.isMatch()) {
+            matcher.production().stream().forEach(x -> print(x));
+
+            System.out.print("Success");
+        } else {
+            System.out.print("Failure");
+        }
+
+        if(1 != 2)
+            return;
+        */
+
         JFrame frame = new JFrame();
 
         frame.getContentPane().add(new RelationSetView());

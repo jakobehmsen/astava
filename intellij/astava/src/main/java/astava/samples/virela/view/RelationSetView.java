@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class RelationSetView extends JPanel {
     private Map<String, Cell<?>> relationSet;
-    private JPanel contentView = new JPanel();
+    private JPanel contentView;
 
     private ScheduledExecutorService parseExecutor = Executors.newScheduledThreadPool(1);
     private ScheduledFuture<?> parseFuture;
@@ -29,6 +29,9 @@ public class RelationSetView extends JPanel {
 
     public RelationSetView() {
         setLayout(new BorderLayout());
+
+        contentView = new JPanel();
+        contentView.setLayout(new BoxLayout(contentView, BoxLayout.Y_AXIS));
 
         add(contentView, BorderLayout.CENTER);
 
@@ -44,6 +47,10 @@ public class RelationSetView extends JPanel {
                     try {
                         String source = scriptView.getText();
                         System.out.println("Source:\n" + source);
+
+                        if(source.contains("(") && source.contains(")")) {
+                            new String();
+                        }
 
                     /*
 
@@ -91,8 +98,8 @@ public class RelationSetView extends JPanel {
                                 // E.g. int stream should be numeric up down
 
                                 JLabel relationIdView = new JLabel(r.getId());
-                                relationIdView.setFont(new Font(Font.MONOSPACED, Font.ITALIC | Font.BOLD, 12));
-                                relationIdView.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 5));
+                                relationIdView.setFont(new Font(Font.MONOSPACED, Font.ITALIC | Font.BOLD, 14));
+                                relationIdView.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
                                 JPanel topView = new JPanel(new BorderLayout());
                                 topView.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.BLACK));
                                 topView.add(relationIdView, BorderLayout.NORTH);
@@ -110,6 +117,7 @@ public class RelationSetView extends JPanel {
                                 relationView.add(topView, BorderLayout.WEST);
                                 relationView.add(relationValueView);
 
+                                relationView.setMaximumSize(new Dimension(relationView.getMaximumSize().width, 30));
                                 contentView.add(relationView);
                                 relationSet.put(r.getId(), cell);
 
@@ -165,21 +173,23 @@ public class RelationSetView extends JPanel {
         return expression.reduce(new ExpressionReducer<Cell<?>>() {
             @Override
             public void visitIntStream() {
-                reduceTo(new Cell<Integer>(new JSpinner()) {
+                JSpinner view = new JSpinner();
+
+                reduceTo(new Cell<Integer>(view) {
                     private ArrayList<Integer> buffer = new ArrayList<Integer>();
                     private ArrayList<CellConsumer<Integer>> consumers = new ArrayList<CellConsumer<Integer>>();
 
                     {
-                        ((JSpinner)getView()).addChangeListener(new ChangeListener() {
+                        ((JSpinner) getView()).addChangeListener(new ChangeListener() {
                             @Override
                             public void stateChanged(ChangeEvent e) {
-                                Number currentValue = (Number)((JSpinner)getView()).getValue();
+                                Number currentValue = (Number) ((JSpinner) getView()).getValue();
                                 propogateNext(currentValue.intValue());
                                 System.out.println("stateChanged: " + currentValue.intValue());
                             }
                         });
 
-                        Number currentValue = (Number)((JSpinner)getView()).getValue();
+                        Number currentValue = (Number) ((JSpinner) getView()).getValue();
                         propogateNext(currentValue.intValue());
                     }
 
@@ -192,18 +202,18 @@ public class RelationSetView extends JPanel {
 
                     @Override
                     public String toString() {
-                        return "int: " + ((JSpinner)getView()).getValue();
+                        return "int: " + ((JSpinner) getView()).getValue();
                     }
 
                     @Override
                     public Object getState() {
-                        return (Number)((JSpinner)getView()).getValue();
+                        return (Number) ((JSpinner) getView()).getValue();
                     }
 
                     @Override
                     public void loadState(Object state) {
-                        if(state != null && state instanceof Number) {
-                            ((JSpinner)getView()).setValue(state);
+                        if (state != null && state instanceof Number) {
+                            ((JSpinner) getView()).setValue(state);
                         }
                     }
 
@@ -222,7 +232,7 @@ public class RelationSetView extends JPanel {
                     }
 
                     private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
-                        if(index < buffer.size())
+                        if (index < buffer.size())
                             consumer.next(buffer.get(index), nc -> propogateBuffer(index + 1, nc));
                         else
                             consumers.add(consumer);
