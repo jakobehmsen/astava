@@ -3,6 +3,7 @@ package astava.samples.virela.parser;
 import astava.parse.*;
 import astava.parse.charsequence.CharParse;
 
+import java.math.BigDecimal;
 import java.util.function.Function;
 
 public class RelationParser extends DelegateParser<Character, Relation> {
@@ -13,9 +14,21 @@ public class RelationParser extends DelegateParser<Character, Relation> {
     private Parser<Character, Expression> ws =
         new SkipParser<>(CharParse.<Expression>isWhitespace().then(Parse.consume()).multi());
 
-    private Parser<Character, Expression> intValue = Parse.reduceInt(
+    private Parser<Character, Expression> intValue2 = Parse.reduceInt(
         CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore(),
         i -> v -> v.visitIntLiteral(i)
+    );
+    private Parser<Character, Expression> intValue = Parse.reduceString(
+        CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore()
+        .then(
+            CharParse.<Character>isChar('.').then(Parse.copy()).then(Parse.consume())
+            .then(
+                CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore()
+            )
+            .maybe()
+        ),
+        i -> v ->
+            v.visitIntLiteral(new BigDecimal(i).intValue())
     );
     private Parser<Character, Expression> intStream =
         CharParse.<Expression>isChars("int").then(Parse.put(v -> v.visitIntStream()));

@@ -13,8 +13,8 @@ import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
-        /*String strInput =
-            "sat = (7)"
+        String strInput =
+            "sat = 5.5"
             ;
 
         RelationParser parser = new RelationParser();
@@ -30,7 +30,7 @@ public class Main {
 
         if(1 != 2)
             return;
-        */
+
 
         JFrame frame = new JFrame();
 
