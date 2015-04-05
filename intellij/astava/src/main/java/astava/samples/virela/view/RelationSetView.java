@@ -9,10 +9,20 @@ import javafx.scene.text.*;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.DefaultFormatter;
+import javax.swing.text.DefaultFormatterFactory;
+import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -48,7 +58,7 @@ public class RelationSetView extends JPanel {
                         String source = scriptView.getText();
                         System.out.println("Source:\n" + source);
 
-                        if(source.contains("(") && source.contains(")")) {
+                        if (source.contains("(") && source.contains(")")) {
                             new String();
                         }
 
@@ -67,7 +77,7 @@ public class RelationSetView extends JPanel {
                             contentView.removeAll();
                             //relationSet.values().forEach(x -> contentView.remove(x));
 
-                            if(relationSet != null) {
+                            if (relationSet != null) {
                                 /*if(relationSet.entrySet().stream().filter(x -> x.getKey() == null || x.getValue() == null).count() > 0) {
                                     new String();
                                 }*/
@@ -99,7 +109,7 @@ public class RelationSetView extends JPanel {
 
                                 JLabel relationIdView = new JLabel(r.getId());
                                 relationIdView.setFont(new Font(Font.MONOSPACED, Font.ITALIC | Font.BOLD, 14));
-                                relationIdView.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
+                                relationIdView.setBorder(BorderFactory.createEmptyBorder(4, 8, 8, 8));
                                 JPanel topView = new JPanel(new BorderLayout());
                                 topView.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.BLACK));
                                 topView.add(relationIdView, BorderLayout.NORTH);
@@ -157,7 +167,7 @@ public class RelationSetView extends JPanel {
                         } else {
                             System.out.println("Failure");
                         }
-                    } catch(Exception ex) {
+                    } catch (Exception ex) {
                         System.out.println("Unexpected error occured during parse: ");
                         ex.printStackTrace();
                     }
@@ -165,36 +175,87 @@ public class RelationSetView extends JPanel {
             }
         });
         scriptView.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
-        scriptView.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK));
+
+
+
+        scriptView.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         add(scriptView, BorderLayout.SOUTH);
     }
 
     private Cell<?> expressionToView(Expression expression) {
         return expression.reduce(new ExpressionReducer<Cell<?>>() {
             @Override
-            public void visitIntStream() {
-                JSpinner view = new JSpinner();
+            public void visitNumberStream() {
+                /*NumberFormat format = NumberFormat.getInstance();
+                NumberFormatter formatter = new NumberFormatter(format);
+                formatter.setValueClass(BigDecimal.class);*/
 
-                reduceTo(new Cell<Integer>(view) {
-                    private ArrayList<Integer> buffer = new ArrayList<Integer>();
-                    private ArrayList<CellConsumer<Integer>> consumers = new ArrayList<CellConsumer<Integer>>();
+
+                NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+                nf.setParseIntegerOnly(false);
+                NumberFormatter formatter = new NumberFormatter(nf);
+                formatter.setValueClass(BigDecimal.class);
+                JFormattedTextField view = new JFormattedTextField(formatter);
+                view.setValue(new BigDecimal(0));
+                view.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+
+                reduceTo(new Cell<BigDecimal>(view) {
+                    private ArrayList<BigDecimal> buffer = new ArrayList<>();
+                    private ArrayList<CellConsumer<BigDecimal>> consumers = new ArrayList<>();
 
                     {
-                        ((JSpinner) getView()).addChangeListener(new ChangeListener() {
-                            @Override
-                            public void stateChanged(ChangeEvent e) {
-                                Number currentValue = (Number) ((JSpinner) getView()).getValue();
-                                propogateNext(currentValue.intValue());
-                                System.out.println("stateChanged: " + currentValue.intValue());
-                            }
+                        view.addPropertyChangeListener("value", evt -> {
+                            BigDecimal currentValue = (BigDecimal) view.getValue();
+                            if (currentValue != null)
+                                propogateNext(currentValue);
                         });
 
-                        Number currentValue = (Number) ((JSpinner) getView()).getValue();
-                        propogateNext(currentValue.intValue());
+                        /*view.getDocument().addDocumentListener(new DocumentListener() {
+                            @Override
+                            public void insertUpdate(DocumentEvent e) {
+                                BigDecimal currentValue = (BigDecimal) view.getValue();
+                                if (currentValue != null)
+                                    propogateNext(currentValue);
+                            }
+
+                            @Override
+                            public void removeUpdate(DocumentEvent e) {
+                                BigDecimal currentValue = (BigDecimal) view.getValue();
+                                if (currentValue != null)
+                                    propogateNext(currentValue);
+                            }
+
+                            @Override
+                            public void changedUpdate(DocumentEvent e) {
+                                BigDecimal currentValue = (BigDecimal) view.getValue();
+                                if (currentValue != null)
+                                    propogateNext(currentValue);
+                            }
+                        });*/
+
+                        /*view.addActionListener(e -> {
+                            BigDecimal currentValue = (BigDecimal) view.getValue();
+                            propogateNext(currentValue);
+                        });*/
+
+                        /*((JSpinner) getView()).addChangeListener(new ChangeListener() {
+                            @Override
+                            public void stateChanged(ChangeEvent e) {
+                                BigDecimal currentValue = (BigDecimal) ((JSpinner) getView()).getValue();
+                                propogateNext(currentValue);
+                                System.out.println("stateChanged: " + currentValue.intValue());
+                            }
+                        });*/
+
+                        BigDecimal currentValue = (BigDecimal) view.getValue();
+                        propogateNext(currentValue);
                     }
 
                     @Override
-                    public void consume(CellConsumer<Integer> consumer) {
+                    public void consume(CellConsumer<BigDecimal> consumer) {
                         System.out.println("IntStream.consume: " + this);
                         System.out.println("buffer: " + buffer);
                         propogateBuffer(0, consumer);
@@ -202,36 +263,36 @@ public class RelationSetView extends JPanel {
 
                     @Override
                     public String toString() {
-                        return "int: " + ((JSpinner) getView()).getValue();
+                        return "int: " + view.getValue();
                     }
 
                     @Override
                     public Object getState() {
-                        return (Number) ((JSpinner) getView()).getValue();
+                        return view.getValue();
                     }
 
                     @Override
                     public void loadState(Object state) {
-                        if (state != null && state instanceof Number) {
-                            ((JSpinner) getView()).setValue(state);
+                        if (state != null && state instanceof BigDecimal) {
+                            view.setValue(state);
                         }
                     }
 
-                    private void propogateNext(Integer next) {
+                    private void propogateNext(BigDecimal next) {
                         System.out.println("propogateNext: " + next);
                         System.out.println("buffer: " + buffer);
                         buffer.add(next);
-                        ArrayList<CellConsumer<Integer>> currentConsumers = new ArrayList<CellConsumer<Integer>>(consumers);
-                        ArrayList<CellConsumer<Integer>> nextConsumers = new ArrayList<CellConsumer<Integer>>();
+                        ArrayList<CellConsumer<BigDecimal>> currentConsumers = new ArrayList<>(consumers);
+                        ArrayList<CellConsumer<BigDecimal>> nextConsumers = new ArrayList<>();
 
-                        for (CellConsumer<Integer> c : currentConsumers)
+                        for (CellConsumer<BigDecimal> c : currentConsumers)
                             c.next(next, nc -> nextConsumers.add(nc));
 
                         consumers = nextConsumers;
                         System.out.println("nextConsumers=" + nextConsumers);
                     }
 
-                    private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
+                    private void propogateBuffer(int index, CellConsumer<BigDecimal> consumer) {
                         if (index < buffer.size())
                             consumer.next(buffer.get(index), nc -> propogateBuffer(index + 1, nc));
                         else
@@ -281,40 +342,57 @@ public class RelationSetView extends JPanel {
             }
 
             @Override
-            public void visitIntLiteral(int value) {
-                reduceTo(new Cell<Integer>(new JLabel("" + value)) {
+            public void visitNumberLiteral(BigDecimal value) {
+                JLabel view = new JLabel("" + value);
+
+                reduceTo(new Cell<BigDecimal>(view) {
+                    BigDecimal theValue = value;
+
                     @Override
-                    public void consume(CellConsumer<Integer> consumer) {
-                        consumer.next(value, nc -> nc.atEnd());
+                    public void consume(CellConsumer<BigDecimal> consumer) {
+                        consumer.next(theValue, nc -> nc.atEnd());
+                    }
+
+                    @Override
+                    public Object getState() {
+                        return theValue;
+                    }
+
+                    @Override
+                    public void loadState(Object state) {
+                        /*if (state != null && state instanceof BigDecimal) {
+                            theValue = (BigDecimal)state;
+                            view.setText("" + theValue);
+                        }*/
                     }
                 });
             }
 
             @Override
             public void visitBinary(int operator, Expression lhs, Expression rhs) {
-                Cell<Integer> lhsCell = (Cell<Integer>)expressionToView(lhs);
-                Cell<Integer> rhsCell = (Cell<Integer>)expressionToView(rhs);
+                Cell<BigDecimal> lhsCell = (Cell<BigDecimal>)expressionToView(lhs);
+                Cell<BigDecimal> rhsCell = (Cell<BigDecimal>)expressionToView(rhs);
 
                 JLabel label = new JLabel();
 
-                reduceTo(new Cell<Integer>(label) {
-                    private Number lhsValue;
-                    private Number rhsValue;
+                reduceTo(new Cell<BigDecimal>(label) {
+                    private BigDecimal lhsValue;
+                    private BigDecimal rhsValue;
 
-                    private ArrayList<Integer> buffer = new ArrayList<Integer>();
-                    private ArrayList<CellConsumer<Integer>> consumers = new ArrayList<CellConsumer<Integer>>();
+                    private ArrayList<BigDecimal> buffer = new ArrayList<>();
+                    private ArrayList<CellConsumer<BigDecimal>> consumers = new ArrayList<>();
 
                     {
-                        lhsCell.consume(new CellConsumer.Infinite<Integer>() {
+                        lhsCell.consume(new CellConsumer.Infinite<BigDecimal>() {
                             @Override
-                            public void next(Integer value) {
+                            public void next(BigDecimal value) {
                                 lhsValue = value;
                                 update();
                             }
                         });
-                        rhsCell.consume(new CellConsumer.Infinite<Integer>() {
+                        rhsCell.consume(new CellConsumer.Infinite<BigDecimal>() {
                             @Override
-                            public void next(Integer value) {
+                            public void next(BigDecimal value) {
                                 rhsValue = value;
                                 update();
                             }
@@ -325,21 +403,25 @@ public class RelationSetView extends JPanel {
                         if(lhsValue != null && rhsValue != null) {
                             System.out.println("update");
 
-                            Integer next = null;
+                            BigDecimal next = null;
 
                             try {
                                 switch (operator) {
                                     case ExpressionVisitor.BINARY_OPERATOR_ADD:
-                                        next = lhsValue.intValue() + rhsValue.intValue();
+                                        //next = lhsValue.intValue() + rhsValue.intValue();
+                                        next = lhsValue.add(rhsValue);
                                         break;
                                     case ExpressionVisitor.BINARY_OPERATOR_SUB:
-                                        next = lhsValue.intValue() - rhsValue.intValue();
+                                        //next = lhsValue.intValue() - rhsValue.intValue();
+                                        next = lhsValue.subtract(rhsValue);
                                         break;
                                     case ExpressionVisitor.BINARY_OPERATOR_MUL:
-                                        next = lhsValue.intValue() * rhsValue.intValue();
+                                        //next = lhsValue.intValue() * rhsValue.intValue();
+                                        next = lhsValue.multiply(rhsValue);
                                         break;
                                     case ExpressionVisitor.BINARY_OPERATOR_DIV:
-                                        next = lhsValue.intValue() / rhsValue.intValue();
+                                        //next = lhsValue.intValue() / rhsValue.intValue();
+                                        next = lhsValue.divide(rhsValue);
                                         break;
                                 }
 
@@ -353,23 +435,23 @@ public class RelationSetView extends JPanel {
                     }
 
                     @Override
-                    public void consume(CellConsumer<Integer> consumer) {
+                    public void consume(CellConsumer<BigDecimal> consumer) {
                         propogateBuffer(0, consumer);
                     }
 
-                    private void propogateNext(Integer next) {
+                    private void propogateNext(BigDecimal next) {
                         System.out.println("propogateNext");
                         buffer.add(next);
-                        ArrayList<CellConsumer<Integer>> currentConsumers = new ArrayList<CellConsumer<Integer>>(consumers);
-                        ArrayList<CellConsumer<Integer>> nextConsumers = new ArrayList<CellConsumer<Integer>>();
+                        ArrayList<CellConsumer<BigDecimal>> currentConsumers = new ArrayList<>(consumers);
+                        ArrayList<CellConsumer<BigDecimal>> nextConsumers = new ArrayList<>();
 
-                        for (CellConsumer<Integer> c : currentConsumers)
+                        for (CellConsumer<BigDecimal> c : currentConsumers)
                             c.next(next, nc -> nextConsumers.add(nc));
 
                         consumers = nextConsumers;
                     }
 
-                    private void propogateBuffer(int index, CellConsumer<Integer> consumer) {
+                    private void propogateBuffer(int index, CellConsumer<BigDecimal> consumer) {
                         if(index < buffer.size())
                             consumer.next(buffer.get(index), nc -> propogateBuffer(index + 1, nc));
                         else

@@ -10,10 +10,11 @@ import astava.samples.virela.parser.RelationParser;
 import astava.samples.virela.view.RelationSetView;
 
 import javax.swing.*;
+import java.math.BigDecimal;
 
 public class Main {
     public static void main(String[] args) {
-        String strInput =
+        /*String strInput =
             "sat = 5.5"
             ;
 
@@ -29,7 +30,7 @@ public class Main {
         }
 
         if(1 != 2)
-            return;
+            return;*/
 
 
         JFrame frame = new JFrame();
@@ -67,7 +68,7 @@ public class Main {
         System.out.print(relation.getId() + " = ");
         relation.getValue().accept(new ExpressionVisitor() {
             @Override
-            public void visitIntStream() {
+            public void visitNumberStream() {
                 System.out.print("int");
             }
 
@@ -77,7 +78,7 @@ public class Main {
             }
 
             @Override
-            public void visitIntLiteral(int value) {
+            public void visitNumberLiteral(BigDecimal value) {
                 System.out.print(value);
             }
 

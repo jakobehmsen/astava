@@ -14,24 +14,24 @@ public class RelationParser extends DelegateParser<Character, Relation> {
     private Parser<Character, Expression> ws =
         new SkipParser<>(CharParse.<Expression>isWhitespace().then(Parse.consume()).multi());
 
-    private Parser<Character, Expression> intValue2 = Parse.reduceInt(
+    /*private Parser<Character, Expression> intValue2 = Parse.reduceInt(
         CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore(),
-        i -> v -> v.visitIntLiteral(i)
-    );
-    private Parser<Character, Expression> intValue = Parse.reduceString(
+        i -> v -> v.visitNumberLiteral(i)
+    );*/
+    private Parser<Character, Expression> numberValue = Parse.reduceString(
         CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore()
         .then(
             CharParse.<Character>isChar('.').then(Parse.copy()).then(Parse.consume())
-            .then(
-                CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore()
-            )
-            .maybe()
+                .then(
+                    CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore()
+                )
+                .maybe()
         ),
         i -> v ->
-            v.visitIntLiteral(new BigDecimal(i).intValue())
+            v.visitNumberLiteral(new BigDecimal(i))
     );
-    private Parser<Character, Expression> intStream =
-        CharParse.<Expression>isChars("int").then(Parse.put(v -> v.visitIntStream()));
+    private Parser<Character, Expression> numberStream =
+        CharParse.<Expression>isChars("number").then(Parse.put(v -> v.visitNumberStream()));
 
     private Parser<Character, Expression> mulExpression =
         ref(() -> this.leafExpression).wrap((cursor, matcher) -> leProduction -> {
@@ -82,8 +82,8 @@ public class RelationParser extends DelegateParser<Character, Relation> {
     }
 
     private Parser<Character, Expression> leafExpression =
-        intStream
-        .or(intValue)
+        numberStream
+        .or(numberValue)
         .or(ref(() -> this.id))
         .or(CharParse.<Expression>isChar('(').then(Parse.consume()).then(ws).then(ref(() -> this.expression)).then(ws).then(CharParse.isChar(')')).then(Parse.consume()));
 

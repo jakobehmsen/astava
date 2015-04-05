@@ -1,9 +1,11 @@
 package astava.samples.virela.parser;
 
+import java.math.BigDecimal;
+
 public interface ExpressionVisitor {
-    void visitIntStream();
+    void visitNumberStream();
     void visitId(String id);
-    void visitIntLiteral(int value);
+    void visitNumberLiteral(BigDecimal value);
 
     public static final int BINARY_OPERATOR_ADD = 0;
     public static final int BINARY_OPERATOR_SUB = 1;
