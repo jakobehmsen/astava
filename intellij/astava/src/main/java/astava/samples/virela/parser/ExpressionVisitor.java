@@ -3,7 +3,7 @@ package astava.samples.virela.parser;
 import java.math.BigDecimal;
 
 public interface ExpressionVisitor {
-    void visitNumberStream();
+    //void visitNumberStream();
     void visitId(String id);
     void visitNumberLiteral(BigDecimal value);
 

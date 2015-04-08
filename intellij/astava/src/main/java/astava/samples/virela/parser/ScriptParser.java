@@ -6,7 +6,7 @@ import astava.parse.charsequence.CharParse;
 import java.math.BigDecimal;
 import java.util.function.Function;
 
-public class RelationParser extends DelegateParser<Character, Relation> {
+public class ScriptParser extends DelegateParser<Character, Statement> {
     private <TOut> Parser<Character, TOut> ws() {
         return new SkipParser<>(CharParse.<TOut>isWhitespace().then(Parse.consume()).multi());
     }
@@ -18,6 +18,7 @@ public class RelationParser extends DelegateParser<Character, Relation> {
         CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore(),
         i -> v -> v.visitNumberLiteral(i)
     );*/
+
     private Parser<Character, Expression> numberValue = Parse.reduceString(
         CharParse.<Character>isDigit().then(Parse.copy()).then(Parse.consume()).onceOrMore()
         .then(
@@ -30,8 +31,8 @@ public class RelationParser extends DelegateParser<Character, Relation> {
         i -> v ->
             v.visitNumberLiteral(new BigDecimal(i))
     );
-    private Parser<Character, Expression> numberStream =
-        CharParse.<Expression>isChars("number").then(Parse.put(v -> v.visitNumberStream()));
+    /*private Parser<Character, Expression> numberStream =
+        CharParse.<Expression>isChars("number").then(Parse.put(v -> v.visitNumberStream()));*/
 
     private Parser<Character, Expression> mulExpression =
         ref(() -> this.leafExpression).wrap((cursor, matcher) -> leProduction -> {
@@ -82,8 +83,8 @@ public class RelationParser extends DelegateParser<Character, Relation> {
     }
 
     private Parser<Character, Expression> leafExpression =
-        numberStream
-        .or(numberValue)
+        //numberStream
+        numberValue
         .or(ref(() -> this.id))
         .or(CharParse.<Expression>isChar('(').then(Parse.consume()).then(ws).then(ref(() -> this.expression)).then(ws).then(CharParse.isChar(')')).then(Parse.consume()));
 
@@ -98,22 +99,37 @@ public class RelationParser extends DelegateParser<Character, Relation> {
 
     private Parser<Character, Expression> id = idPattern(str -> v -> v.visitId(str));
 
-    private Parser<Character, Relation> assign =
+    private Parser<Character, Statement> assign =
         idPattern(str -> str).wrap((cursor, matcher) -> idProduction -> {
             String id = idProduction.cursor().peek();
 
             ws.then(CharParse.isChar('=')).then(Parse.consume()).then(ws).then(expression)
-            .reduce1(value ->
-                new Relation(id, value))
-            .parse(cursor, matcher);
+                .<Statement>reduce1(value -> v -> v.visitAssign(id, value))
+                .parse(cursor, matcher);
         });
 
-    private Parser<Character, Relation> statement = assign;
-    private Parser<Character, Relation> statements = statement.then(this.<Relation>ws().then(statement).multi());
-    private Parser<Character, Relation> body = this.<Relation>ws().then(statements.then(this.<Relation>ws()).maybe());
+    private Parser<Character, Statement> edit =
+        CharParse.<Statement>isChars("edit")
+        .then(this.<Statement>ws())
+        .then(
+            this.<Statement>idPattern(str ->
+                v -> v.visitEdit(str))
+        );
+
+    private Parser<Character, Statement> show =
+        CharParse.<Statement>isChars("show")
+        .then(this.<Statement>ws())
+        .then(
+            this.<Statement>idPattern(str -> v -> v.visitShow(str))
+        );
+
+    private Parser<Character, Statement> statement =
+        edit.or(show).or(assign);
+    private Parser<Character, Statement> statements = statement.then(this.<Statement>ws().then(statement).multi());
+    private Parser<Character, Statement> body = this.<Statement>ws().then(statements.then(this.<Statement>ws()).maybe());
 
     @Override
-    public Parser<Character, Relation> createParser() {
+    public Parser<Character, Statement> createParser() {
         return ref(() -> this.body).then(Parse.atEnd());
     }
 }
