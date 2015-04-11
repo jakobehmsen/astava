@@ -14,11 +14,13 @@ import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class RelationSetView extends JPanel {
-    private Map<String, Slot<?>> relationSet = new Hashtable<>();
+    //private Map<String, Slot<?>> relationSet = new Hashtable<>();
+    private Dict root;
     private JPanel contentView;
     private JTextPane scriptView;
 
@@ -69,7 +71,7 @@ public class RelationSetView extends JPanel {
             contentView.revalidate();
             contentView.repaint();
 
-            System.out.println("Success, relation set size = " + relationSet.size());
+            //System.out.println("Success, relation set size = " + relationSet.size());
         } else {
             System.out.println("Failure");
         }
@@ -78,50 +80,17 @@ public class RelationSetView extends JPanel {
     private void runStatement(Statement statement) {
         statement.accept(new StatementVisitor() {
             @Override
-            public void visitAssign(String id, Expression value) {
-                //relationSet.put
-
+            public void visitAssignLazy(String id, Expression value) {
                 Cell<?> valueCell = expressionToView(value);
 
-                Slot slot = relationSet.computeIfAbsent(id, i -> new Slot<>());
+                root.put(id, valueCell);
+                //Slot slot = relationSet.computeIfAbsent(id, i -> new Slot<>());
 
-                slot.set(valueCell);
+                //slot.set(valueCell);
             }
 
             @Override
-            public void visitEdit(String id) {
-                Slot slot = relationSet.computeIfAbsent(id, i -> new Slot<>());
-                JPanel slotEditor = new JPanel();
-
-                slotEditor.add(new Label(id));
-
-                slot.consume(new CellConsumer() {
-                    JFormattedTextField view;
-                    Object currentValue;
-
-                    @Override
-                    public void next(Object value) {
-                        if (currentValue == null) {
-                            NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-                            nf.setParseIntegerOnly(false);
-                            NumberFormatter formatter = new NumberFormatter(nf);
-                            formatter.setValueClass(BigDecimal.class);
-                            view = new JFormattedTextField(formatter);
-                            view.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
-
-                            slotEditor.add(view);
-                        }
-
-                        currentValue = value;
-                        view.setValue(value);
-                    }
-                });
-
-                contentView.add(slotEditor);
-            }
-
-            @Override
-            public void visitShow(String id) {
+            public void visitAssignEager(String id, Expression value) {
 
             }
         });
@@ -204,8 +173,23 @@ public class RelationSetView extends JPanel {
             }*/
 
             @Override
+            public void visitDict(List<Map.Entry<String, Expression>> entries) {
+                Dict d = new Dict();
+
+                entries.forEach(e -> d.put(e.getKey(), expressionToView(e.getValue())));
+
+                reduceTo(d);
+            }
+
+            @Override
+            public void visitLookup(Expression target, String id) {
+
+            }
+
+            @Override
             public void visitId(String id) {
-                Slot slot = relationSet.computeIfAbsent(id, i -> new Slot());
+                //Slot slot = relationSet.computeIfAbsent(id, i -> new Slot());
+                Cell<?> slot = root.get(id);
 
                 reduceTo(slot);
 
@@ -251,7 +235,9 @@ public class RelationSetView extends JPanel {
             public void visitNumberLiteral(BigDecimal value) {
                 //JLabel view = new JLabel("" + value);
 
-                reduceTo(new Cell<BigDecimal>() {
+                reduceTo(new Singleton<>(value));
+
+                /*reduceTo(new Cell<BigDecimal>() {
                     BigDecimal theValue = value;
 
                     @Override
@@ -260,7 +246,12 @@ public class RelationSetView extends JPanel {
 
                         return () -> { };
                     }
-                });
+                });*/
+            }
+
+            @Override
+            public void visitConstruction(String id, List<Map.Entry<String, Expression>> arguments) {
+
             }
 
             @Override
