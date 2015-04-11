@@ -29,7 +29,6 @@ public class LineTool implements Tool {
             Graphics2D g2D = (Graphics2D)g;
             Line2D lin = new Line2D.Float(x1, y1, x2, y2);
             g2D.draw(lin);
-            System.out.println(x1 + "," + y1 + "," + x2 + "," + y2);
         }
     }
 
