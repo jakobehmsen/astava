@@ -59,6 +59,7 @@ public class MainView extends JFrame {
         return Arrays.asList(
             new LineTool(),
             new RectTool(),
+            new NumberTool(),
             new MarkTool()
         );
     }
