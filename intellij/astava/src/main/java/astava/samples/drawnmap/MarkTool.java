@@ -1,15 +1,13 @@
 package astava.samples.drawnmap;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.text.html.HTMLDocument;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -76,23 +74,41 @@ public class MarkTool extends AbstractTool {
 
     @Override
     public void deactivate() {
-        markings.forEach(m -> getTarget().remove(m));
-        markings.clear();
+        selections.forEach(m -> getTarget().remove(m.marking));
+        selections.forEach(m -> environment.remove(m.variableName));
+        selections.clear();
         getTarget().remove(overlay);
         getTarget().revalidate();
         getTarget().repaint();
-        selectedComponents.clear();
     }
 
-    private ArrayList<JComponent> markings = new ArrayList<>();
-    private HashSet<JComponent> selectedComponents = new HashSet<>();
+    private Map<String, Cell> environment;
+
+    @Override
+    public void setEnvironment(Map<String, Cell> environment) {
+        this.environment = environment;
+    }
+
+    private static class Selection {
+        private final JComponent componentOver;
+        private final JComponent marking;
+        private final String variableName;
+
+        private Selection(JComponent componentOver, JComponent marking, String variableName) {
+            this.componentOver = componentOver;
+            this.marking = marking;
+            this.variableName = variableName;
+        }
+    }
+
+    private ArrayList<Selection> selections = new ArrayList<>();
 
     @Override
     public ToolSession startSession(int x, int y) {
         JComponent componentOver = (JComponent)Arrays.asList(getTarget().getComponentsInLayer(JLayeredPane.DEFAULT_LAYER)).stream().filter(c ->
             c.getBounds().contains(x, y)).findFirst().orElseGet(() -> null);
 
-        if(componentOver != null && componentOver != getTarget() && !selectedComponents.contains(componentOver)) {
+        if(componentOver != null && componentOver != getTarget() && !selections.stream().anyMatch(m -> m.componentOver == componentOver)) {
             JPanel marking = new JPanel(new BorderLayout());
             marking.setBackground(Color.RED);
             String variableName = nextVariableName();
@@ -106,23 +122,25 @@ public class MarkTool extends AbstractTool {
             ));
             marking.add(variableNameLabel, BorderLayout.NORTH);
             marking.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createDashedBorder(Color.DARK_GRAY, 2.0f, 2.0f, 2.0f, false),
+                BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false),
                 BorderFactory.createCompoundBorder(
                     BorderFactory.createDashedBorder(Color.LIGHT_GRAY, 1.0f, 2.0f, 2.0f, false),
-                    BorderFactory.createDashedBorder(Color.DARK_GRAY, 2.0f, 2.0f, 2.0f, false)
+                    BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false)
                 )
             ));
             marking.setOpaque(false);
 
-            int sizeExtra = 18;
-            marking.setSize(componentOver.getWidth() + sizeExtra, componentOver.getHeight() + sizeExtra);
-            marking.setLocation(componentOver.getX() - sizeExtra / 2, componentOver.getY() - sizeExtra / 2);
+            int sizeExtra = 6;
+            int topExtra = 20;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
+            marking.setSize(sizeExtra + componentOver.getWidth() + sizeExtra, topExtra + componentOver.getHeight() + sizeExtra);
+            marking.setLocation(componentOver.getX() - sizeExtra, componentOver.getY() - topExtra);
 
             getTarget().add(marking, JLayeredPane.DRAG_LAYER);
             getTarget().revalidate();
             getTarget().repaint();
-            markings.add(marking);
-            selectedComponents.add(componentOver);
+            selections.add(new Selection(componentOver, marking, variableName));
+
+            environment.put(variableName, (Cell)componentOver);
         }
 
         return NullToolSession.INSTANCE;
@@ -133,7 +151,7 @@ public class MarkTool extends AbstractTool {
     }
 
     private String nextVariableName() {
-        int chIndex = selectedComponents.size() % getSeed().size();
+        int chIndex = selections.size() % getSeed().size();
         char ch = getSeed().get(chIndex);
 
         return "" + ch;

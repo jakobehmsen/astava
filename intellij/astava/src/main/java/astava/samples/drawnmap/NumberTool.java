@@ -8,19 +8,48 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 public class NumberTool extends AbstractTool {
+    private static class Number extends JFormattedTextField implements Cell<BigDecimal>, CellConsumer<BigDecimal> {
+        private Slot<BigDecimal> slot;
+
+        public Number() {
+            NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+            nf.setParseIntegerOnly(false);
+            NumberFormatter formatter = new NumberFormatter(nf);
+            formatter.setValueClass(BigDecimal.class);
+            setFormatter(formatter);
+            setValue(new BigDecimal(0));
+            setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
+
+            slot = new Slot<>();
+            slot.set(new BigDecimal(0));
+
+            addPropertyChangeListener("value", evt -> {
+                BigDecimal currentValue = (BigDecimal) getValue();
+                if (currentValue != null)
+                    slot.set(currentValue);
+            });
+        }
+
+        @Override
+        public Binding consume(CellConsumer<BigDecimal> consumer) {
+            return slot.consume(consumer);
+        }
+
+        @Override
+        public void next(BigDecimal value) {
+            slot.set(new BigDecimal(0));
+            setValue(value);
+        }
+    }
+
     public NumberTool() {
         super("Number");
     }
 
     @Override
     public ToolSession startSession(int x1, int y1) {
-        NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-        nf.setParseIntegerOnly(false);
-        NumberFormatter formatter = new NumberFormatter(nf);
-        formatter.setValueClass(BigDecimal.class);
-        JFormattedTextField number = new JFormattedTextField(formatter);
-        number.setValue(new BigDecimal(0));
-        number.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
+        Number number = new Number();
+
         number.setLocation(x1, y1);
 
         getTarget().add(number);
