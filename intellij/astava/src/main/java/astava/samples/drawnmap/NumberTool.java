@@ -22,6 +22,7 @@ public class NumberTool implements Tool {
         JFormattedTextField number = new JFormattedTextField(formatter);
         number.setValue(new BigDecimal(0));
         number.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        number.setLocation(x1, y1);
 
         target.add(number);
 

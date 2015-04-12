@@ -10,33 +10,30 @@ public class LineTool implements Tool {
         return "Line";
     }
 
-    private static class Line extends JComponent{
-        private int x1;
-        private int y1;
-        private int x2;
-        private int y2;
+    private static class Line extends JComponent {
+        private Line2D line;
 
         private Line(int x1, int y1) {
-            this.x1 = x1;
-            this.y1 = y1;
-            this.x2 = x1;
-            this.y2 = y1;
+            line = new Line2D.Float(x1, y1, x1, y1);
+        }
+
+        public void setLine(int x1, int y1, int x2, int y2) {
+            line.setLine(x1, y1, x2, y2);
         }
 
         @Override
         public void paint(Graphics g) {
             super.paint(g);
             Graphics2D g2D = (Graphics2D)g;
-            Line2D lin = new Line2D.Float(x1, y1, x2, y2);
-            g2D.draw(lin);
+            g2D.draw(line);
         }
     }
 
     @Override
-    public ToolSession startSession(JComponent target, int x, int y) {
-        Line line = new Line(x, y);
+    public ToolSession startSession(JComponent target, int x1, int y1) {
+        Line line = new Line(x1, y1);
 
-        line.setSize(target.getSize());
+        line.setLocation(x1, y1);
 
         target.add(line);
         target.revalidate();
@@ -44,37 +41,35 @@ public class LineTool implements Tool {
 
         return new ToolSession() {
             @Override
-            public void update(int x, int y) {
-                line.x2 = x;
-                line.y2 = y;
+            public void update(int x2, int y2) {
+                int left = Math.min(x1, x2);
+                int right = Math.max(x1, x2);
+                int top = Math.min(y1, y2);
+                int bottom = Math.max(y1, y2);
+                int xDelta = right - left;
+                int yDelta = bottom - top;
+
+                int xDir = x1 < x2
+                    ? 0 // LeftRight
+                    : 1 ; // RightLeft
+                int yDir = y1 < y2
+                    ? 0 // TopDown
+                    : 1 ; // BottomUp
+
+                line.setSize(xDelta + 1, yDelta + 1);
+                line.setLocation(left, top);
+                int lineX1 = xDir == 0 ? 0 : xDelta;
+                int lineY1 = yDir == 0 ? 0 : yDelta;
+                int lineX2 = xDir == 1 ? 0 : xDelta;
+                int lineY2 = yDir == 1 ? 0 : yDelta;
+                line.setLine(lineX1, lineY1, lineX2, lineY2);
                 line.revalidate();
                 line.repaint();
             }
 
             @Override
             public void end() {
-                int left = Math.min(line.x1, line.x2);
-                int right = Math.max(line.x1, line.x2);
-                int top = Math.min(line.y1, line.y2);
-                int bottom = Math.max(line.y1, line.y2);
-                int xDelta = right - left;
-                int yDelta = bottom - top;
 
-                int xDir = line.x1 < line.x2
-                    ? 0 // LeftRight
-                    : 1 ; // RightLeft
-                int yDir = line.y1 < line.y2
-                    ? 0 // TopDown
-                    : 1 ; // BottomUp
-
-                line.setSize(xDelta + 1, yDelta + 1);
-                line.setLocation(left, top);
-                line.x1 = xDir == 0 ? 0 : xDelta;
-                line.y1 = yDir == 0 ? 0 : yDelta;
-                line.x2 = xDir == 1 ? 0 : xDelta;
-                line.y2 = yDir == 1 ? 0 : yDelta;
-                line.revalidate();
-                line.repaint();
             }
         };
     }
