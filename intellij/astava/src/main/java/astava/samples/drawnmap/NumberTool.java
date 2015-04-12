@@ -20,7 +20,7 @@ public class NumberTool extends AbstractTool {
         formatter.setValueClass(BigDecimal.class);
         JFormattedTextField number = new JFormattedTextField(formatter);
         number.setValue(new BigDecimal(0));
-        number.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        number.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
         number.setLocation(x1, y1);
 
         getTarget().add(number);

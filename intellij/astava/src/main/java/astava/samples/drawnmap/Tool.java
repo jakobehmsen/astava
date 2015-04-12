@@ -7,5 +7,5 @@ public interface Tool {
     default void activate() { }
     default void deactivate() { }
     ToolSession startSession(int x, int y);
-    void setTarget(JComponent target);
+    void setTarget(JLayeredPane target);
 }

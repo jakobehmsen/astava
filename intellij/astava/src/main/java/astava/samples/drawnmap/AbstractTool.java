@@ -4,7 +4,7 @@ import javax.swing.*;
 
 public abstract class AbstractTool implements Tool {
     private String text;
-    private JComponent target;
+    private JLayeredPane target;
 
     protected AbstractTool(String text) {
         this.text = text;
@@ -16,11 +16,11 @@ public abstract class AbstractTool implements Tool {
     }
 
     @Override
-    public void setTarget(JComponent target) {
+    public void setTarget(JLayeredPane target) {
         this.target = target;
     }
 
-    public JComponent getTarget() {
+    public JLayeredPane getTarget() {
         return target;
     }
 }

@@ -9,7 +9,7 @@ import java.awt.event.*;
 public class MainView extends JFrame {
     private java.util.List<Tool> tools;
     private JComponent toolBoxView;
-    private JComponent canvasView;
+    private JLayeredPane canvasView;
     private JComponent scriptView;
 
     public MainView(java.util.List<Tool> tools) {
@@ -40,14 +40,11 @@ public class MainView extends JFrame {
             Tool tool = tools.get(i);
 
             JRadioButton b = new JRadioButton();
-            b.addItemListener(new ItemListener() {
-                @Override
-                public void itemStateChanged(ItemEvent e) {
-                    if (e.getStateChange() == ItemEvent.SELECTED) {
-                        tool.activate();
-                    } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-                        tool.deactivate();
-                    }
+            b.addItemListener(e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    tool.activate();
+                } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                    tool.deactivate();
                 }
             });
             b.setActionCommand("" + i);
@@ -110,8 +107,8 @@ public class MainView extends JFrame {
     };
     private MouseAdapter canvasMouseAdapter;
 
-    private JComponent createCanvasView() {
-        JPanel view = new JPanel();
+    private JLayeredPane createCanvasView() {
+        JLayeredPane view = new JLayeredPane();
 
         view.setLayout(null);
 
@@ -158,6 +155,7 @@ public class MainView extends JFrame {
             BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
+        view.setFont(new Font(Font.MONOSPACED, Font.BOLD | Font.ITALIC, 16));
 
         return view;
     }
