@@ -7,14 +7,13 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-public class NumberTool implements Tool {
-    @Override
-    public String getText() {
-        return "Number";
+public class NumberTool extends AbstractTool {
+    public NumberTool() {
+        super("Number");
     }
 
     @Override
-    public ToolSession startSession(JComponent target, int x1, int y1) {
+    public ToolSession startSession(int x1, int y1) {
         NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
         nf.setParseIntegerOnly(false);
         NumberFormatter formatter = new NumberFormatter(nf);
@@ -24,7 +23,7 @@ public class NumberTool implements Tool {
         number.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
         number.setLocation(x1, y1);
 
-        target.add(number);
+        getTarget().add(number);
 
         return new ToolSession() {
             @Override

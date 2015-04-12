@@ -1,18 +1,20 @@
 package astava.samples.drawnmap;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.util.Arrays;
+import java.awt.event.*;
 
 public class MainView extends JFrame {
+    private java.util.List<Tool> tools;
     private JComponent toolBoxView;
     private JComponent canvasView;
     private JComponent scriptView;
 
-    public MainView() {
+    public MainView(java.util.List<Tool> tools) {
+        this.tools = tools;
+
         setTitle("Draw'n'map");
 
         toolBoxView = createToolBoxView();
@@ -34,14 +36,24 @@ public class MainView extends JFrame {
 
         toolBoxButtonGroup = new ButtonGroup();
 
-        java.util.List<Tool> tools = getTools();
         for(int i = 0; i < tools.size(); i++) {
             Tool tool = tools.get(i);
 
             JRadioButton b = new JRadioButton();
+            b.addItemListener(new ItemListener() {
+                @Override
+                public void itemStateChanged(ItemEvent e) {
+                    if (e.getStateChange() == ItemEvent.SELECTED) {
+                        tool.activate();
+                    } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                        tool.deactivate();
+                    }
+                }
+            });
             b.setActionCommand("" + i);
-            if(i == 0)
+            if(i == 0) {
                 b.setSelected(true);
+            }
             b.setText(tool.getText());
             toolBoxButtonGroup.add(b);
             toolBar.add(b);
@@ -52,16 +64,7 @@ public class MainView extends JFrame {
 
     private Tool getSelectedTool() {
         int indexOfTool = Integer.parseInt(toolBoxButtonGroup.getSelection().getActionCommand());
-        return getTools().get(indexOfTool);
-    }
-
-    private java.util.List<Tool> getTools() {
-        return Arrays.asList(
-            new LineTool(),
-            new RectTool(),
-            new NumberTool(),
-            new MarkTool()
-        );
+        return tools.get(indexOfTool);
     }
 
     private MouseAdapter canvasMouseAdapterProxy = new MouseAdapter() {
@@ -117,6 +120,8 @@ public class MainView extends JFrame {
         view.addMouseListener(canvasMouseAdapterProxy);
         view.addMouseMotionListener(canvasMouseAdapterProxy);
 
+        tools.forEach(t -> t.setTarget(view));
+
         return view;
     }
 
@@ -125,7 +130,7 @@ public class MainView extends JFrame {
             @Override
             public void mousePressed(MouseEvent e) {
                 Tool tool = getSelectedTool();
-                switchCanvasMouseAction(tool.startSession(canvasView, e.getX(), e.getY()));
+                switchCanvasMouseAction(tool.startSession(e.getX(), e.getY()));
             }
         };
     }

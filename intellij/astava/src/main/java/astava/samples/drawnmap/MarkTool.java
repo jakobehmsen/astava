@@ -1,15 +1,12 @@
 package astava.samples.drawnmap;
 
-import javax.swing.*;
-
-public class MarkTool implements Tool {
-    @Override
-    public String getText() {
-        return "Mark";
+public class MarkTool extends AbstractTool {
+    public MarkTool() {
+        super("Mark");
     }
 
     @Override
-    public ToolSession startSession(JComponent target, int x, int y) {
+    public ToolSession startSession(int x, int y) {
         return null;
     }
 }

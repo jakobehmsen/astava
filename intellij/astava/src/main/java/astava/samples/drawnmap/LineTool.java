@@ -4,10 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Line2D;
 
-public class LineTool implements Tool {
-    @Override
-    public String getText() {
-        return "Line";
+public class LineTool extends AbstractTool {
+    public LineTool() {
+        super("Line");
     }
 
     private static class Line extends JComponent {
@@ -30,14 +29,12 @@ public class LineTool implements Tool {
     }
 
     @Override
-    public ToolSession startSession(JComponent target, int x1, int y1) {
+    public ToolSession startSession(int x1, int y1) {
         Line line = new Line(x1, y1);
 
         line.setLocation(x1, y1);
 
-        target.add(line);
-        target.revalidate();
-        target.repaint();
+        getTarget().add(line);
 
         return new ToolSession() {
             @Override

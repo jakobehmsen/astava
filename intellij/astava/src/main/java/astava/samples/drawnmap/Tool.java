@@ -4,5 +4,8 @@ import javax.swing.*;
 
 public interface Tool {
     String getText();
-    ToolSession startSession(JComponent target, int x, int y);
+    default void activate() { }
+    default void deactivate() { }
+    ToolSession startSession(int x, int y);
+    void setTarget(JComponent target);
 }

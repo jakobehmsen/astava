@@ -3,10 +3,9 @@ package astava.samples.drawnmap;
 import javax.swing.*;
 import java.awt.*;
 
-public class RectTool implements Tool {
-    @Override
-    public String getText() {
-        return "Rect";
+public class RectTool extends AbstractTool {
+    public RectTool() {
+        super("Rect");
     }
 
     private static class Rect extends JComponent {
@@ -18,14 +17,12 @@ public class RectTool implements Tool {
     }
 
     @Override
-    public ToolSession startSession(JComponent target, int x1, int y1) {
+    public ToolSession startSession(int x1, int y1) {
         Rect rect = new Rect();
 
         rect.setLocation(x1, y1);
 
-        target.add(rect);
-        target.revalidate();
-        target.repaint();
+        getTarget().add(rect);
 
         return new ToolSession() {
             @Override
