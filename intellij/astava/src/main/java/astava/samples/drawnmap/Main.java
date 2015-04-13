@@ -10,6 +10,7 @@ public class Main {
             new LineTool(),
             new RectTool(),
             new NumberTool(),
+            new TextTool(),
             new MarkTool()
         ));
 
