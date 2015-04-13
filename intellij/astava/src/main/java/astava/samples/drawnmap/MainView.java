@@ -1,8 +1,5 @@
 package astava.samples.drawnmap;
 
-import astava.parse.CommonMatcher;
-import astava.parse.Matcher;
-import astava.parse.charsequence.CharSequenceCursor;
 import astava.samples.drawnmap.lang.antlr4.DrawNMapBaseVisitor;
 import astava.samples.drawnmap.lang.antlr4.DrawNMapLexer;
 import astava.samples.drawnmap.lang.antlr4.DrawNMapParser;
@@ -18,9 +15,11 @@ import java.awt.event.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class MainView extends JFrame {
     private java.util.List<Tool> tools;
@@ -28,6 +27,54 @@ public class MainView extends JFrame {
     private JLayeredPane canvasView;
     private JComponent scriptView;
     private Hashtable<String, Cell> environment = new Hashtable<>();
+
+    private static class Selector {
+        private final String name;
+        private final Class<?>[] parameterTypes;
+
+        private Selector(String name, Class<?>[] parameterTypes) {
+            this.name = name;
+            this.parameterTypes = parameterTypes;
+        }
+
+        @Override
+        public int hashCode() {
+            return name.hashCode() * Arrays.hashCode(parameterTypes);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if(obj instanceof Selector) {
+                Selector objSelector = (Selector)obj;
+                return this.name.equals(objSelector.name) &&
+                    Arrays.equals(this.parameterTypes, objSelector.parameterTypes);
+            }
+
+            return false;
+        }
+    }
+
+    private Hashtable<Selector, Function<Object[], Object>> functions = new Hashtable<>();
+
+    private Function<Object[], Object> resolve(String name, Class<?>[] parameterTypes) {
+        return functions.get(new Selector(name, parameterTypes));
+    }
+
+    private void define(String name, Class<?>[] parameterTypes, Function<Object[], Object> function) {
+        functions.put(new Selector(name, parameterTypes), function);
+    }
+
+    private <Return> void define(String name, Supplier<Return> function) {
+        define(name, new Class<?>[0], args -> function.get());
+    }
+
+    private <P0, Return> void define(String name, Class<P0> param1, Function<P0, Return> function) {
+        define(name, new Class<?>[]{param1}, args -> function.apply((P0) args[0]));
+    }
+
+    private <P0, P1, Return> void define(String name, Class<P0> param1, Class<P1> param2, BiFunction<P0, P1, Return> function) {
+        define(name, new Class<?>[]{param1, param2}, args -> function.apply((P0)args[0], (P1)args[1]));
+    }
 
     public MainView(java.util.List<Tool> tools) {
         this.tools = tools;
@@ -42,6 +89,13 @@ public class MainView extends JFrame {
         getContentPane().add(toolBoxView, BorderLayout.NORTH);
         getContentPane().add(canvasView, BorderLayout.CENTER);
         getContentPane().add(scriptView, BorderLayout.SOUTH);
+
+        define("+", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.add(rhs));
+        define("-", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.subtract(rhs));
+        define("/", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.divide(rhs));
+        define("*", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.multiply(rhs));
+
+        define("+", String.class, String.class, (lhs, rhs) -> lhs.concat(rhs));
     }
 
     private ButtonGroup toolBoxButtonGroup;
@@ -228,13 +282,13 @@ public class MainView extends JFrame {
         });
     }
 
-    private Cell<BigDecimal> createBinaryOperation(String operator, Cell<BigDecimal> lhsCell, Cell<BigDecimal> rhsCell) {
-        return new Cell<BigDecimal>() {
+    private Cell<Object> createBinaryOperation(String operator, Cell<Object> lhsCell, Cell<Object> rhsCell) {
+        return new Cell<Object>() {
             @Override
-            public Binding consume(CellConsumer<BigDecimal> consumer) {
+            public Binding consume(CellConsumer<Object> consumer) {
                 return new Binding() {
-                    private BigDecimal lhsValue;
-                    private BigDecimal rhsValue;
+                    private Object lhsValue;
+                    private Object rhsValue;
 
                     private Binding lhsBinding = lhsCell.consume(next -> {
                         lhsValue = next;
@@ -248,7 +302,7 @@ public class MainView extends JFrame {
 
                     private void update() {
                         if(lhsValue != null && rhsValue != null) {
-                            BigDecimal next = reduce(operator, lhsValue, rhsValue);
+                            Object next = reduce(operator, lhsValue, rhsValue);
                             consumer.next(next);
                         }
                     }
@@ -263,17 +317,11 @@ public class MainView extends JFrame {
         };
     }
 
-    private BigDecimal reduce(String operator, BigDecimal lhs, BigDecimal rhs) {
-        switch(operator) {
-            case "+":
-                return lhs.add(rhs);
-            case "-":
-                return lhs.subtract(rhs);
-            case "*":
-                return lhs.multiply(rhs);
-            case "/":
-                return lhs.divide(rhs);
-        }
+    private Object reduce(String operator, Object lhs, Object rhs) {
+        Function<Object[], Object> function = functions.get(new Selector(operator, new Class<?>[]{lhs.getClass(), rhs.getClass()}));
+
+        if(function != null)
+            return function.apply(new Object[]{lhs, rhs});
 
         return null;
     }
@@ -286,9 +334,9 @@ public class MainView extends JFrame {
 
                 if(ctx.mulExpression().size() > 1) {
                     for(int i = 1; i < ctx.mulExpression().size(); i++) {
-                        Cell<BigDecimal> rhsCell = (Cell<BigDecimal>)reduceSource(ctx.mulExpression(i));
+                        Cell<Object> rhsCell = (Cell<Object>)reduceSource(ctx.mulExpression(i));
 
-                        Cell<BigDecimal> lhsCell = (Cell<BigDecimal>)lhs;
+                        Cell<Object> lhsCell = (Cell<Object>)lhs;
 
                         String operator = ctx.ADD_OP(i - 1).getText();
 
@@ -305,9 +353,9 @@ public class MainView extends JFrame {
 
                 if(ctx.leafExpression().size() > 1) {
                     for(int i = 1; i < ctx.leafExpression().size(); i++) {
-                        Cell<BigDecimal> rhsCell = (Cell<BigDecimal>)reduceSource(ctx.leafExpression(i));
+                        Cell<Object> rhsCell = (Cell<Object>)reduceSource(ctx.leafExpression(i));
 
-                        Cell<BigDecimal> lhsCell = (Cell<BigDecimal>)lhs;
+                        Cell<Object> lhsCell = (Cell<Object>)lhs;
 
                         String operator = ctx.MUL_OP(i - 1).getText();
 
@@ -319,13 +367,19 @@ public class MainView extends JFrame {
             }
 
             @Override
-            public Cell visitId(@NotNull DrawNMapParser.IdContext ctx) {
-                return environment.get(ctx.ID().getText());
+            public Cell visitNumber(@NotNull DrawNMapParser.NumberContext ctx) {
+                return new Singleton<>(new BigDecimal(ctx.NUMBER().getText()));
             }
 
             @Override
-            public Cell visitNumber(@NotNull DrawNMapParser.NumberContext ctx) {
-                return new Singleton<>(new BigDecimal(ctx.NUMBER().getText()));
+            public Cell visitString(@NotNull DrawNMapParser.StringContext ctx) {
+                String value = ctx.STRING().getText().substring(1, ctx.STRING().getText().length() - 1);
+                return new Singleton<>(value);
+            }
+
+            @Override
+            public Cell visitId(@NotNull DrawNMapParser.IdContext ctx) {
+                return environment.get(ctx.ID().getText());
             }
 
             @Override
