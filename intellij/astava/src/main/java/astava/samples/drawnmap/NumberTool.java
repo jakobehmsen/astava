@@ -37,7 +37,7 @@ public class NumberTool extends AbstractTool {
 
         @Override
         public void next(BigDecimal value) {
-            slot.set(new BigDecimal(0));
+            slot.set(value);
             setValue(value);
         }
     }
