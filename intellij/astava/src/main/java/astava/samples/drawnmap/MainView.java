@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -272,11 +273,16 @@ public class MainView extends JFrame {
         programCtx.accept(new DrawNMapBaseVisitor<Void>() {
             @Override
             public Void visitAssign(@NotNull DrawNMapParser.AssignContext ctx) {
+                Map<String, Cell> idToCellMap = new Hashtable<>();
+                idToCellMap.putAll(environment);
                 CellConsumer<Object> target = (CellConsumer<Object>) environment.get(ctx.ID().getText());
                 Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression());
 
                 Binding binding = source.consume(target);
                 target.setBinding(binding);
+
+
+                target.setDescription(new Description(idToCellMap, ctx.getText()));
 
                 return null;
             }
@@ -374,7 +380,10 @@ public class MainView extends JFrame {
 
             @Override
             public Cell visitId(@NotNull DrawNMapParser.IdContext ctx) {
-                return environment.get(ctx.ID().getText());
+                String id = ctx.ID().getText();
+                Cell cell = environment.get(id);
+
+                return cell;
             }
 
             @Override

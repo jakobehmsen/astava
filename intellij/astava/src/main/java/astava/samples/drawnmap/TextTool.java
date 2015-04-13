@@ -38,6 +38,16 @@ public class TextTool extends AbstractTool {
             slot.set(value);
             setValue(value);
         }
+
+        @Override
+        public void setDescription(Object description) {
+            slot.setDescription(description);
+        }
+
+        @Override
+        public Object getDescription() {
+            return slot.getDescription();
+        }
     }
 
     public TextTool() {

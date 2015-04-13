@@ -11,7 +11,8 @@ public class Main {
             new RectTool(),
             new NumberTool(),
             new TextTool(),
-            new MarkTool()
+            new MarkTool(),
+            new InspectTool()
         ));
 
         view.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

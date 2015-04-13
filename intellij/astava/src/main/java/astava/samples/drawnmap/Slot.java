@@ -43,4 +43,16 @@ public class Slot<T> implements Cell<T>, CellConsumer<T> {
     public void next(T value) {
         set(value);
     }
+
+    private Object description;
+
+    @Override
+    public void setDescription(Object description) {
+        this.description = description;
+    }
+
+    @Override
+    public Object getDescription() {
+        return description;
+    }
 }
