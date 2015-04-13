@@ -31,6 +31,11 @@ public class NumberTool extends AbstractTool {
         }
 
         @Override
+        public void setBinding(Binding binding) {
+            slot.setBinding(binding);
+        }
+
+        @Override
         public Binding consume(CellConsumer<BigDecimal> consumer) {
             return slot.consume(consumer);
         }

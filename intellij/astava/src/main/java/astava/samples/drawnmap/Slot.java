@@ -2,7 +2,7 @@ package astava.samples.drawnmap;
 
 import java.util.ArrayList;
 
-public class Slot<T> implements Cell<T> {
+public class Slot<T> implements Cell<T>, CellConsumer<T> {
     private T currentValue;
     private ArrayList<CellConsumer<T>> consumers = new ArrayList<>();
 
@@ -28,5 +28,19 @@ public class Slot<T> implements Cell<T> {
         consumers.add(consumer);
 
         return () -> consumers.remove(consumer);
+    }
+
+    private Binding binding;
+
+    @Override
+    public void setBinding(Binding binding) {
+        if(this.binding != null)
+            this.binding.remove();
+        this.binding = binding;
+    }
+
+    @Override
+    public void next(T value) {
+        set(value);
     }
 }

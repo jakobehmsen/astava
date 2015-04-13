@@ -123,7 +123,6 @@ public class MarkTool extends AbstractTool {
                 getTarget().repaint();
             } else {
                 JPanel marking = new JPanel(new BorderLayout());
-                marking.setToolTipText("BLA");
                 marking.setBackground(Color.RED);
                 String variableName = nextVariableName();
                 JLabel variableNameLabel = new JLabel(variableName);
@@ -144,8 +143,8 @@ public class MarkTool extends AbstractTool {
                 ));
                 marking.setOpaque(false);
 
-                int sizeExtra = 6;
-                int topExtra = 20;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
+                int sizeExtra = 2;
+                int topExtra = 24;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
                 marking.setSize(sizeExtra + componentOver.getWidth() + sizeExtra, topExtra + componentOver.getHeight() + sizeExtra);
                 marking.setLocation(componentOver.getX() - sizeExtra, componentOver.getY() - topExtra);
 

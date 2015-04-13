@@ -275,7 +275,8 @@ public class MainView extends JFrame {
                 CellConsumer<Object> target = (CellConsumer<Object>) environment.get(ctx.ID().getText());
                 Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression());
 
-                source.consume(target);
+                Binding binding = source.consume(target);
+                target.setBinding(binding);
 
                 return null;
             }
@@ -367,6 +368,16 @@ public class MainView extends JFrame {
             }
 
             @Override
+            public Cell visitFunctionCall(@NotNull DrawNMapParser.FunctionCallContext ctx) {
+                return super.visitFunctionCall(ctx);
+            }
+
+            @Override
+            public Cell visitId(@NotNull DrawNMapParser.IdContext ctx) {
+                return environment.get(ctx.ID().getText());
+            }
+
+            @Override
             public Cell visitNumber(@NotNull DrawNMapParser.NumberContext ctx) {
                 return new Singleton<>(new BigDecimal(ctx.NUMBER().getText()));
             }
@@ -375,11 +386,6 @@ public class MainView extends JFrame {
             public Cell visitString(@NotNull DrawNMapParser.StringContext ctx) {
                 String value = ctx.STRING().getText().substring(1, ctx.STRING().getText().length() - 1);
                 return new Singleton<>(value);
-            }
-
-            @Override
-            public Cell visitId(@NotNull DrawNMapParser.IdContext ctx) {
-                return environment.get(ctx.ID().getText());
             }
 
             @Override
