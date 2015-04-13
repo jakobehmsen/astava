@@ -70,6 +70,8 @@ public class MarkTool extends AbstractTool {
 
         getTarget().add(overlay);
         getTarget().setLayer(overlay, JLayeredPane.DRAG_LAYER);
+
+        seedIndex = 0;
     }
 
     @Override
@@ -108,52 +110,73 @@ public class MarkTool extends AbstractTool {
         JComponent componentOver = (JComponent)Arrays.asList(getTarget().getComponentsInLayer(JLayeredPane.DEFAULT_LAYER)).stream().filter(c ->
             c.getBounds().contains(x, y)).findFirst().orElseGet(() -> null);
 
-        if(componentOver != null && componentOver != getTarget() && !selections.stream().anyMatch(m -> m.componentOver == componentOver)) {
-            JPanel marking = new JPanel(new BorderLayout());
-            marking.setBackground(Color.RED);
-            String variableName = nextVariableName();
-            JLabel variableNameLabel = new JLabel(variableName);
-            variableNameLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD | Font.ITALIC, 16));
-            variableNameLabel.setOpaque(true);
+        if(componentOver != null && componentOver != getTarget()) {
+            Selection selection = selections.stream().filter(s -> s.componentOver == componentOver).findFirst().orElseGet(() -> null);
 
-            variableNameLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.BLACK),
-                BorderFactory.createEmptyBorder(0, 2, 2, 2)
-            ));
-            marking.add(variableNameLabel, BorderLayout.NORTH);
-            marking.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false),
-                BorderFactory.createCompoundBorder(
-                    BorderFactory.createDashedBorder(Color.LIGHT_GRAY, 1.0f, 2.0f, 2.0f, false),
-                    BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false)
-                )
-            ));
-            marking.setOpaque(false);
+            if(selection != null) {
+                selections.remove(selection);
+                if(selections.isEmpty())
+                    seedIndex = 0;
+                getTarget().remove(selection.marking);
+                environment.remove(selection.variableName);
+                getTarget().revalidate();
+                getTarget().repaint();
+            } else {
+                JPanel marking = new JPanel(new BorderLayout());
+                marking.setToolTipText("BLA");
+                marking.setBackground(Color.RED);
+                String variableName = nextVariableName();
+                JLabel variableNameLabel = new JLabel(variableName);
+                variableNameLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD | Font.ITALIC, 16));
+                variableNameLabel.setOpaque(true);
 
-            int sizeExtra = 6;
-            int topExtra = 20;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
-            marking.setSize(sizeExtra + componentOver.getWidth() + sizeExtra, topExtra + componentOver.getHeight() + sizeExtra);
-            marking.setLocation(componentOver.getX() - sizeExtra, componentOver.getY() - topExtra);
+                variableNameLabel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.BLACK),
+                    BorderFactory.createEmptyBorder(0, 2, 2, 2)
+                ));
+                marking.add(variableNameLabel, BorderLayout.NORTH);
+                marking.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false),
+                    BorderFactory.createCompoundBorder(
+                        BorderFactory.createDashedBorder(Color.LIGHT_GRAY, 1.0f, 2.0f, 2.0f, false),
+                        BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false)
+                    )
+                ));
+                marking.setOpaque(false);
 
-            getTarget().add(marking, JLayeredPane.DRAG_LAYER);
-            getTarget().revalidate();
-            getTarget().repaint();
-            selections.add(new Selection(componentOver, marking, variableName));
+                int sizeExtra = 6;
+                int topExtra = 20;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
+                marking.setSize(sizeExtra + componentOver.getWidth() + sizeExtra, topExtra + componentOver.getHeight() + sizeExtra);
+                marking.setLocation(componentOver.getX() - sizeExtra, componentOver.getY() - topExtra);
 
-            environment.put(variableName, (Cell)componentOver);
+                getTarget().add(marking, JLayeredPane.DRAG_LAYER);
+                getTarget().revalidate();
+                getTarget().repaint();
+                selections.add(new Selection(componentOver, marking, variableName));
+
+                environment.put(variableName, (Cell) componentOver);
+            }
         }
 
         return NullToolSession.INSTANCE;
     }
 
     private java.util.List<Character> getSeed() {
-        return IntStream.range('a', 'z').mapToObj(x -> Character.valueOf((char)x)).collect(Collectors.toList());
+        return IntStream.range('a', 'z' + 1).mapToObj(x -> Character.valueOf((char)x)).collect(Collectors.toList());
     }
 
-    private String nextVariableName() {
-        int chIndex = selections.size() % getSeed().size();
-        char ch = getSeed().get(chIndex);
+    private int seedIndex;
 
-        return "" + ch;
+    private String nextVariableName() {
+        int chIndex = seedIndex % getSeed().size();
+        char ch = getSeed().get(chIndex);
+        String name = "" + ch;
+
+        for(int i = 0; i < seedIndex / getSeed().size(); i++)
+            name += ch;
+
+        seedIndex++;
+
+        return name;
     }
 }
