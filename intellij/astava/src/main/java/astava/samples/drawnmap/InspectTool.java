@@ -80,6 +80,7 @@ public class InspectTool extends AbstractTool {
         if(descriptionView != null)
             getTarget().remove(descriptionView);
         selections.forEach(m -> getTarget().remove(m.marking));
+        selections.forEach(m -> environment.remove(m.variableName));
         selections.clear();
         getTarget().remove(overlay);
         getTarget().revalidate();
@@ -101,6 +102,13 @@ public class InspectTool extends AbstractTool {
     private JTextPane descriptionView;
     private ArrayList<Selection> selections = new ArrayList<>();
 
+    private Map<String, Cell> environment;
+
+    @Override
+    public void setEnvironment(Map<String, Cell> environment) {
+        this.environment = environment;
+    }
+
     @Override
     public ToolSession startSession(int x, int y) {
         JComponent componentOver = (JComponent) Arrays.asList(getTarget().getComponentsInLayer(JLayeredPane.DEFAULT_LAYER)).stream().filter(c ->
@@ -110,6 +118,7 @@ public class InspectTool extends AbstractTool {
             if(descriptionView != null)
                 getTarget().remove(descriptionView);
             selections.forEach(m -> getTarget().remove(m.marking));
+            selections.forEach(m -> environment.remove(m.variableName));
             selections.clear();
 
             Description description = (Description)((CellConsumer<?>) componentOver).getDescription();
@@ -156,6 +165,8 @@ public class InspectTool extends AbstractTool {
                         marking.setSize(marking.getWidth(), marking.getHeight() + topExtra);
                         //getTarget().add(descriptionView);
                     }
+
+                    environment.put(variableName, (Cell) e.getValue());
                 });
             }
 

@@ -3,9 +3,10 @@ package astava.samples.drawnmap;
 import javax.swing.*;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
+import java.math.BigDecimal;
 
 public class TextTool extends AbstractTool {
-    private static class Text extends JFormattedTextField implements Cell<String>, CellConsumer<String> {
+    public static class Text extends JFormattedTextField implements Cell<String>, CellConsumer<String> {
         private Slot<String> slot;
 
         public Text() {
@@ -47,6 +48,11 @@ public class TextTool extends AbstractTool {
         @Override
         public Object getDescription() {
             return slot.getDescription();
+        }
+
+        @Override
+        public String value() {
+            return (String)getValue();
         }
     }
 

@@ -55,4 +55,9 @@ public class Slot<T> implements Cell<T>, CellConsumer<T> {
     public Object getDescription() {
         return description;
     }
+
+    @Override
+    public T value() {
+        return currentValue;
+    }
 }

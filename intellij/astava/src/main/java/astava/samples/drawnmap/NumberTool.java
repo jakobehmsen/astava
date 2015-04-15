@@ -8,7 +8,7 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 public class NumberTool extends AbstractTool {
-    private static class Number extends JFormattedTextField implements Cell<BigDecimal>, CellConsumer<BigDecimal> {
+    public static class Number extends JFormattedTextField implements Cell<BigDecimal>, CellConsumer<BigDecimal> {
         private Slot<BigDecimal> slot;
 
         public Number() {
@@ -41,6 +41,11 @@ public class NumberTool extends AbstractTool {
         }
 
         @Override
+        public BigDecimal value() {
+            return (BigDecimal)getValue();
+        }
+
+        @Override
         public void next(BigDecimal value) {
             slot.set(value);
             setValue(value);
@@ -55,6 +60,8 @@ public class NumberTool extends AbstractTool {
         public Object getDescription() {
             return slot.getDescription();
         }
+
+
     }
 
     public NumberTool() {

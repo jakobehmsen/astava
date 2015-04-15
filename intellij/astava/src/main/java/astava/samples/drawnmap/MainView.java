@@ -269,6 +269,13 @@ public class MainView extends JFrame {
         return view;
     }
 
+    private int nextOutX = 30;
+    private int nextOutY = 30;
+
+    private void updateOuts(int width, int height) {
+        nextOutY += height + 30;
+    }
+
     private void evaluateProgram(DrawNMapParser.ProgramContext programCtx) {
         programCtx.accept(new DrawNMapBaseVisitor<Void>() {
             @Override
@@ -276,13 +283,43 @@ public class MainView extends JFrame {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
                 idToCellMap.putAll(environment);
                 CellConsumer<Object> target = (CellConsumer<Object>) environment.get(ctx.ID().getText());
+
                 Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression());
 
-                Binding binding = source.consume(target);
-                target.setBinding(binding);
+                if (target == null) {
+                    // Undeclared element; implies request for allocation of new element
+                    // Make new element eagerly from right hand side
 
+                    Object value = source.value();
 
-                target.setDescription(new Description(idToCellMap, ctx.getText()));
+                    JComponent newElement = null;
+
+                    if(value instanceof BigDecimal) {
+                        newElement = new NumberTool.Number();
+                        newElement.setSize(60, 20);
+                    } else if(value instanceof String) {
+                        newElement = new TextTool.Text();
+                        newElement.setSize(60, 20);
+                    }
+
+                    idToCellMap.put(ctx.ID().getText(), (Cell)newElement);
+
+                    Binding binding = source.consume((CellConsumer<Object>)newElement);
+                    ((CellConsumer<Object>)newElement).setBinding(binding);
+
+                    ((CellConsumer<Object>)newElement).setDescription(new Description(idToCellMap, ctx.getText()));
+
+                    newElement.setLocation(nextOutX, nextOutY);
+
+                    updateOuts(newElement.getWidth(), newElement.getHeight());
+
+                    canvasView.add(newElement);
+                } else {
+                    Binding binding = source.consume(target);
+                    target.setBinding(binding);
+
+                    target.setDescription(new Description(idToCellMap, ctx.getText()));
+                }
 
                 return null;
             }
@@ -320,6 +357,11 @@ public class MainView extends JFrame {
                         rhsBinding.remove();
                     }
                 };
+            }
+
+            @Override
+            public Object value() {
+                return reduce(operator, lhsCell.value(), rhsCell.value());
             }
         };
     }

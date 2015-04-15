@@ -18,4 +18,9 @@ public class Singleton<T> implements Cell<T> {
     public String toString() {
         return value.toString();
     }
+
+    @Override
+    public T value() {
+        return value;
+    }
 }
