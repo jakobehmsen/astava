@@ -15,19 +15,201 @@ import java.awt.event.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class MainView extends JFrame {
+public class MainView extends JFrame implements Canvas {
     private java.util.List<Tool> tools;
     private JComponent toolBoxView;
     private JLayeredPane canvasView;
     private JComponent scriptView;
     private Hashtable<String, Cell> environment = new Hashtable<>();
+
+
+
+    private static class Selection {
+        private final JComponent component;
+        private final JComponent marking;
+        private final String variableName;
+
+        private Selection(JComponent componentOver, JComponent marking, String variableName) {
+            this.component = componentOver;
+            this.marking = marking;
+            this.variableName = variableName;
+        }
+    }
+
+    private ArrayList<Selection> selections = new ArrayList<>();
+
+    private JPanel overlay;
+
+    @Override
+    public void beginSelect() {
+        overlay = new JPanel();
+        overlay.setSize(canvasView.getSize());
+        overlay.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                for(MouseListener l: canvasView.getMouseListeners())
+                    l.mouseClicked(e);
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                for(MouseListener l: canvasView.getMouseListeners())
+                    l.mousePressed(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                for(MouseListener l: canvasView.getMouseListeners())
+                    l.mouseReleased(e);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                for(MouseListener l: canvasView.getMouseListeners())
+                    l.mouseEntered(e);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                for(MouseListener l: canvasView.getMouseListeners())
+                    l.mouseExited(e);
+            }
+        });
+        overlay.addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                for(MouseMotionListener l: canvasView.getMouseMotionListeners())
+                    l.mouseDragged(e);
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                for(MouseMotionListener l: canvasView.getMouseMotionListeners())
+                    l.mouseMoved(e);
+            }
+        });
+        overlay.setOpaque(false);
+
+        canvasView.add(overlay);
+        canvasView.setLayer(overlay, JLayeredPane.DRAG_LAYER);
+
+        seedIndex = 0;
+    }
+
+    private java.util.List<Character> getSeed() {
+        return IntStream.range('a', 'z' + 1).mapToObj(x -> Character.valueOf((char)x)).collect(Collectors.toList());
+    }
+
+    private int seedIndex;
+
+    private String nextVariableName() {
+        int chIndex = seedIndex % getSeed().size();
+        char ch = getSeed().get(chIndex);
+        String name = "" + ch;
+
+        for(int i = 0; i < seedIndex / getSeed().size(); i++)
+            name += ch;
+
+        seedIndex++;
+
+        return name;
+    }
+
+    @Override
+    public void endSelect() {
+        canvasView.remove(overlay);
+        overlay = null;
+    }
+
+    @Override
+    public JComponent findComponent(int x, int y) {
+        JComponent componentOver = (JComponent)Arrays.asList(canvasView.getComponentsInLayer(JLayeredPane.DEFAULT_LAYER)).stream().filter(c ->
+            c.getBounds().contains(x, y)).findFirst().orElseGet(() -> null);
+
+        return componentOver;
+    }
+
+    @Override
+    public boolean isSelected(JComponent component) {
+        return selections.stream().anyMatch(x -> x.component == component);
+    }
+
+    @Override
+    public JComponent getSelected(String id) {
+        return selections.stream().filter(x -> x.variableName.equals(id)).map(x -> x.component).findFirst().orElseGet(() -> null);
+    }
+
+    @Override
+    public void select(String variableName, JComponent component) {
+        JPanel marking = new JPanel(new BorderLayout());
+        marking.setBackground(Color.RED);
+        if(variableName == null)
+            variableName = nextVariableName();
+        JLabel variableNameLabel = new JLabel(variableName);
+        variableNameLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD | Font.ITALIC, 16));
+        variableNameLabel.setOpaque(true);
+
+        variableNameLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.BLACK),
+            BorderFactory.createEmptyBorder(0, 2, 2, 2)
+        ));
+        marking.add(variableNameLabel, BorderLayout.NORTH);
+        marking.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false),
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createDashedBorder(Color.LIGHT_GRAY, 1.0f, 2.0f, 2.0f, false),
+                BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false)
+            )
+        ));
+        marking.setOpaque(false);
+
+        int sizeExtra = 2;
+        int topExtra = 24;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
+        marking.setSize(sizeExtra + component.getWidth() + sizeExtra, topExtra + component.getHeight() + sizeExtra);
+        marking.setLocation(component.getX() - sizeExtra, component.getY() - topExtra);
+
+        canvasView.add(marking, JLayeredPane.DRAG_LAYER);
+        canvasView.revalidate();
+        canvasView.repaint();
+        selections.add(new Selection(component, marking, variableName));
+
+        environment.put(variableName, (Cell) component);
+    }
+
+    @Override
+    public void deselect(JComponent component) {
+        Selection selection = selections.stream().filter(s -> s.component == component).findFirst().orElseGet(() -> null);
+
+        selections.remove(selection);
+        if(selections.isEmpty())
+            seedIndex = 0;
+
+        canvasView.remove(selection.marking);
+        environment.remove(selection.variableName);
+        canvasView.revalidate();
+        canvasView.repaint();
+    }
+
+    @Override
+    public void clearSelection() {
+        selections.forEach(s -> {
+            canvasView.remove(s.marking);
+            environment.remove(s.variableName);
+        });
+        selections.clear();
+        canvasView.revalidate();
+        canvasView.repaint();
+    }
 
     private static class Selector {
         private final String name;
@@ -265,8 +447,14 @@ public class MainView extends JFrame {
             }
         });
         tools.forEach(t -> t.setEnvironment(environment));
+        tools.forEach(t -> t.setCanvas(this));
 
         return view;
+    }
+
+    @Override
+    public void setScript(String src) {
+        ((JTextPane)scriptView).setText(src);
     }
 
     private int nextOutX = 30;
@@ -281,10 +469,15 @@ public class MainView extends JFrame {
             @Override
             public Void visitAssign(@NotNull DrawNMapParser.AssignContext ctx) {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
+
+                // TODO: Don't add all ids!!! Only the ones actually used (via reduceSource(...))!!!
                 idToCellMap.putAll(environment);
-                CellConsumer<Object> target = (CellConsumer<Object>) environment.get(ctx.ID().getText());
+                String variableName = ctx.ID().getText();
+                CellConsumer<Object> target = (CellConsumer<Object>) environment.get(variableName);
 
                 Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression());
+
+                String srcCode = ctx.getText();
 
                 if (target == null) {
                     // Undeclared element; implies request for allocation of new element
@@ -302,23 +495,25 @@ public class MainView extends JFrame {
                         newElement.setSize(60, 20);
                     }
 
-                    idToCellMap.put(ctx.ID().getText(), (Cell)newElement);
+                    idToCellMap.put(variableName, (Cell)newElement);
 
                     Binding binding = source.consume((CellConsumer<Object>)newElement);
                     ((CellConsumer<Object>)newElement).setBinding(binding);
 
-                    ((CellConsumer<Object>)newElement).setDescription(new Description(idToCellMap, ctx.getText()));
+                    ((CellConsumer<Object>)newElement).setDescription(new Description(idToCellMap, srcCode));
 
                     newElement.setLocation(nextOutX, nextOutY);
 
                     updateOuts(newElement.getWidth(), newElement.getHeight());
 
                     canvasView.add(newElement);
+
+                    select(variableName, newElement);
                 } else {
                     Binding binding = source.consume(target);
                     target.setBinding(binding);
 
-                    target.setDescription(new Description(idToCellMap, ctx.getText()));
+                    target.setDescription(new Description(idToCellMap, srcCode));
                 }
 
                 return null;

@@ -10,4 +10,5 @@ public interface Tool {
     ToolSession startSession(int x, int y);
     void setTarget(JLayeredPane target);
     default void setEnvironment(Map<String, Cell> environment) { }
+    default void setCanvas(Canvas canvas) { }
 }
