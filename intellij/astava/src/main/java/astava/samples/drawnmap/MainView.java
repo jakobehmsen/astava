@@ -470,12 +470,10 @@ public class MainView extends JFrame implements Canvas {
             public Void visitAssign(@NotNull DrawNMapParser.AssignContext ctx) {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
 
-                // TODO: Don't add all ids!!! Only the ones actually used (via reduceSource(...))!!!
-                idToCellMap.putAll(environment);
                 String variableName = ctx.ID().getText();
                 CellConsumer<Object> target = (CellConsumer<Object>) environment.get(variableName);
 
-                Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression());
+                Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression(), idToCellMap);
 
                 String srcCode = ctx.getText();
 
@@ -510,6 +508,8 @@ public class MainView extends JFrame implements Canvas {
 
                     select(variableName, newElement);
                 } else {
+                    idToCellMap.put(variableName, (Cell)target);
+
                     Binding binding = source.consume(target);
                     target.setBinding(binding);
 
@@ -570,15 +570,15 @@ public class MainView extends JFrame implements Canvas {
         return null;
     }
 
-    private Cell<?> reduceSource(ParserRuleContext ctx) {
+    private Cell<?> reduceSource(ParserRuleContext ctx, Map<String, Cell> idToCellMap) {
         return ctx.accept(new DrawNMapBaseVisitor<Cell>() {
             @Override
             public Cell visitAddExpression(@NotNull DrawNMapParser.AddExpressionContext ctx) {
-                Cell lhs = reduceSource(ctx.mulExpression(0));
+                Cell lhs = reduceSource(ctx.mulExpression(0), idToCellMap);
 
                 if(ctx.mulExpression().size() > 1) {
                     for(int i = 1; i < ctx.mulExpression().size(); i++) {
-                        Cell<Object> rhsCell = (Cell<Object>)reduceSource(ctx.mulExpression(i));
+                        Cell<Object> rhsCell = (Cell<Object>)reduceSource(ctx.mulExpression(i), idToCellMap);
 
                         Cell<Object> lhsCell = (Cell<Object>)lhs;
 
@@ -593,11 +593,11 @@ public class MainView extends JFrame implements Canvas {
 
             @Override
             public Cell visitMulExpression(@NotNull DrawNMapParser.MulExpressionContext ctx) {
-                Cell lhs = reduceSource(ctx.leafExpression(0));
+                Cell lhs = reduceSource(ctx.leafExpression(0), idToCellMap);
 
                 if(ctx.leafExpression().size() > 1) {
                     for(int i = 1; i < ctx.leafExpression().size(); i++) {
-                        Cell<Object> rhsCell = (Cell<Object>)reduceSource(ctx.leafExpression(i));
+                        Cell<Object> rhsCell = (Cell<Object>)reduceSource(ctx.leafExpression(i), idToCellMap);
 
                         Cell<Object> lhsCell = (Cell<Object>)lhs;
 
@@ -620,6 +620,8 @@ public class MainView extends JFrame implements Canvas {
                 String id = ctx.ID().getText();
                 Cell cell = environment.get(id);
 
+                idToCellMap.put(id, cell);
+
                 return cell;
             }
 
@@ -636,7 +638,7 @@ public class MainView extends JFrame implements Canvas {
 
             @Override
             public Cell visitEmbeddedExpression(@NotNull DrawNMapParser.EmbeddedExpressionContext ctx) {
-                return reduceSource(ctx.expression());
+                return reduceSource(ctx.expression(), idToCellMap);
             }
         });
     }
