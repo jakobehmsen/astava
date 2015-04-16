@@ -279,6 +279,9 @@ public class MainView extends JFrame implements Canvas {
         define("*", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.multiply(rhs));
 
         define("+", String.class, String.class, (lhs, rhs) -> lhs.concat(rhs));
+
+        define("line", new Class<?>[]{BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, arguments ->
+            new Line(((BigDecimal)arguments[0]).intValue(), ((BigDecimal)arguments[1]).intValue(), ((BigDecimal)arguments[2]).intValue(), ((BigDecimal)arguments[3]).intValue()));
     }
 
     private ButtonGroup toolBoxButtonGroup;
@@ -491,6 +494,9 @@ public class MainView extends JFrame implements Canvas {
                     } else if(value instanceof String) {
                         newElement = new TextTool.Text();
                         newElement.setSize(60, 20);
+                    } else if(value instanceof Line) {
+                        Line lineValue = (Line)value;
+                        newElement = new LineTool.Line(lineValue.x1, lineValue.y1, lineValue.x2, lineValue.y2);
                     }
 
                     idToCellMap.put(variableName, (Cell)newElement);
@@ -519,6 +525,65 @@ public class MainView extends JFrame implements Canvas {
                 return null;
             }
         });
+    }
+
+    private Cell<Object> createFunctionCall(String name, java.util.List<Cell<Object>> argumentCells) {
+        return new Cell<Object>() {
+            @Override
+            public Binding consume(CellConsumer<Object> consumer) {
+                return new Binding() {
+                    private java.util.List<Object> arguments = new ArrayList<>();
+                    private java.util.List<Binding> bindings;
+
+                    {
+                        IntStream.range(0, argumentCells.size()).forEach(i -> arguments.add(null));
+                        bindings = IntStream.range(0, argumentCells.size()).mapToObj(i -> argumentCells.get(i).consume(next -> {
+                            arguments.set(i, next);
+                            update();
+                        })).collect(Collectors.toList());
+                    }
+
+                    private void update() {
+                        if(arguments.stream().filter(x -> x == null).count() == 0) {
+                            Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
+                            Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
+
+                            Object next;
+
+                            if(function != null)
+                                next = function.apply(arguments.toArray(new Object[arguments.size()]));
+                            else
+                                next = null;
+
+                            consumer.next(next);
+                        }
+                    }
+
+                    @Override
+                    public void remove() {
+                        bindings.forEach(x -> x.remove());
+                        arguments = null;
+                        bindings = null;
+                    }
+                };
+            }
+
+            @Override
+            public Object value() {
+                java.util.List<Object> arguments = argumentCells.stream().map(x -> x.value()).collect(Collectors.toList());
+                Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
+                Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
+
+                Object next;
+
+                if(function != null)
+                    next = function.apply(arguments.toArray(new Object[arguments.size()]));
+                else
+                    next = null;
+
+                return next;
+            }
+        };
     }
 
     private Cell<Object> createBinaryOperation(String operator, Cell<Object> lhsCell, Cell<Object> rhsCell) {
@@ -612,7 +677,11 @@ public class MainView extends JFrame implements Canvas {
 
             @Override
             public Cell visitFunctionCall(@NotNull DrawNMapParser.FunctionCallContext ctx) {
-                return super.visitFunctionCall(ctx);
+                String name = ctx.id().ID().getText();
+
+                java.util.List<Cell<Object>> argumentCells = ctx.expression().stream().map(x -> (Cell<Object>) reduceSource(x, idToCellMap)).collect(Collectors.toList());
+
+                return createFunctionCall(name, argumentCells);
             }
 
             @Override
