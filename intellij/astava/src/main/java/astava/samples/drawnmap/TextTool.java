@@ -54,6 +54,21 @@ public class TextTool extends AbstractTool {
         public String value() {
             return (String)getValue();
         }
+
+        @Override
+        public void moveConsumersTo(Cell cell) {
+            slot.moveConsumersTo(cell);
+        }
+
+        @Override
+        public void acceptBinding(Binding x) {
+            slot.acceptBinding(x);
+        }
+
+        @Override
+        public Binding getBinding() {
+            return slot.getBinding();
+        }
     }
 
     public TextTool() {

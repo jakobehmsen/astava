@@ -88,6 +88,21 @@ public class LineTool extends AbstractTool {
         public Object getDescription() {
             return slot.getDescription();
         }
+
+        @Override
+        public void moveConsumersTo(Cell cell) {
+            slot.moveConsumersTo(cell);
+        }
+
+        @Override
+        public void acceptBinding(Binding x) {
+            slot.acceptBinding(x);
+        }
+
+        @Override
+        public Binding getBinding() {
+            return slot.getBinding();
+        }
     }
 
     @Override

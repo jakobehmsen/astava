@@ -474,13 +474,109 @@ public class MainView extends JFrame implements Canvas {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
 
                 String variableName = ctx.ID().getText();
-                CellConsumer<Object> target = (CellConsumer<Object>) environment.get(variableName);
+                CellConsumer<Object> currentTarget = (CellConsumer<Object>) environment.get(variableName);
 
                 Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression(), idToCellMap);
 
                 String srcCode = ctx.getText();
 
-                if (target == null) {
+                if(currentTarget == null) {
+                    JComponent newElement = new SlotComponent();
+
+                    newElement.setSize(60, 20);
+                    newElement.setLocation(nextOutX, nextOutY);
+                    idToCellMap.put(variableName, (Cell) newElement);
+
+                    updateOuts(newElement.getWidth(), newElement.getHeight());
+
+                    currentTarget = (CellConsumer<Object>)newElement;
+                    canvasView.add(newElement);
+
+                    select(variableName, newElement);
+                }
+
+                Binding binding = source.consume(currentTarget);
+                currentTarget.setBinding(binding);
+                currentTarget.setDescription(new Description(idToCellMap, srcCode));
+
+
+
+
+/*
+                int currentTargetComponentIndex = -1;
+                Rectangle currentTargetComponentBounds = null;
+
+                if(currentTarget != null) {
+
+                    deselect((JComponent)currentTarget);
+                    currentTargetComponentIndex = canvasView.getIndexOf((JComponent)currentTarget);
+                    currentTargetComponentBounds = ((JComponent)currentTarget).getBounds();
+                    canvasView.remove((JComponent)currentTarget);
+                    environment.remove(variableName);
+                }
+
+                Object value = source.value();
+
+                JComponent newElement = null;
+
+                if(value instanceof BigDecimal) {
+                    newElement = new NumberTool.Number();
+
+                    if(currentTarget == null) {
+                        newElement.setSize(60, 20);
+                        newElement.setLocation(nextOutX, nextOutY);
+
+                        updateOuts(newElement.getWidth(), newElement.getHeight());
+                    } else {
+                        newElement.setBounds(currentTargetComponentBounds);
+                    }
+                } else if(value instanceof String) {
+                    newElement = new TextTool.Text();
+
+                    if(currentTarget == null) {
+                        newElement.setSize(60, 20);
+                        newElement.setLocation(nextOutX, nextOutY);
+
+                        updateOuts(newElement.getWidth(), newElement.getHeight());
+                    } else {
+                        newElement.setBounds(currentTargetComponentBounds);
+                    }
+                } else if(value instanceof Line) {
+                    Line lineValue = (Line)value;
+                    newElement = new LineTool.Line(lineValue.x1, lineValue.y1, lineValue.x2, lineValue.y2);
+                }
+
+                idToCellMap.put(variableName, (Cell)newElement);
+
+                Binding binding = source.consume((CellConsumer<Object>)newElement);
+                //source.addConsumer((CellConsumer<Object>) newElement);
+                //((CellConsumer<Object>)newElement).setSource(source);
+                ((CellConsumer<Object>)newElement).setBinding(binding);
+
+                ((CellConsumer<Object>)newElement).setDescription(new Description(idToCellMap, srcCode));
+
+                if(currentTarget == null) {
+                    canvasView.add(newElement);
+                } else {
+                    Binding currentTargetBinding = currentTarget.getBinding();
+                    currentTargetBinding.remove();
+
+                    ((Cell)currentTarget).moveConsumersTo((Cell) newElement);
+                    canvasView.add(newElement, currentTargetComponentIndex);
+                }
+
+                environment.put(variableName, (Cell)newElement);
+                select(variableName, newElement);
+
+
+*/
+
+
+
+
+
+
+                /*if (currentTarget == null) {
                     // Undeclared element; implies request for allocation of new element
                     // Make new element eagerly from right hand side
 
@@ -514,13 +610,13 @@ public class MainView extends JFrame implements Canvas {
 
                     select(variableName, newElement);
                 } else {
-                    idToCellMap.put(variableName, (Cell)target);
+                    idToCellMap.put(variableName, (Cell)currentTarget);
 
-                    Binding binding = source.consume(target);
-                    target.setBinding(binding);
+                    Binding binding = source.consume(currentTarget);
+                    currentTarget.setBinding(binding);
 
-                    target.setDescription(new Description(idToCellMap, srcCode));
-                }
+                    currentTarget.setDescription(new Description(idToCellMap, srcCode));
+                }*/
 
                 return null;
             }
@@ -587,7 +683,9 @@ public class MainView extends JFrame implements Canvas {
     }
 
     private Cell<Object> createBinaryOperation(String operator, Cell<Object> lhsCell, Cell<Object> rhsCell) {
-        return new Cell<Object>() {
+        return createFunctionCall(operator, Arrays.asList(lhsCell, rhsCell));
+
+        /*return new Cell<Object>() {
             @Override
             public Binding consume(CellConsumer<Object> consumer) {
                 return new Binding() {
@@ -623,7 +721,7 @@ public class MainView extends JFrame implements Canvas {
             public Object value() {
                 return reduce(operator, lhsCell.value(), rhsCell.value());
             }
-        };
+        };*/
     }
 
     private Object reduce(String operator, Object lhs, Object rhs) {
