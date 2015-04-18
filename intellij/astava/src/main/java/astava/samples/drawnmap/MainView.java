@@ -296,6 +296,10 @@ public class MainView extends JFrame implements Canvas {
         functions.put(new Selector(name, parameterTypes), function);
     }
 
+    private void defineWrapper(String name, Class<?>[] parameterTypes, Function<Object[], Function<Function<Object, SlotValueComponent>, SlotValueComponent>> wrapper) {
+        functions.put(new Selector(name, parameterTypes), args -> wrapper.apply(args));
+    }
+
     private <Return> void define(String name, Supplier<Return> function) {
         define(name, new Class<?>[0], args -> function.get());
     }
@@ -330,10 +334,13 @@ public class MainView extends JFrame implements Canvas {
         define("+", String.class, String.class, (lhs, rhs) -> lhs.concat(rhs));
 
         define("line", new Class<?>[]{BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, arguments ->
-            new Line(((BigDecimal)arguments[0]).intValue(), ((BigDecimal)arguments[1]).intValue(), ((BigDecimal)arguments[2]).intValue(), ((BigDecimal)arguments[3]).intValue()));
+            new Line(((BigDecimal) arguments[0]).intValue(), ((BigDecimal) arguments[1]).intValue(), ((BigDecimal) arguments[2]).intValue(), ((BigDecimal) arguments[3]).intValue()));
 
-        define("bounds", new Class<?>[]{Object.class, BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, arguments ->
-            new Bounds(arguments[0], ((BigDecimal)arguments[1]).intValue(), ((BigDecimal)arguments[2]).intValue(), ((BigDecimal)arguments[3]).intValue(), ((BigDecimal)arguments[4]).intValue()));
+        defineWrapper("bounds", new Class<?>[]{Object.class, BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, args -> valueCreator -> {
+            SlotValueComponent svc = valueCreator.apply(args[0]);
+            svc.getComponent().setBounds(((BigDecimal) args[1]).intValue(), ((BigDecimal) args[2]).intValue(), ((BigDecimal) args[3]).intValue(), ((BigDecimal) args[4]).intValue());
+            return svc;
+        });
     }
 
     private ButtonGroup toolBoxButtonGroup;
@@ -621,6 +628,7 @@ public class MainView extends JFrame implements Canvas {
             @Override
             public Void visitAssign(@NotNull DrawNMapParser.AssignContext ctx) {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
+                //idToCellMap.putAll(environment);
 
                 String variableName = ctx.ID().getText();
                 CellConsumer<Object> currentTarget = (CellConsumer<Object>) environment.get(variableName);
@@ -658,12 +666,9 @@ public class MainView extends JFrame implements Canvas {
                             } else if (value instanceof Line) {
                                 atFirst = false;
                                 return createSlotLine(slot, (Line) value);
-                            } else if(value instanceof Bounds) {
-                                atFirst = false;
-                                Bounds bounds = (Bounds)value;
-                                SlotValueComponent slotValue = createSlotComponentValue(wrapper, slot, bounds.value);
-                                slotValue.getComponent().setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
-                                return slotValue;
+                            } else if(value instanceof Function) {
+                                return ((Function<Function<Object, SlotValueComponent>, SlotValueComponent>)value).apply(v ->
+                                    createSlotComponentValue(wrapper, slot, v));
                             }
                             return null;
                         }
@@ -839,7 +844,7 @@ public class MainView extends JFrame implements Canvas {
 
                     private void update() {
                         if(arguments.stream().filter(x -> x == null).count() == 0) {
-                            Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
+                            //Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
                             //Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
                             Function<Object[], Object> function = resolve(name, arguments.toArray());
 
@@ -979,6 +984,17 @@ public class MainView extends JFrame implements Canvas {
                 java.util.List<Cell<Object>> argumentCells = ctx.expression().stream().map(x -> (Cell<Object>) reduceSource(x, idToCellMap)).collect(Collectors.toList());
 
                 return createFunctionCall(name, argumentCells);
+            }
+
+            @Override
+            public Cell visitProperty(@NotNull DrawNMapParser.PropertyContext ctx) {
+                String name = ctx.name.ID().getText();
+                String id = ctx.target.ID().getText();
+                Cell cell = environment.get(id);
+
+                return ((SlotComponent)cell).property(name);
+
+                //return super.visitProperty(ctx);
             }
 
             @Override
