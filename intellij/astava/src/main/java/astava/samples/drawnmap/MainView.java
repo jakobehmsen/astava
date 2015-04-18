@@ -9,21 +9,23 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.border.Border;
+import javax.swing.text.DefaultFormatter;
+import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Map;
+import java.text.NumberFormat;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class MainView extends JFrame implements Canvas {
     private java.util.List<Tool> tools;
@@ -38,11 +40,13 @@ public class MainView extends JFrame implements Canvas {
         private final JComponent component;
         private final JComponent marking;
         private final String variableName;
+        private final ComponentListener componentListener;
 
-        private Selection(JComponent componentOver, JComponent marking, String variableName) {
+        private Selection(JComponent componentOver, JComponent marking, String variableName, ComponentListener componentListener) {
             this.component = componentOver;
             this.marking = marking;
             this.variableName = variableName;
+            this.componentListener = componentListener;
         }
     }
 
@@ -181,7 +185,31 @@ public class MainView extends JFrame implements Canvas {
         canvasView.add(marking, JLayeredPane.DRAG_LAYER);
         canvasView.revalidate();
         canvasView.repaint();
-        selections.add(new Selection(component, marking, variableName));
+
+        ComponentListener componentListener = new ComponentListener() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                marking.setSize(sizeExtra + component.getWidth() + sizeExtra, topExtra + component.getHeight() + sizeExtra);
+            }
+
+            @Override
+            public void componentMoved(ComponentEvent e) {
+                marking.setLocation(component.getX() - sizeExtra, component.getY() - topExtra);
+            }
+
+            @Override
+            public void componentShown(ComponentEvent e) {
+
+            }
+
+            @Override
+            public void componentHidden(ComponentEvent e) {
+
+            }
+        };
+        component.addComponentListener(componentListener);
+
+        selections.add(new Selection(component, marking, variableName, componentListener));
 
         environment.put(variableName, (Cell) component);
     }
@@ -204,6 +232,7 @@ public class MainView extends JFrame implements Canvas {
     public void clearSelection() {
         selections.forEach(s -> {
             canvasView.remove(s.marking);
+            s.component.removeComponentListener(s.componentListener);
             environment.remove(s.variableName);
         });
         selections.clear();
@@ -237,11 +266,31 @@ public class MainView extends JFrame implements Canvas {
         }
     }
 
+    private Function<Object[], Object> resolve(String name, Object[] arguments) {
+        java.util.List<Function<Object[], Object>> candidates = functions.entrySet().stream()
+            .filter(x ->
+                x.getKey().name.equals(name))
+            .filter(x ->
+                x.getKey().parameterTypes.length == arguments.length)
+            .filter(x ->
+                IntStream.range(0, arguments.length).allMatch(i ->
+                    x.getKey().parameterTypes[i].isAssignableFrom(arguments[i].getClass())))
+            .map(x -> x.getValue())
+            .collect(Collectors.toList());
+
+        if(candidates.size() > 0) {
+            // TODO: Compare candidates; select "most specific".
+            return candidates.get(0);
+        }
+
+        return null;
+    }
+
     private Hashtable<Selector, Function<Object[], Object>> functions = new Hashtable<>();
 
-    private Function<Object[], Object> resolve(String name, Class<?>[] parameterTypes) {
+    /*private Function<Object[], Object> resolve(String name, Class<?>[] parameterTypes) {
         return functions.get(new Selector(name, parameterTypes));
-    }
+    }*/
 
     private void define(String name, Class<?>[] parameterTypes, Function<Object[], Object> function) {
         functions.put(new Selector(name, parameterTypes), function);
@@ -282,6 +331,9 @@ public class MainView extends JFrame implements Canvas {
 
         define("line", new Class<?>[]{BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, arguments ->
             new Line(((BigDecimal)arguments[0]).intValue(), ((BigDecimal)arguments[1]).intValue(), ((BigDecimal)arguments[2]).intValue(), ((BigDecimal)arguments[3]).intValue()));
+
+        define("bounds", new Class<?>[]{Object.class, BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, arguments ->
+            new Bounds(arguments[0], ((BigDecimal)arguments[1]).intValue(), ((BigDecimal)arguments[2]).intValue(), ((BigDecimal)arguments[3]).intValue(), ((BigDecimal)arguments[4]).intValue()));
     }
 
     private ButtonGroup toolBoxButtonGroup;
@@ -467,6 +519,103 @@ public class MainView extends JFrame implements Canvas {
         nextOutY += height + 30;
     }
 
+    private SlotValueComponent createSlotNumber(Slot slot, BigDecimal value) {
+        return new SlotValueComponent() {
+            private JFormattedTextField component;
+
+            {
+                NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+                nf.setParseIntegerOnly(false);
+                NumberFormatter formatter = new NumberFormatter(nf);
+                formatter.setValueClass(BigDecimal.class);
+                component = new JFormattedTextField(formatter);
+
+                component.addPropertyChangeListener("value", evt -> {
+                    BigDecimal currentValue = (BigDecimal) component.getValue();
+                    if (currentValue != null)
+                        slot.set(currentValue);
+                });
+
+                component.setValue(value);
+                component.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
+            }
+
+            @Override
+            public JComponent getComponent() {
+                return component;
+            }
+
+            @Override
+            public boolean accepts(Object value) {
+                return value instanceof BigDecimal;
+            }
+
+            @Override
+            public void setValue(Object value) {
+                component.setValue(value);
+            }
+        };
+    }
+
+    private SlotValueComponent createSlotText(Slot slot, String value) {
+        return new SlotValueComponent() {
+            private JFormattedTextField component;
+
+            {
+                component = new JFormattedTextField(new DefaultFormatter());
+
+                component.addPropertyChangeListener("value", evt -> {
+                    String currentValue = (String) component.getValue();
+                    if (currentValue != null)
+                        slot.set(currentValue);
+                });
+
+                component.setValue(value);
+                component.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
+            }
+
+            @Override
+            public JComponent getComponent() {
+                return component;
+            }
+
+            @Override
+            public boolean accepts(Object value) {
+                return value instanceof String;
+            }
+
+            @Override
+            public void setValue(Object value) {
+                component.setValue(value);
+            }
+        };
+    }
+
+    private SlotValueComponent createSlotLine(Slot slot, Line value) {
+        return new SlotValueComponent() {
+            private LineTool.Line component;
+
+            {
+                component = new LineTool.Line(value.x1, value.y1, value.x2, value.y2);
+            }
+
+            @Override
+            public JComponent getComponent() {
+                return component;
+            }
+
+            @Override
+            public boolean accepts(Object value) {
+                return value instanceof Line;
+            }
+
+            @Override
+            public void setValue(Object value) {
+                component.setLine(((Line) value).x1, ((Line) value).y1, ((Line) value).x2, ((Line) value).y2);
+            }
+        };
+    }
+
     private void evaluateProgram(DrawNMapParser.ProgramContext programCtx) {
         programCtx.accept(new DrawNMapBaseVisitor<Void>() {
             @Override
@@ -481,13 +630,62 @@ public class MainView extends JFrame implements Canvas {
                 String srcCode = ctx.getText();
 
                 if(currentTarget == null) {
-                    JComponent newElement = new SlotComponent();
+                    SlotComponent newElement = new SlotComponent(new SlotValueComponentFactory() {
+                        boolean atFirst = true;
 
-                    newElement.setSize(60, 20);
-                    newElement.setLocation(nextOutX, nextOutY);
+                        @Override
+                        public SlotValueComponent createSlotComponentValue(JPanel wrapper, Slot slot, Object value) {
+                            if (value instanceof BigDecimal) {
+                                SlotValueComponent svc = createSlotNumber(slot, (BigDecimal) value);
+                                if(atFirst) {
+                                    svc.getComponent().setSize(60, 20);
+                                    svc.getComponent().setLocation(nextOutX, nextOutY);
+
+                                    updateOuts(svc.getComponent().getWidth(), svc.getComponent().getHeight());
+                                }
+                                atFirst = false;
+                                return svc;
+                            } else if (value instanceof String) {
+                                SlotValueComponent svc = createSlotText(slot, (String) value);
+                                if(atFirst) {
+                                    svc.getComponent().setSize(60, 20);
+                                    svc.getComponent().setLocation(nextOutX, nextOutY);
+
+                                    updateOuts(svc.getComponent().getWidth(), svc.getComponent().getHeight());
+                                }
+                                atFirst = false;
+                                return svc;
+                            } else if (value instanceof Line) {
+                                atFirst = false;
+                                return createSlotLine(slot, (Line) value);
+                            } else if(value instanceof Bounds) {
+                                atFirst = false;
+                                Bounds bounds = (Bounds)value;
+                                SlotValueComponent slotValue = createSlotComponentValue(wrapper, slot, bounds.value);
+                                slotValue.getComponent().setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+                                return slotValue;
+                            }
+                            return null;
+                        }
+                    });
+
+                    /*SlotComponent newElement = new SlotComponent(value -> {
+                        if (value instanceof BigDecimal) {
+                            return createSlotNumber((BigDecimal) value);
+                        } else if (value instanceof String) {
+                            return createSlotText((String) value);
+                        } else if (value instanceof Line) {
+                            return createSlotLine((Line) value);
+                        }
+                        return null;
+                    });*/
+
+
                     idToCellMap.put(variableName, (Cell) newElement);
+                    /*newElement.setSize(60, 20);
+                    newElement.setLocation(nextOutX, nextOutY);
 
-                    updateOuts(newElement.getWidth(), newElement.getHeight());
+                    updateOuts(newElement.getWidth(), newElement.getHeight());*/
 
                     currentTarget = (CellConsumer<Object>)newElement;
                     canvasView.add(newElement);
@@ -642,7 +840,8 @@ public class MainView extends JFrame implements Canvas {
                     private void update() {
                         if(arguments.stream().filter(x -> x == null).count() == 0) {
                             Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
-                            Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
+                            //Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
+                            Function<Object[], Object> function = resolve(name, arguments.toArray());
 
                             Object next;
 
