@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
 import javax.swing.text.DefaultFormatter;
 import javax.swing.text.NumberFormatter;
 import java.awt.*;
@@ -157,57 +158,36 @@ public class MainView extends JFrame implements Canvas {
     public void select(String variableName, JComponent component) {
         JPanel marking = new JPanel(new BorderLayout());
         marking.setToolTipText(variableName);
-        marking.setBackground(Color.RED);
         if(variableName == null)
             variableName = nextVariableName();
-        JLabel variableNameLabel = new JLabel(variableName);
-        variableNameLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD | Font.ITALIC, 16));
-        variableNameLabel.setOpaque(true);
-
-        variableNameLabel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Color.BLACK),
-            BorderFactory.createEmptyBorder(0, 2, 2, 2)
-        ));
-        marking.add(variableNameLabel, BorderLayout.NORTH);
-        marking.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false),
-            BorderFactory.createCompoundBorder(
-                BorderFactory.createDashedBorder(Color.LIGHT_GRAY, 1.0f, 2.0f, 2.0f, false),
-                BorderFactory.createDashedBorder(Color.DARK_GRAY, 1.0f, 2.0f, 2.0f, false)
-            )
-        ));
+        TitledBorder border = new TitledBorder(variableName);
+        border.setTitleColor(Color.DARK_GRAY);
+        border.setTitleFont(new Font(Font.MONOSPACED, Font.BOLD | Font.ITALIC, 16));
+        marking.setBorder(border);
         marking.setOpaque(false);
 
-        int sizeExtra = 2;
-        int topExtra = 24;//variableNameLabel.getFont().getLineMetrics(variableName, ) variableNameLabel.getHeight();
-        marking.setSize(sizeExtra + component.getWidth() + sizeExtra, topExtra + component.getHeight() + sizeExtra);
-        marking.setLocation(component.getX() - sizeExtra, component.getY() - topExtra);
+        int sizeExtra = 6;
+        int topExtra = 10;
 
         canvasView.add(marking, JLayeredPane.DRAG_LAYER);
         canvasView.revalidate();
         canvasView.repaint();
 
-        ComponentListener componentListener = new ComponentListener() {
+        ComponentListener componentListener = new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                marking.setSize(sizeExtra + component.getWidth() + sizeExtra, topExtra + component.getHeight() + sizeExtra);
+                marking.setSize(sizeExtra + component.getWidth() + sizeExtra, topExtra + sizeExtra + component.getHeight() + sizeExtra);
             }
 
             @Override
             public void componentMoved(ComponentEvent e) {
-                marking.setLocation(component.getX() - sizeExtra, component.getY() - topExtra);
-            }
-
-            @Override
-            public void componentShown(ComponentEvent e) {
-
-            }
-
-            @Override
-            public void componentHidden(ComponentEvent e) {
-
+                marking.setLocation(component.getX() - sizeExtra, component.getY() - (topExtra + sizeExtra));
             }
         };
+
+        componentListener.componentResized(new ComponentEvent(component, -1));
+        componentListener.componentMoved(new ComponentEvent(component, -1));
+
         component.addComponentListener(componentListener);
 
         selections.add(new Selection(component, marking, variableName, componentListener));
@@ -642,7 +622,6 @@ public class MainView extends JFrame implements Canvas {
             @Override
             public Void visitAssign(@NotNull DrawNMapParser.AssignContext ctx) {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
-                //idToCellMap.putAll(environment);
 
                 String variableName = ctx.ID().getText();
                 CellConsumer<Object> currentTarget = (CellConsumer<Object>) environment.get(variableName);
@@ -688,25 +667,9 @@ public class MainView extends JFrame implements Canvas {
                         }
                     });
 
-                    /*SlotComponent newElement = new SlotComponent(value -> {
-                        if (value instanceof BigDecimal) {
-                            return createSlotNumber((BigDecimal) value);
-                        } else if (value instanceof String) {
-                            return createSlotText((String) value);
-                        } else if (value instanceof Line) {
-                            return createSlotLine((Line) value);
-                        }
-                        return null;
-                    });*/
+                    idToCellMap.put(variableName, newElement);
 
-
-                    idToCellMap.put(variableName, (Cell) newElement);
-                    /*newElement.setSize(60, 20);
-                    newElement.setLocation(nextOutX, nextOutY);
-
-                    updateOuts(newElement.getWidth(), newElement.getHeight());*/
-
-                    currentTarget = (CellConsumer<Object>)newElement;
+                    currentTarget = newElement;
                     canvasView.add(newElement);
 
                     select(variableName, newElement);
@@ -717,125 +680,6 @@ public class MainView extends JFrame implements Canvas {
                 Binding binding = source.consume(currentTarget);
                 currentTarget.setBinding(binding);
                 currentTarget.setDescription(new Description(idToCellMap, srcCode));
-
-
-
-
-/*
-                int currentTargetComponentIndex = -1;
-                Rectangle currentTargetComponentBounds = null;
-
-                if(currentTarget != null) {
-
-                    deselect((JComponent)currentTarget);
-                    currentTargetComponentIndex = canvasView.getIndexOf((JComponent)currentTarget);
-                    currentTargetComponentBounds = ((JComponent)currentTarget).getBounds();
-                    canvasView.remove((JComponent)currentTarget);
-                    environment.remove(variableName);
-                }
-
-                Object value = source.value();
-
-                JComponent newElement = null;
-
-                if(value instanceof BigDecimal) {
-                    newElement = new NumberTool.Number();
-
-                    if(currentTarget == null) {
-                        newElement.setSize(60, 20);
-                        newElement.setLocation(nextOutX, nextOutY);
-
-                        updateOuts(newElement.getWidth(), newElement.getHeight());
-                    } else {
-                        newElement.setBounds(currentTargetComponentBounds);
-                    }
-                } else if(value instanceof String) {
-                    newElement = new TextTool.Text();
-
-                    if(currentTarget == null) {
-                        newElement.setSize(60, 20);
-                        newElement.setLocation(nextOutX, nextOutY);
-
-                        updateOuts(newElement.getWidth(), newElement.getHeight());
-                    } else {
-                        newElement.setBounds(currentTargetComponentBounds);
-                    }
-                } else if(value instanceof Line) {
-                    Line lineValue = (Line)value;
-                    newElement = new LineTool.Line(lineValue.x1, lineValue.y1, lineValue.x2, lineValue.y2);
-                }
-
-                idToCellMap.put(variableName, (Cell)newElement);
-
-                Binding binding = source.consume((CellConsumer<Object>)newElement);
-                //source.addConsumer((CellConsumer<Object>) newElement);
-                //((CellConsumer<Object>)newElement).setSource(source);
-                ((CellConsumer<Object>)newElement).setBinding(binding);
-
-                ((CellConsumer<Object>)newElement).setDescription(new Description(idToCellMap, srcCode));
-
-                if(currentTarget == null) {
-                    canvasView.add(newElement);
-                } else {
-                    Binding currentTargetBinding = currentTarget.getBinding();
-                    currentTargetBinding.remove();
-
-                    ((Cell)currentTarget).moveConsumersTo((Cell) newElement);
-                    canvasView.add(newElement, currentTargetComponentIndex);
-                }
-
-                environment.put(variableName, (Cell)newElement);
-                select(variableName, newElement);
-
-
-*/
-
-
-
-
-
-
-                /*if (currentTarget == null) {
-                    // Undeclared element; implies request for allocation of new element
-                    // Make new element eagerly from right hand side
-
-                    Object value = source.value();
-
-                    JComponent newElement = null;
-
-                    if(value instanceof BigDecimal) {
-                        newElement = new NumberTool.Number();
-                        newElement.setSize(60, 20);
-                    } else if(value instanceof String) {
-                        newElement = new TextTool.Text();
-                        newElement.setSize(60, 20);
-                    } else if(value instanceof Line) {
-                        Line lineValue = (Line)value;
-                        newElement = new LineTool.Line(lineValue.x1, lineValue.y1, lineValue.x2, lineValue.y2);
-                    }
-
-                    idToCellMap.put(variableName, (Cell)newElement);
-
-                    Binding binding = source.consume((CellConsumer<Object>)newElement);
-                    ((CellConsumer<Object>)newElement).setBinding(binding);
-
-                    ((CellConsumer<Object>)newElement).setDescription(new Description(idToCellMap, srcCode));
-
-                    newElement.setLocation(nextOutX, nextOutY);
-
-                    updateOuts(newElement.getWidth(), newElement.getHeight());
-
-                    canvasView.add(newElement);
-
-                    select(variableName, newElement);
-                } else {
-                    idToCellMap.put(variableName, (Cell)currentTarget);
-
-                    Binding binding = source.consume(currentTarget);
-                    currentTarget.setBinding(binding);
-
-                    currentTarget.setDescription(new Description(idToCellMap, srcCode));
-                }*/
 
                 return null;
             }
