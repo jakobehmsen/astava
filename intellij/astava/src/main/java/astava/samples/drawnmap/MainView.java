@@ -500,8 +500,8 @@ public class MainView extends JFrame implements Canvas {
         ((JTextPane)scriptView).setText(src);
     }
 
-    private int nextOutX = 30;
-    private int nextOutY = 30;
+    private int nextOutX;
+    private int nextOutY;
 
     private void updateOuts(int width, int height) {
         nextOutY += height + 30;
@@ -605,6 +605,9 @@ public class MainView extends JFrame implements Canvas {
     }
 
     private void evaluateProgram(DrawNMapParser.ProgramContext programCtx) {
+        nextOutX = 30;
+        nextOutY = 30;
+
         programCtx.accept(new DrawNMapBaseVisitor<Void>() {
             @Override
             public Void visitPropertyAssign(@NotNull DrawNMapParser.PropertyAssignContext ctx) {
@@ -704,8 +707,6 @@ public class MainView extends JFrame implements Canvas {
 
                     private void update() {
                         if(arguments.stream().filter(x -> x == null).count() == 0) {
-                            //Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
-                            //Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
                             Function<Object[], Object> function = resolve(name, arguments.toArray());
 
                             Object next;
