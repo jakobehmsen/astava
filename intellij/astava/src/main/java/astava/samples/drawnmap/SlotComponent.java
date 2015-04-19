@@ -12,11 +12,9 @@ import java.beans.PropertyChangeListener;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Locale;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<Object> {
     private Slot<Object> slot;
@@ -194,6 +192,45 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
     @Override
     public Binding getBinding() {
         return slot.getBinding();
+    }
+
+    private Hashtable<String, Binding> propertyBindings = new Hashtable<>();
+
+    private Consumer propertyUpdater(String name) {
+        switch(name) {
+            case "x":
+                return value ->
+                    setLocation(((BigDecimal) value).intValue(), getY());
+            case "y":
+                return value ->
+                    setLocation(getX(), ((BigDecimal) value).intValue());
+            case "width":
+                return value -> {
+                    setSize(((BigDecimal) value).intValue(), getHeight());
+                    revalidate();
+                    repaint();
+                };
+            case "height":
+                return value -> {
+                    setSize(getWidth(), ((BigDecimal) value).intValue());
+                    revalidate();
+                    repaint();
+                };
+        }
+
+        return null;
+    }
+
+    public void propertyAssign(String name, Cell<Object> valueCell) {
+        Binding binding = propertyBindings.get(name);
+
+        if(binding != null)
+            binding.remove();
+
+        Consumer propertyUpdater = propertyUpdater(name);
+        binding = valueCell.consume(value -> propertyUpdater.accept(value));
+
+        propertyBindings.put(name, binding);
     }
 
     private abstract class PropertyCell implements Cell {

@@ -105,7 +105,7 @@ public class MainView extends JFrame implements Canvas {
         overlay.setOpaque(false);
 
         canvasView.add(overlay);
-        canvasView.setLayer(overlay, JLayeredPane.DRAG_LAYER);
+        canvasView.setLayer(overlay, JLayeredPane.DRAG_LAYER + 1);
 
         seedIndex = 0;
     }
@@ -156,6 +156,7 @@ public class MainView extends JFrame implements Canvas {
     @Override
     public void select(String variableName, JComponent component) {
         JPanel marking = new JPanel(new BorderLayout());
+        marking.setToolTipText(variableName);
         marking.setBackground(Color.RED);
         if(variableName == null)
             variableName = nextVariableName();
@@ -625,6 +626,19 @@ public class MainView extends JFrame implements Canvas {
 
     private void evaluateProgram(DrawNMapParser.ProgramContext programCtx) {
         programCtx.accept(new DrawNMapBaseVisitor<Void>() {
+            @Override
+            public Void visitPropertyAssign(@NotNull DrawNMapParser.PropertyAssignContext ctx) {
+                String variableName = ctx.target.ID().getText();
+                String propertyName = ctx.name.ID().getText();
+                SlotComponent currentTarget = (SlotComponent) environment.get(variableName);
+
+                Map<String, Cell> idToCellMap = new Hashtable<>();
+                Cell<Object> source = (Cell<Object>) reduceSource(ctx.expression(), idToCellMap);
+                currentTarget.propertyAssign(propertyName, source);
+
+                return super.visitPropertyAssign(ctx);
+            }
+
             @Override
             public Void visitAssign(@NotNull DrawNMapParser.AssignContext ctx) {
                 Map<String, Cell> idToCellMap = new Hashtable<>();
