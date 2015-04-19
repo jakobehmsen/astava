@@ -24,12 +24,12 @@ public class DrawNMapParser extends Parser {
 	public static final int
 		RULE_program = 0, RULE_statement = 1, RULE_assign = 2, RULE_expression = 3, 
 		RULE_addExpression = 4, RULE_mulExpression = 5, RULE_leafExpression = 6, 
-		RULE_functionCall = 7, RULE_property = 8, RULE_id = 9, RULE_number = 10, 
-		RULE_string = 11, RULE_embeddedExpression = 12;
+		RULE_functionCall = 7, RULE_property = 8, RULE_propertyAssign = 9, RULE_id = 10, 
+		RULE_number = 11, RULE_string = 12, RULE_embeddedExpression = 13;
 	public static final String[] ruleNames = {
 		"program", "statement", "assign", "expression", "addExpression", "mulExpression", 
-		"leafExpression", "functionCall", "property", "id", "number", "string", 
-		"embeddedExpression"
+		"leafExpression", "functionCall", "property", "propertyAssign", "id", 
+		"number", "string", "embeddedExpression"
 	};
 
 	@Override
@@ -73,16 +73,16 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(29);
+			setState(31);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==ID) {
 				{
 				{
-				setState(26); statement();
+				setState(28); statement();
 				}
 				}
-				setState(31);
+				setState(33);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -103,6 +103,9 @@ public class DrawNMapParser extends Parser {
 		public AssignContext assign() {
 			return getRuleContext(AssignContext.class,0);
 		}
+		public PropertyAssignContext propertyAssign() {
+			return getRuleContext(PropertyAssignContext.class,0);
+		}
 		public StatementContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -118,9 +121,21 @@ public class DrawNMapParser extends Parser {
 		StatementContext _localctx = new StatementContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_statement);
 		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(32); assign();
+			setState(36);
+			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
+			case 1:
+				enterOuterAlt(_localctx, 1);
+				{
+				setState(34); propertyAssign();
+				}
+				break;
+
+			case 2:
+				enterOuterAlt(_localctx, 2);
+				{
+				setState(35); assign();
+				}
+				break;
 			}
 		}
 		catch (RecognitionException re) {
@@ -157,9 +172,9 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(34); match(ID);
-			setState(35); match(ASSIGN_OP);
-			setState(36); expression();
+			setState(38); match(ID);
+			setState(39); match(ASSIGN_OP);
+			setState(40); expression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -194,7 +209,7 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(38); addExpression();
+			setState(42); addExpression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -237,18 +252,18 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(40); mulExpression();
-			setState(45);
+			setState(44); mulExpression();
+			setState(49);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==ADD_OP) {
 				{
 				{
-				setState(41); match(ADD_OP);
-				setState(42); mulExpression();
+				setState(45); match(ADD_OP);
+				setState(46); mulExpression();
 				}
 				}
-				setState(47);
+				setState(51);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -294,18 +309,18 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(48); leafExpression();
-			setState(53);
+			setState(52); leafExpression();
+			setState(57);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==MUL_OP) {
 				{
 				{
-				setState(49); match(MUL_OP);
-				setState(50); leafExpression();
+				setState(53); match(MUL_OP);
+				setState(54); leafExpression();
 				}
 				}
-				setState(55);
+				setState(59);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -356,47 +371,47 @@ public class DrawNMapParser extends Parser {
 		LeafExpressionContext _localctx = new LeafExpressionContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_leafExpression);
 		try {
-			setState(62);
-			switch ( getInterpreter().adaptivePredict(_input,3,_ctx) ) {
+			setState(66);
+			switch ( getInterpreter().adaptivePredict(_input,4,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(56); functionCall();
+				setState(60); functionCall();
 				}
 				break;
 
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(57); property();
+				setState(61); property();
 				}
 				break;
 
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(58); id();
+				setState(62); id();
 				}
 				break;
 
 			case 4:
 				enterOuterAlt(_localctx, 4);
 				{
-				setState(59); number();
+				setState(63); number();
 				}
 				break;
 
 			case 5:
 				enterOuterAlt(_localctx, 5);
 				{
-				setState(60); string();
+				setState(64); string();
 				}
 				break;
 
 			case 6:
 				enterOuterAlt(_localctx, 6);
 				{
-				setState(61); embeddedExpression();
+				setState(65); embeddedExpression();
 				}
 				break;
 			}
@@ -446,31 +461,31 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(64); id();
-			setState(65); match(OPEN_PAR);
-			setState(74);
+			setState(68); id();
+			setState(69); match(OPEN_PAR);
+			setState(78);
 			_la = _input.LA(1);
 			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << OPEN_PAR) | (1L << ID) | (1L << NUMBER) | (1L << STRING))) != 0)) {
 				{
-				setState(66); expression();
-				setState(71);
+				setState(70); expression();
+				setState(75);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==COMMA) {
 					{
 					{
-					setState(67); match(COMMA);
-					setState(68); expression();
+					setState(71); match(COMMA);
+					setState(72); expression();
 					}
 					}
-					setState(73);
+					setState(77);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
 				}
 			}
 
-			setState(76); match(CLOSE_PAR);
+			setState(80); match(CLOSE_PAR);
 			}
 		}
 		catch (RecognitionException re) {
@@ -511,9 +526,58 @@ public class DrawNMapParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(78); ((PropertyContext)_localctx).target = id();
-			setState(79); match(DOT);
-			setState(80); ((PropertyContext)_localctx).name = id();
+			setState(82); ((PropertyContext)_localctx).target = id();
+			setState(83); match(DOT);
+			setState(84); ((PropertyContext)_localctx).name = id();
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class PropertyAssignContext extends ParserRuleContext {
+		public IdContext target;
+		public IdContext name;
+		public TerminalNode DOT() { return getToken(DrawNMapParser.DOT, 0); }
+		public IdContext id(int i) {
+			return getRuleContext(IdContext.class,i);
+		}
+		public TerminalNode ASSIGN_OP() { return getToken(DrawNMapParser.ASSIGN_OP, 0); }
+		public List<IdContext> id() {
+			return getRuleContexts(IdContext.class);
+		}
+		public ExpressionContext expression() {
+			return getRuleContext(ExpressionContext.class,0);
+		}
+		public PropertyAssignContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_propertyAssign; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DrawNMapVisitor ) return ((DrawNMapVisitor<? extends T>)visitor).visitPropertyAssign(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final PropertyAssignContext propertyAssign() throws RecognitionException {
+		PropertyAssignContext _localctx = new PropertyAssignContext(_ctx, getState());
+		enterRule(_localctx, 18, RULE_propertyAssign);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(86); ((PropertyAssignContext)_localctx).target = id();
+			setState(87); match(DOT);
+			setState(88); ((PropertyAssignContext)_localctx).name = id();
+			setState(89); match(ASSIGN_OP);
+			setState(90); expression();
 			}
 		}
 		catch (RecognitionException re) {
@@ -542,11 +606,11 @@ public class DrawNMapParser extends Parser {
 
 	public final IdContext id() throws RecognitionException {
 		IdContext _localctx = new IdContext(_ctx, getState());
-		enterRule(_localctx, 18, RULE_id);
+		enterRule(_localctx, 20, RULE_id);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(82); match(ID);
+			setState(92); match(ID);
 			}
 		}
 		catch (RecognitionException re) {
@@ -575,11 +639,11 @@ public class DrawNMapParser extends Parser {
 
 	public final NumberContext number() throws RecognitionException {
 		NumberContext _localctx = new NumberContext(_ctx, getState());
-		enterRule(_localctx, 20, RULE_number);
+		enterRule(_localctx, 22, RULE_number);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(84); match(NUMBER);
+			setState(94); match(NUMBER);
 			}
 		}
 		catch (RecognitionException re) {
@@ -608,11 +672,11 @@ public class DrawNMapParser extends Parser {
 
 	public final StringContext string() throws RecognitionException {
 		StringContext _localctx = new StringContext(_ctx, getState());
-		enterRule(_localctx, 22, RULE_string);
+		enterRule(_localctx, 24, RULE_string);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(86); match(STRING);
+			setState(96); match(STRING);
 			}
 		}
 		catch (RecognitionException re) {
@@ -645,13 +709,13 @@ public class DrawNMapParser extends Parser {
 
 	public final EmbeddedExpressionContext embeddedExpression() throws RecognitionException {
 		EmbeddedExpressionContext _localctx = new EmbeddedExpressionContext(_ctx, getState());
-		enterRule(_localctx, 24, RULE_embeddedExpression);
+		enterRule(_localctx, 26, RULE_embeddedExpression);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(88); match(OPEN_PAR);
-			setState(89); expression();
-			setState(90); match(CLOSE_PAR);
+			setState(98); match(OPEN_PAR);
+			setState(99); expression();
+			setState(100); match(CLOSE_PAR);
 			}
 		}
 		catch (RecognitionException re) {
@@ -666,28 +730,31 @@ public class DrawNMapParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\uacf5\uee8c\u4f5d\u8b0d\u4a45\u78bd\u1b2f\u3378\3\16_\4\2\t\2\4\3\t"+
+		"\3\uacf5\uee8c\u4f5d\u8b0d\u4a45\u78bd\u1b2f\u3378\3\16i\4\2\t\2\4\3\t"+
 		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4"+
-		"\f\t\f\4\r\t\r\4\16\t\16\3\2\7\2\36\n\2\f\2\16\2!\13\2\3\3\3\3\3\4\3\4"+
-		"\3\4\3\4\3\5\3\5\3\6\3\6\3\6\7\6.\n\6\f\6\16\6\61\13\6\3\7\3\7\3\7\7\7"+
-		"\66\n\7\f\7\16\79\13\7\3\b\3\b\3\b\3\b\3\b\3\b\5\bA\n\b\3\t\3\t\3\t\3"+
-		"\t\3\t\7\tH\n\t\f\t\16\tK\13\t\5\tM\n\t\3\t\3\t\3\n\3\n\3\n\3\n\3\13\3"+
-		"\13\3\f\3\f\3\r\3\r\3\16\3\16\3\16\3\16\3\16\2\17\2\4\6\b\n\f\16\20\22"+
-		"\24\26\30\32\2\2[\2\37\3\2\2\2\4\"\3\2\2\2\6$\3\2\2\2\b(\3\2\2\2\n*\3"+
-		"\2\2\2\f\62\3\2\2\2\16@\3\2\2\2\20B\3\2\2\2\22P\3\2\2\2\24T\3\2\2\2\26"+
-		"V\3\2\2\2\30X\3\2\2\2\32Z\3\2\2\2\34\36\5\4\3\2\35\34\3\2\2\2\36!\3\2"+
-		"\2\2\37\35\3\2\2\2\37 \3\2\2\2 \3\3\2\2\2!\37\3\2\2\2\"#\5\6\4\2#\5\3"+
-		"\2\2\2$%\7\13\2\2%&\7\b\2\2&\'\5\b\5\2\'\7\3\2\2\2()\5\n\6\2)\t\3\2\2"+
-		"\2*/\5\f\7\2+,\7\6\2\2,.\5\f\7\2-+\3\2\2\2.\61\3\2\2\2/-\3\2\2\2/\60\3"+
-		"\2\2\2\60\13\3\2\2\2\61/\3\2\2\2\62\67\5\16\b\2\63\64\7\7\2\2\64\66\5"+
-		"\16\b\2\65\63\3\2\2\2\669\3\2\2\2\67\65\3\2\2\2\678\3\2\2\28\r\3\2\2\2"+
-		"9\67\3\2\2\2:A\5\20\t\2;A\5\22\n\2<A\5\24\13\2=A\5\26\f\2>A\5\30\r\2?"+
-		"A\5\32\16\2@:\3\2\2\2@;\3\2\2\2@<\3\2\2\2@=\3\2\2\2@>\3\2\2\2@?\3\2\2"+
-		"\2A\17\3\2\2\2BC\5\24\13\2CL\7\4\2\2DI\5\b\5\2EF\7\3\2\2FH\5\b\5\2GE\3"+
-		"\2\2\2HK\3\2\2\2IG\3\2\2\2IJ\3\2\2\2JM\3\2\2\2KI\3\2\2\2LD\3\2\2\2LM\3"+
-		"\2\2\2MN\3\2\2\2NO\7\5\2\2O\21\3\2\2\2PQ\5\24\13\2QR\7\t\2\2RS\5\24\13"+
-		"\2S\23\3\2\2\2TU\7\13\2\2U\25\3\2\2\2VW\7\f\2\2W\27\3\2\2\2XY\7\r\2\2"+
-		"Y\31\3\2\2\2Z[\7\4\2\2[\\\5\b\5\2\\]\7\5\2\2]\33\3\2\2\2\b\37/\67@IL";
+		"\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\3\2\7\2 \n\2\f\2\16\2#\13\2\3\3\3\3"+
+		"\5\3\'\n\3\3\4\3\4\3\4\3\4\3\5\3\5\3\6\3\6\3\6\7\6\62\n\6\f\6\16\6\65"+
+		"\13\6\3\7\3\7\3\7\7\7:\n\7\f\7\16\7=\13\7\3\b\3\b\3\b\3\b\3\b\3\b\5\b"+
+		"E\n\b\3\t\3\t\3\t\3\t\3\t\7\tL\n\t\f\t\16\tO\13\t\5\tQ\n\t\3\t\3\t\3\n"+
+		"\3\n\3\n\3\n\3\13\3\13\3\13\3\13\3\13\3\13\3\f\3\f\3\r\3\r\3\16\3\16\3"+
+		"\17\3\17\3\17\3\17\3\17\2\20\2\4\6\b\n\f\16\20\22\24\26\30\32\34\2\2e"+
+		"\2!\3\2\2\2\4&\3\2\2\2\6(\3\2\2\2\b,\3\2\2\2\n.\3\2\2\2\f\66\3\2\2\2\16"+
+		"D\3\2\2\2\20F\3\2\2\2\22T\3\2\2\2\24X\3\2\2\2\26^\3\2\2\2\30`\3\2\2\2"+
+		"\32b\3\2\2\2\34d\3\2\2\2\36 \5\4\3\2\37\36\3\2\2\2 #\3\2\2\2!\37\3\2\2"+
+		"\2!\"\3\2\2\2\"\3\3\2\2\2#!\3\2\2\2$\'\5\24\13\2%\'\5\6\4\2&$\3\2\2\2"+
+		"&%\3\2\2\2\'\5\3\2\2\2()\7\13\2\2)*\7\b\2\2*+\5\b\5\2+\7\3\2\2\2,-\5\n"+
+		"\6\2-\t\3\2\2\2.\63\5\f\7\2/\60\7\6\2\2\60\62\5\f\7\2\61/\3\2\2\2\62\65"+
+		"\3\2\2\2\63\61\3\2\2\2\63\64\3\2\2\2\64\13\3\2\2\2\65\63\3\2\2\2\66;\5"+
+		"\16\b\2\678\7\7\2\28:\5\16\b\29\67\3\2\2\2:=\3\2\2\2;9\3\2\2\2;<\3\2\2"+
+		"\2<\r\3\2\2\2=;\3\2\2\2>E\5\20\t\2?E\5\22\n\2@E\5\26\f\2AE\5\30\r\2BE"+
+		"\5\32\16\2CE\5\34\17\2D>\3\2\2\2D?\3\2\2\2D@\3\2\2\2DA\3\2\2\2DB\3\2\2"+
+		"\2DC\3\2\2\2E\17\3\2\2\2FG\5\26\f\2GP\7\4\2\2HM\5\b\5\2IJ\7\3\2\2JL\5"+
+		"\b\5\2KI\3\2\2\2LO\3\2\2\2MK\3\2\2\2MN\3\2\2\2NQ\3\2\2\2OM\3\2\2\2PH\3"+
+		"\2\2\2PQ\3\2\2\2QR\3\2\2\2RS\7\5\2\2S\21\3\2\2\2TU\5\26\f\2UV\7\t\2\2"+
+		"VW\5\26\f\2W\23\3\2\2\2XY\5\26\f\2YZ\7\t\2\2Z[\5\26\f\2[\\\7\b\2\2\\]"+
+		"\5\b\5\2]\25\3\2\2\2^_\7\13\2\2_\27\3\2\2\2`a\7\f\2\2a\31\3\2\2\2bc\7"+
+		"\r\2\2c\33\3\2\2\2de\7\4\2\2ef\5\b\5\2fg\7\5\2\2g\35\3\2\2\2\t!&\63;D"+
+		"MP";
 	public static final ATN _ATN =
 		ATNSimulator.deserialize(_serializedATN.toCharArray());
 	static {

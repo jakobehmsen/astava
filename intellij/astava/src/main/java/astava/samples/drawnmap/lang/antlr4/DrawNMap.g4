@@ -1,7 +1,7 @@
 grammar DrawNMap;
 
 program: statement*;
-statement: assign;
+statement: propertyAssign | assign;
 assign: ID ASSIGN_OP expression;
 expression: addExpression;
 addExpression: mulExpression (ADD_OP mulExpression)*;
@@ -10,6 +10,7 @@ leafExpression:
     functionCall | property | id | number | string | embeddedExpression;
 functionCall: id OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
 property: target=id DOT name=id;
+propertyAssign: target=id DOT name=id ASSIGN_OP expression;
 id: ID;
 number: NUMBER;
 string: STRING;

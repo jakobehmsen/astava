@@ -106,6 +106,14 @@ public class DrawNMapBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
+	@Override public T visitPropertyAssign(@NotNull DrawNMapParser.PropertyAssignContext ctx) { return visitChildren(ctx); }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.
+	 */
 	@Override public T visitAssign(@NotNull DrawNMapParser.AssignContext ctx) { return visitChildren(ctx); }
 
 	/**

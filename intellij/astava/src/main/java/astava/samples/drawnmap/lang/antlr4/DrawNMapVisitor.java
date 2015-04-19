@@ -89,6 +89,13 @@ public interface DrawNMapVisitor<T> extends ParseTreeVisitor<T> {
 	T visitId(@NotNull DrawNMapParser.IdContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link DrawNMapParser#propertyAssign}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPropertyAssign(@NotNull DrawNMapParser.PropertyAssignContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link DrawNMapParser#assign}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
