@@ -696,6 +696,8 @@ public class MainView extends JFrame implements Canvas {
                     canvasView.add(newElement);
 
                     select(variableName, newElement);
+                } else {
+                    idToCellMap.put(variableName, (Cell) currentTarget);
                 }
 
                 Binding binding = source.consume(currentTarget);
@@ -991,6 +993,8 @@ public class MainView extends JFrame implements Canvas {
                 String name = ctx.name.ID().getText();
                 String id = ctx.target.ID().getText();
                 Cell cell = environment.get(id);
+
+                idToCellMap.put(id, cell);
 
                 return ((SlotComponent)cell).property(name);
 
