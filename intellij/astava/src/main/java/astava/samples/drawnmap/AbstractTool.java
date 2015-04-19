@@ -5,6 +5,7 @@ import javax.swing.*;
 public abstract class AbstractTool implements Tool {
     private String text;
     private JLayeredPane target;
+    private Canvas canvas;
 
     protected AbstractTool(String text) {
         this.text = text;
@@ -22,5 +23,14 @@ public abstract class AbstractTool implements Tool {
 
     public JLayeredPane getTarget() {
         return target;
+    }
+
+    @Override
+    public void setCanvas(Canvas canvas) {
+        this.canvas = canvas;
+    }
+
+    public Canvas getCanvas() {
+        return canvas;
     }
 }
