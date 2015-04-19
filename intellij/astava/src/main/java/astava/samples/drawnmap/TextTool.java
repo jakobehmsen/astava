@@ -3,7 +3,6 @@ package astava.samples.drawnmap;
 import javax.swing.*;
 import javax.swing.text.DefaultFormatter;
 import java.awt.*;
-import java.math.BigDecimal;
 
 public class TextTool extends AbstractTool {
     public static class Text extends JFormattedTextField implements Cell<String>, CellConsumer<String> {
@@ -53,16 +52,6 @@ public class TextTool extends AbstractTool {
         @Override
         public String value() {
             return (String)getValue();
-        }
-
-        @Override
-        public void moveConsumersTo(Cell cell) {
-            slot.moveConsumersTo(cell);
-        }
-
-        @Override
-        public void acceptBinding(Binding x) {
-            slot.acceptBinding(x);
         }
 
         @Override
