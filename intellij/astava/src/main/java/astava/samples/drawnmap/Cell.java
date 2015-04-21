@@ -2,5 +2,5 @@ package astava.samples.drawnmap;
 
 public interface Cell<T> {
     Binding consume(CellConsumer<T> consumer);
-    T value();
+    T value(Object[] args);
 }

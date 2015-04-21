@@ -20,7 +20,7 @@ public class Singleton<T> implements Cell<T> {
     }
 
     @Override
-    public T value() {
+    public T value(Object[] args) {
         return value;
     }
 }

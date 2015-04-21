@@ -74,6 +74,14 @@ public class DrawNMapBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
+	@Override public T visitFunction(@NotNull DrawNMapParser.FunctionContext ctx) { return visitChildren(ctx); }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.
+	 */
 	@Override public T visitFunctionCall(@NotNull DrawNMapParser.FunctionCallContext ctx) { return visitChildren(ctx); }
 
 	/**
@@ -98,6 +106,22 @@ public class DrawNMapBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
+	@Override public T visitParameterAndUsage(@NotNull DrawNMapParser.ParameterAndUsageContext ctx) { return visitChildren(ctx); }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.
+	 */
+	@Override public T visitBlock(@NotNull DrawNMapParser.BlockContext ctx) { return visitChildren(ctx); }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.
+	 */
 	@Override public T visitId(@NotNull DrawNMapParser.IdContext ctx) { return visitChildren(ctx); }
 
 	/**
@@ -107,6 +131,14 @@ public class DrawNMapBaseVisitor<T> extends AbstractParseTreeVisitor<T> implemen
 	 * {@link #visitChildren} on {@code ctx}.
 	 */
 	@Override public T visitPropertyAssign(@NotNull DrawNMapParser.PropertyAssignContext ctx) { return visitChildren(ctx); }
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.
+	 */
+	@Override public T visitParameters(@NotNull DrawNMapParser.ParametersContext ctx) { return visitChildren(ctx); }
 
 	/**
 	 * {@inheritDoc}

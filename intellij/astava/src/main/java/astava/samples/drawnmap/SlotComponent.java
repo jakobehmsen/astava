@@ -38,8 +38,8 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
     }
 
     @Override
-    public Object value() {
-        return slot.value();
+    public Object value(Object[] args) {
+        return slot.value(args);
     }
 
     @Override
@@ -122,7 +122,7 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
         @Override
         public Binding consume(CellConsumer consumer) {
             consumers.add(consumer);
-            consumer.next(value());
+            consumer.next(value(null));
             return () -> {
                 consumers.remove(consumer);
                 if(consumers.isEmpty())
@@ -131,7 +131,7 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
         }
 
         protected void post() {
-            consumers.forEach(x -> x.next(value()));
+            consumers.forEach(x -> x.next(value(null)));
         }
 
         protected abstract void clean();
@@ -142,7 +142,7 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
 
         ComponentListener listener = new ComponentAdapter() {
             {
-                lastValue = value();
+                lastValue = value(null);
             }
 
             @Override
@@ -166,9 +166,9 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
         }
 
         protected void componentChanged() {
-            if(lastValue == null || !lastValue.equals(value()));
+            if(lastValue == null || !lastValue.equals(value(null)));
                 post();
-            lastValue = value();
+            lastValue = value(null);
         }
     }
 
@@ -177,28 +177,28 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
             case "x":
                 return new ComponentListerPropertyCell() {
                     @Override
-                    public Object value() {
+                    public Object value(Object[] args) {
                         return new BigDecimal(getX());
                     }
                 };
             case "y":
                 return new ComponentListerPropertyCell() {
                     @Override
-                    public Object value() {
+                    public Object value(Object[] args) {
                         return new BigDecimal(getY());
                     }
                 };
             case "width":
                 return new ComponentListerPropertyCell() {
                     @Override
-                    public Object value() {
+                    public Object value(Object[] args) {
                         return new BigDecimal(getWidth());
                     }
                 };
             case "height":
                 return new ComponentListerPropertyCell() {
                     @Override
-                    public Object value() {
+                    public Object value(Object[] args) {
                         return new BigDecimal(getHeight());
                     }
                 };

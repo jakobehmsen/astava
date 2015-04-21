@@ -50,7 +50,7 @@ public class TextTool extends AbstractTool {
         }
 
         @Override
-        public String value() {
+        public String value(Object[] args) {
             return (String)getValue();
         }
 

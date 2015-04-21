@@ -69,8 +69,8 @@ public class LineTool extends AbstractTool {
         }
 
         @Override
-        public astava.samples.drawnmap.Line value() {
-            return slot.value();
+        public astava.samples.drawnmap.Line value(Object[] args) {
+            return slot.value(args);
         }
 
         @Override

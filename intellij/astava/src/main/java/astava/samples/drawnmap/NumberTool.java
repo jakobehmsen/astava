@@ -41,7 +41,7 @@ public class NumberTool extends AbstractTool {
         }
 
         @Override
-        public BigDecimal value() {
+        public BigDecimal value(Object[] args) {
             return (BigDecimal)getValue();
         }
 

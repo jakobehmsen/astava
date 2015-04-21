@@ -61,6 +61,13 @@ public interface DrawNMapVisitor<T> extends ParseTreeVisitor<T> {
 	T visitEmbeddedExpression(@NotNull DrawNMapParser.EmbeddedExpressionContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link DrawNMapParser#function}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunction(@NotNull DrawNMapParser.FunctionContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link DrawNMapParser#functionCall}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -82,6 +89,20 @@ public interface DrawNMapVisitor<T> extends ParseTreeVisitor<T> {
 	T visitProperty(@NotNull DrawNMapParser.PropertyContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link DrawNMapParser#parameterAndUsage}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterAndUsage(@NotNull DrawNMapParser.ParameterAndUsageContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link DrawNMapParser#block}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBlock(@NotNull DrawNMapParser.BlockContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link DrawNMapParser#id}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -94,6 +115,13 @@ public interface DrawNMapVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitPropertyAssign(@NotNull DrawNMapParser.PropertyAssignContext ctx);
+
+	/**
+	 * Visit a parse tree produced by {@link DrawNMapParser#parameters}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameters(@NotNull DrawNMapParser.ParametersContext ctx);
 
 	/**
 	 * Visit a parse tree produced by {@link DrawNMapParser#assign}.
