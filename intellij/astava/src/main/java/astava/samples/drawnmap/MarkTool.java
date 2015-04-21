@@ -9,30 +9,23 @@ public class MarkTool extends AbstractTool {
 
     @Override
     public void activate() {
-        canvas.beginSelect();
+        getCanvas().beginSelect();
     }
 
     @Override
     public void deactivate() {
-        canvas.endSelect();
-    }
-
-    private Canvas canvas;
-
-    @Override
-    public void setCanvas(Canvas canvas) {
-        this.canvas = canvas;
+        getCanvas().endSelect();
     }
 
     @Override
     public ToolSession startSession(int x, int y) {
-        JComponent componentOver = canvas.findComponent(x, y);
+        JComponent componentOver = getCanvas().findComponent(x, y);
 
         if(componentOver != null) {
-            if(canvas.isSelected(componentOver)) {
-                canvas.deselect(componentOver);
+            if(getCanvas().isSelected(componentOver)) {
+                getCanvas().deselect(componentOver);
             } else {
-                canvas.select(null, componentOver);
+                getCanvas().select(null, componentOver);
             }
         }
 

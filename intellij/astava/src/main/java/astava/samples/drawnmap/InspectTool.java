@@ -9,33 +9,26 @@ public class InspectTool extends AbstractTool {
 
     @Override
     public void activate() {
-        canvas.beginSelect();
+        getCanvas().beginSelect();
     }
 
     @Override
     public void deactivate() {
-        canvas.endSelect();
-    }
-
-    private Canvas canvas;
-
-    @Override
-    public void setCanvas(Canvas canvas) {
-        this.canvas = canvas;
+        getCanvas().endSelect();
     }
 
     @Override
     public ToolSession startSession(int x, int y) {
-        JComponent componentOver = canvas.findComponent(x, y);
+        JComponent componentOver = getCanvas().findComponent(x, y);
 
         if(componentOver != null) {
-            canvas.clearSelection();
+            getCanvas().clearSelection();
 
             Description description = (Description)((CellConsumer<?>) componentOver).getDescription();
 
             description.getIdToCellMap().entrySet().forEach(e -> {
-                canvas.select(e.getKey(), (JComponent)e.getValue());
-                canvas.setScript(description.getSrc());
+                getCanvas().select(e.getKey(), (JComponent) e.getValue());
+                getCanvas().setScript(description.getSrc());
             });
         }
 
