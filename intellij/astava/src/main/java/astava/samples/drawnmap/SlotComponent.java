@@ -44,22 +44,20 @@ public class SlotComponent extends JPanel implements Cell<Object>, CellConsumer<
 
     @Override
     public void next(Object value) {
-        if(slotValue == null)
-            createSlotValueComponent(value);
-        else if(!slotValue.accepts(value)) {
+        if(slotValue == null) {
+            slotValue = slotValueFactory.createSlotComponentValue(this, slot, value);
+            setBounds(slotValue.getComponent().getBounds());
+            add(slotValue.getComponent(), BorderLayout.CENTER);
+            revalidate();
+            repaint();
+        } else if(!slotValue.accepts(value)) {
             remove(slotValue.getComponent());
-            createSlotValueComponent(value);
+            slotValue = slotValueFactory.createSlotComponentValue(this, slot, value);
+            add(slotValue.getComponent(), BorderLayout.CENTER);
+            revalidate();
+            repaint();
         } else
             slotValue.setValue(value);
-    }
-
-    private void createSlotValueComponent(Object value) {
-        slotValue = slotValueFactory.createSlotComponentValue(this, slot, value);
-
-        setBounds(slotValue.getComponent().getBounds());
-        add(slotValue.getComponent(), BorderLayout.CENTER);
-        revalidate();
-        repaint();
     }
 
     @Override
