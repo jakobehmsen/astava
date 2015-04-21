@@ -27,13 +27,13 @@ public class DrawNMapParser extends Parser {
 		RULE_program = 0, RULE_statement = 1, RULE_assign = 2, RULE_function = 3, 
 		RULE_parameters = 4, RULE_expression = 5, RULE_addExpression = 6, RULE_mulExpression = 7, 
 		RULE_leafExpression = 8, RULE_functionCall = 9, RULE_property = 10, RULE_propertyAssign = 11, 
-		RULE_id = 12, RULE_number = 13, RULE_string = 14, RULE_array = 15, RULE_parameterAndUsage = 16, 
-		RULE_block = 17, RULE_embeddedExpression = 18;
+		RULE_id = 12, RULE_number = 13, RULE_string = 14, RULE_array = 15, RULE_block = 16, 
+		RULE_parameterAndUsage = 17, RULE_embeddedExpression = 18;
 	public static final String[] ruleNames = {
 		"program", "statement", "assign", "function", "parameters", "expression", 
 		"addExpression", "mulExpression", "leafExpression", "functionCall", "property", 
-		"propertyAssign", "id", "number", "string", "array", "parameterAndUsage", 
-		"block", "embeddedExpression"
+		"propertyAssign", "id", "number", "string", "array", "block", "parameterAndUsage", 
+		"embeddedExpression"
 	};
 
 	@Override
@@ -547,14 +547,14 @@ public class DrawNMapParser extends Parser {
 			case 7:
 				enterOuterAlt(_localctx, 7);
 				{
-				setState(93); parameterAndUsage();
+				setState(93); block();
 				}
 				break;
 
 			case 8:
 				enterOuterAlt(_localctx, 8);
 				{
-				setState(94); block();
+				setState(94); parameterAndUsage();
 				}
 				break;
 
@@ -908,41 +908,6 @@ public class DrawNMapParser extends Parser {
 		return _localctx;
 	}
 
-	public static class ParameterAndUsageContext extends ParserRuleContext {
-		public TerminalNode ID() { return getToken(DrawNMapParser.ID, 0); }
-		public TerminalNode COLON() { return getToken(DrawNMapParser.COLON, 0); }
-		public ParameterAndUsageContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-		@Override public int getRuleIndex() { return RULE_parameterAndUsage; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof DrawNMapVisitor ) return ((DrawNMapVisitor<? extends T>)visitor).visitParameterAndUsage(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-
-	public final ParameterAndUsageContext parameterAndUsage() throws RecognitionException {
-		ParameterAndUsageContext _localctx = new ParameterAndUsageContext(_ctx, getState());
-		enterRule(_localctx, 32, RULE_parameterAndUsage);
-		try {
-			enterOuterAlt(_localctx, 1);
-			{
-			setState(141); match(COLON);
-			setState(142); match(ID);
-			}
-		}
-		catch (RecognitionException re) {
-			_localctx.exception = re;
-			_errHandler.reportError(this, re);
-			_errHandler.recover(this, re);
-		}
-		finally {
-			exitRule();
-		}
-		return _localctx;
-	}
-
 	public static class BlockContext extends ParserRuleContext {
 		public ParametersContext parameters() {
 			return getRuleContext(ParametersContext.class,0);
@@ -965,22 +930,57 @@ public class DrawNMapParser extends Parser {
 
 	public final BlockContext block() throws RecognitionException {
 		BlockContext _localctx = new BlockContext(_ctx, getState());
-		enterRule(_localctx, 34, RULE_block);
+		enterRule(_localctx, 32, RULE_block);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(144); match(OPEN_BRA);
-			setState(146);
+			setState(141); match(OPEN_BRA);
+			setState(143);
 			_la = _input.LA(1);
 			if (_la==PIPE) {
 				{
-				setState(145); parameters();
+				setState(142); parameters();
 				}
 			}
 
-			setState(148); expression();
-			setState(149); match(CLOSE_BRA);
+			setState(145); expression();
+			setState(146); match(CLOSE_BRA);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class ParameterAndUsageContext extends ParserRuleContext {
+		public TerminalNode ID() { return getToken(DrawNMapParser.ID, 0); }
+		public TerminalNode COLON() { return getToken(DrawNMapParser.COLON, 0); }
+		public ParameterAndUsageContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_parameterAndUsage; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DrawNMapVisitor ) return ((DrawNMapVisitor<? extends T>)visitor).visitParameterAndUsage(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final ParameterAndUsageContext parameterAndUsage() throws RecognitionException {
+		ParameterAndUsageContext _localctx = new ParameterAndUsageContext(_ctx, getState());
+		enterRule(_localctx, 34, RULE_parameterAndUsage);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(148); match(COLON);
+			setState(149); match(ID);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1044,12 +1044,12 @@ public class DrawNMapParser extends Parser {
 		"\n\3\13\3\13\3\13\3\13\3\13\7\13j\n\13\f\13\16\13m\13\13\5\13o\n\13\3"+
 		"\13\3\13\3\f\3\f\3\f\3\f\3\r\3\r\3\r\3\r\3\r\3\r\3\16\3\16\3\17\3\17\3"+
 		"\20\3\20\3\21\3\21\3\21\3\21\7\21\u0087\n\21\f\21\16\21\u008a\13\21\5"+
-		"\21\u008c\n\21\3\21\3\21\3\22\3\22\3\22\3\23\3\23\5\23\u0095\n\23\3\23"+
+		"\21\u008c\n\21\3\21\3\21\3\22\3\22\5\22\u0092\n\22\3\22\3\22\3\22\3\23"+
 		"\3\23\3\23\3\24\3\24\3\24\3\24\3\24\2\25\2\4\6\b\n\f\16\20\22\24\26\30"+
 		"\32\34\36 \"$&\2\2\u009e\2+\3\2\2\2\4\61\3\2\2\2\6\63\3\2\2\2\b\67\3\2"+
 		"\2\2\n>\3\2\2\2\fG\3\2\2\2\16I\3\2\2\2\20Q\3\2\2\2\22b\3\2\2\2\24d\3\2"+
 		"\2\2\26r\3\2\2\2\30v\3\2\2\2\32|\3\2\2\2\34~\3\2\2\2\36\u0080\3\2\2\2"+
-		" \u0082\3\2\2\2\"\u008f\3\2\2\2$\u0092\3\2\2\2&\u0099\3\2\2\2(*\5\4\3"+
+		" \u0082\3\2\2\2\"\u008f\3\2\2\2$\u0096\3\2\2\2&\u0099\3\2\2\2(*\5\4\3"+
 		"\2)(\3\2\2\2*-\3\2\2\2+)\3\2\2\2+,\3\2\2\2,\3\3\2\2\2-+\3\2\2\2.\62\5"+
 		"\30\r\2/\62\5\6\4\2\60\62\5\b\5\2\61.\3\2\2\2\61/\3\2\2\2\61\60\3\2\2"+
 		"\2\62\5\3\2\2\2\63\64\7\21\2\2\64\65\7\f\2\2\65\66\5\f\7\2\66\7\3\2\2"+
@@ -1071,11 +1071,11 @@ public class DrawNMapParser extends Parser {
 		"\5\f\7\2\u0086\u0084\3\2\2\2\u0087\u008a\3\2\2\2\u0088\u0086\3\2\2\2\u0088"+
 		"\u0089\3\2\2\2\u0089\u008c\3\2\2\2\u008a\u0088\3\2\2\2\u008b\u0083\3\2"+
 		"\2\2\u008b\u008c\3\2\2\2\u008c\u008d\3\2\2\2\u008d\u008e\7\t\2\2\u008e"+
-		"!\3\2\2\2\u008f\u0090\7\20\2\2\u0090\u0091\7\21\2\2\u0091#\3\2\2\2\u0092"+
-		"\u0094\7\6\2\2\u0093\u0095\5\n\6\2\u0094\u0093\3\2\2\2\u0094\u0095\3\2"+
-		"\2\2\u0095\u0096\3\2\2\2\u0096\u0097\5\f\7\2\u0097\u0098\7\7\2\2\u0098"+
+		"!\3\2\2\2\u008f\u0091\7\6\2\2\u0090\u0092\5\n\6\2\u0091\u0090\3\2\2\2"+
+		"\u0091\u0092\3\2\2\2\u0092\u0093\3\2\2\2\u0093\u0094\5\f\7\2\u0094\u0095"+
+		"\7\7\2\2\u0095#\3\2\2\2\u0096\u0097\7\20\2\2\u0097\u0098\7\21\2\2\u0098"+
 		"%\3\2\2\2\u0099\u009a\7\4\2\2\u009a\u009b\5\f\7\2\u009b\u009c\7\5\2\2"+
-		"\u009c\'\3\2\2\2\16+\61:BNVbkn\u0088\u008b\u0094";
+		"\u009c\'\3\2\2\2\16+\61:BNVbkn\u0088\u008b\u0091";
 	public static final ATN _ATN =
 		ATNSimulator.deserialize(_serializedATN.toCharArray());
 	static {

@@ -568,22 +568,12 @@ public class MainView extends JFrame implements Canvas {
         };
     }
 
-    private SlotValueComponent createSlotArray(Slot slot, Object[] value) {
+    private SlotValueComponent createSlotDefault(Slot slot, Object value) {
         return new SlotValueComponent() {
             private JFormattedTextField component;
 
             {
                 component = new JFormattedTextField(new DefaultFormatter());
-                component = new JFormattedTextField(new DefaultFormatter() {
-                    {
-                        setValueClass(Object[].class);
-                    }
-
-                    @Override
-                    public String valueToString(Object value) throws ParseException {
-                        return value != null ? Arrays.toString((Object[])value) : "";
-                    }
-                });
                 component.setEditable(false);
 
                 component.addPropertyChangeListener("value", evt -> {
@@ -696,8 +686,11 @@ public class MainView extends JFrame implements Canvas {
                             } else if (value instanceof Line) {
                                 atFirst = false;
                                 return createSlotLine(slot, (Line) value);
-                            } else if (value instanceof Object[]) {
-                                SlotValueComponent svc = createSlotArray(slot, (Object[]) value);
+                            } else if(value instanceof Function) {
+                                return ((Function<Function<Object, SlotValueComponent>, SlotValueComponent>)value).apply(v ->
+                                    createSlotComponentValue(wrapper, slot, v));
+                            } else {
+                                SlotValueComponent svc = createSlotDefault(slot, value);
                                 if(atFirst) {
                                     svc.getComponent().setSize(60, 20);
                                     svc.getComponent().setLocation(nextOutX, nextOutY);
@@ -706,11 +699,7 @@ public class MainView extends JFrame implements Canvas {
                                 }
                                 atFirst = false;
                                 return svc;
-                            } else if(value instanceof Function) {
-                                return ((Function<Function<Object, SlotValueComponent>, SlotValueComponent>)value).apply(v ->
-                                    createSlotComponentValue(wrapper, slot, v));
                             }
-                            return null;
                         }
                     });
 
@@ -929,6 +918,8 @@ public class MainView extends JFrame implements Canvas {
             public Cell visitArray(@NotNull DrawNMapParser.ArrayContext ctx) {
                 java.util.List<Cell> valueCells = ctx.expression().stream().map(x -> reduceSource(x, idToCellMap, parameters)).collect(Collectors.toList());
 
+                // Could be a usage of a/the list function?
+
                 return new Cell<Object>() {
                     @Override
                     public Binding consume(CellConsumer<Object> consumer) {
@@ -963,9 +954,17 @@ public class MainView extends JFrame implements Canvas {
 
                     @Override
                     public Object value(Object[] args) {
-                        return valueCells.stream().map(x -> x.value(args)).toArray(s -> new Object[s]);
+                        return new Tuple(valueCells.stream().map(x -> x.value(args)).toArray(s -> new Object[s]));
                     }
                 };
+            }
+
+            @Override
+            public Cell visitBlock(@NotNull DrawNMapParser.BlockContext ctx) {
+                ArrayList<ParameterInfo> parameters = new ArrayList<>();
+                Cell bodyCell = reduceSource(ctx.expression(), new Hashtable<>(), parameters);
+
+                return new Singleton(new Block(bodyCell));
             }
 
             @Override
