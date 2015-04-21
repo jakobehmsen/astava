@@ -3,7 +3,7 @@ package astava.samples.drawnmap;
 import java.util.Arrays;
 
 public class Tuple {
-    private Object[] values;
+    public final Object[] values;
 
     public Tuple(Object[] values) {
         this.values = values;

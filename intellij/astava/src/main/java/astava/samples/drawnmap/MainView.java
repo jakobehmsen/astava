@@ -19,6 +19,7 @@ import java.awt.event.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
@@ -27,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class MainView extends JFrame implements Canvas {
     private java.util.List<Tool> tools;
@@ -282,6 +284,10 @@ public class MainView extends JFrame implements Canvas {
         define(name, new Class<?>[]{param1, param2}, args -> function.apply((P0)args[0], (P1)args[1]));
     }
 
+    private <P0, P1, P2, Return> void define(String name, Class<P0> param1, Class<P1> param2, Class<P2> param3, TriFunction<P0, P1, P2, Return> function) {
+        define(name, new Class<?>[]{param1, param2, param3}, args -> function.apply((P0)args[0], (P1)args[1], (P2)args[2]));
+    }
+
     public MainView(java.util.List<Tool> tools) {
         this.tools = tools;
 
@@ -298,19 +304,25 @@ public class MainView extends JFrame implements Canvas {
 
         define("+", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.add(rhs));
         define("-", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.subtract(rhs));
-        define("/", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.divide(rhs));
+        define("/", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.divide(rhs, MathContext.DECIMAL128));
         define("*", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.multiply(rhs));
 
         define("+", String.class, String.class, (lhs, rhs) -> lhs.concat(rhs));
 
-        define("line", new Class<?>[]{BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, arguments ->
-            new Line(((BigDecimal) arguments[0]).intValue(), ((BigDecimal) arguments[1]).intValue(), ((BigDecimal) arguments[2]).intValue(), ((BigDecimal) arguments[3]).intValue()));
+        define("size", Tuple.class, tuple -> new BigDecimal(tuple.values.length));
+        define("+", Tuple.class, Tuple.class, (lhs, rhs) ->
+            new Tuple(Stream.concat(Arrays.asList(lhs.values).stream(), Arrays.asList(rhs.values).stream()).toArray())
+        );
 
-        defineWrapper("bounds", new Class<?>[]{Object.class, BigDecimal.class, BigDecimal.class, BigDecimal.class, BigDecimal.class}, args -> valueCreator -> {
-            SlotValueComponent svc = valueCreator.apply(args[0]);
-            svc.getComponent().setBounds(((BigDecimal) args[1]).intValue(), ((BigDecimal) args[2]).intValue(), ((BigDecimal) args[3]).intValue(), ((BigDecimal) args[4]).intValue());
-            return svc;
-        });
+        define("apply", Tuple.class, Object.class, Block.class, (tuple, seed, reduction) ->
+            Arrays.asList(tuple.values).stream().reduce(seed, (x, y) ->
+                reduction.cell.value(new Object[]{x, y})
+            )
+        );
+
+        define("map", Tuple.class, Block.class, (tuple, reduction) ->
+            new Tuple(Arrays.asList(tuple.values).stream().map(x -> reduction.cell.value(new Object[]{x})).toArray())
+        );
     }
 
     private ButtonGroup toolBoxButtonGroup;
@@ -806,7 +818,7 @@ public class MainView extends JFrame implements Canvas {
             public Object value(Object[] args) {
                 java.util.List<Object> arguments = argumentCells.stream().map(x -> x.value(args)).collect(Collectors.toList());
                 Class<?>[] parameterTypes = arguments.stream().map(x -> x.getClass()).toArray(s -> new Class<?>[s]);
-                Function<Object[], Object> function = functions.get(new Selector(name, parameterTypes));
+                Function<Object[], Object> function = resolve(name, arguments.toArray()); //functions.get(new Selector(name, parameterTypes));
 
                 Object next;
 
