@@ -26,7 +26,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class MainView extends JFrame implements Canvas {
     private java.util.List<Tool> tools;
@@ -34,8 +33,6 @@ public class MainView extends JFrame implements Canvas {
     private JLayeredPane canvasView;
     private JComponent scriptView;
     private Hashtable<String, Cell> environment = new Hashtable<>();
-
-
 
     private static class Selection {
         private final JComponent component;
@@ -268,10 +265,6 @@ public class MainView extends JFrame implements Canvas {
     }
 
     private Hashtable<Selector, Function<Object[], Object>> functions = new Hashtable<>();
-
-    /*private Function<Object[], Object> resolve(String name, Class<?>[] parameterTypes) {
-        return functions.get(new Selector(name, parameterTypes));
-    }*/
 
     private void define(String name, Class<?>[] parameterTypes, Function<Object[], Object> function) {
         functions.put(new Selector(name, parameterTypes), function);
@@ -749,44 +742,6 @@ public class MainView extends JFrame implements Canvas {
 
     private Cell<Object> createBinaryOperation(String operator, Cell<Object> lhsCell, Cell<Object> rhsCell) {
         return createFunctionCall(operator, Arrays.asList(lhsCell, rhsCell));
-
-        /*return new Cell<Object>() {
-            @Override
-            public Binding consume(CellConsumer<Object> consumer) {
-                return new Binding() {
-                    private Object lhsValue;
-                    private Object rhsValue;
-
-                    private Binding lhsBinding = lhsCell.consume(next -> {
-                        lhsValue = next;
-                        update();
-                    });
-
-                    private Binding rhsBinding = rhsCell.consume(next -> {
-                        rhsValue = next;
-                        update();
-                    });
-
-                    private void update() {
-                        if(lhsValue != null && rhsValue != null) {
-                            Object next = reduce(operator, lhsValue, rhsValue);
-                            consumer.next(next);
-                        }
-                    }
-
-                    @Override
-                    public void remove() {
-                        lhsBinding.remove();
-                        rhsBinding.remove();
-                    }
-                };
-            }
-
-            @Override
-            public Object value() {
-                return reduce(operator, lhsCell.value(), rhsCell.value());
-            }
-        };*/
     }
 
     private Object reduce(String operator, Object lhs, Object rhs) {

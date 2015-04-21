@@ -64,14 +64,4 @@ public class Slot<T> implements Cell<T>, CellConsumer<T> {
     public T value() {
         return currentValue;
     }
-
-    @Override
-    public void moveConsumersTo(Cell cell) {
-
-    }
-
-    @Override
-    public void acceptBinding(Binding x) {
-
-    }
 }
