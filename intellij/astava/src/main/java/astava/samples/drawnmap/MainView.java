@@ -147,11 +147,6 @@ public class MainView extends JFrame implements Canvas {
     }
 
     @Override
-    public JComponent getSelected(String id) {
-        return selections.stream().filter(x -> x.variableName.equals(id)).map(x -> x.component).findFirst().orElseGet(() -> null);
-    }
-
-    @Override
     public void select(String variableName, JComponent component) {
         JPanel marking = new JPanel(new BorderLayout());
         marking.setToolTipText(variableName);
