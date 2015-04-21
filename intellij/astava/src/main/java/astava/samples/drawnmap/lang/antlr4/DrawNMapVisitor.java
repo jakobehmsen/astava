@@ -54,6 +54,13 @@ public interface DrawNMapVisitor<T> extends ParseTreeVisitor<T> {
 	T visitAddExpression(@NotNull DrawNMapParser.AddExpressionContext ctx);
 
 	/**
+	 * Visit a parse tree produced by {@link DrawNMapParser#array}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArray(@NotNull DrawNMapParser.ArrayContext ctx);
+
+	/**
 	 * Visit a parse tree produced by {@link DrawNMapParser#embeddedExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

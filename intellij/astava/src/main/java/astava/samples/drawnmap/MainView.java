@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -567,6 +568,51 @@ public class MainView extends JFrame implements Canvas {
         };
     }
 
+    private SlotValueComponent createSlotArray(Slot slot, Object[] value) {
+        return new SlotValueComponent() {
+            private JFormattedTextField component;
+
+            {
+                component = new JFormattedTextField(new DefaultFormatter());
+                component = new JFormattedTextField(new DefaultFormatter() {
+                    {
+                        setValueClass(Object[].class);
+                    }
+
+                    @Override
+                    public String valueToString(Object value) throws ParseException {
+                        return value != null ? Arrays.toString((Object[])value) : "";
+                    }
+                });
+                component.setEditable(false);
+
+                component.addPropertyChangeListener("value", evt -> {
+                    Object currentValue = component.getValue();
+                    if (currentValue != null)
+                        slot.set(currentValue);
+                });
+
+                component.setValue(value);
+                component.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
+            }
+
+            @Override
+            public JComponent getComponent() {
+                return component;
+            }
+
+            @Override
+            public boolean accepts(Object value) {
+                return value instanceof Object[];
+            }
+
+            @Override
+            public void setValue(Object value) {
+                component.setValue(value);
+            }
+        };
+    }
+
     private SlotValueComponent createSlotLine(Slot slot, Line value) {
         return new SlotValueComponent() {
             private LineTool.Line component;
@@ -650,6 +696,16 @@ public class MainView extends JFrame implements Canvas {
                             } else if (value instanceof Line) {
                                 atFirst = false;
                                 return createSlotLine(slot, (Line) value);
+                            } else if (value instanceof Object[]) {
+                                SlotValueComponent svc = createSlotArray(slot, (Object[]) value);
+                                if(atFirst) {
+                                    svc.getComponent().setSize(60, 20);
+                                    svc.getComponent().setLocation(nextOutX, nextOutY);
+
+                                    updateOuts(svc.getComponent().getWidth(), svc.getComponent().getHeight());
+                                }
+                                atFirst = false;
+                                return svc;
                             } else if(value instanceof Function) {
                                 return ((Function<Function<Object, SlotValueComponent>, SlotValueComponent>)value).apply(v ->
                                     createSlotComponentValue(wrapper, slot, v));
@@ -867,6 +923,49 @@ public class MainView extends JFrame implements Canvas {
             public Cell visitString(@NotNull DrawNMapParser.StringContext ctx) {
                 String value = ctx.STRING().getText().substring(1, ctx.STRING().getText().length() - 1);
                 return new Singleton<>(value);
+            }
+
+            @Override
+            public Cell visitArray(@NotNull DrawNMapParser.ArrayContext ctx) {
+                java.util.List<Cell> valueCells = ctx.expression().stream().map(x -> reduceSource(x, idToCellMap, parameters)).collect(Collectors.toList());
+
+                return new Cell<Object>() {
+                    @Override
+                    public Binding consume(CellConsumer<Object> consumer) {
+                        return new Binding() {
+                            private java.util.List<Object> arguments = new ArrayList<>();
+                            private java.util.List<Binding> bindings;
+
+                            {
+                                IntStream.range(0, valueCells.size()).forEach(i -> arguments.add(null));
+                                bindings = IntStream.range(0, valueCells.size()).mapToObj(i -> valueCells.get(i).consume(next -> {
+                                    arguments.set(i, next);
+                                    update();
+                                })).collect(Collectors.toList());
+                            }
+
+                            private void update() {
+                                if(arguments.stream().filter(x -> x == null).count() == 0) {
+                                    Object next = value(null);//valueCells.stream().map(x -> x.value(null)).toArray(s -> new Object[s]);
+
+                                    consumer.next(next);
+                                }
+                            }
+
+                            @Override
+                            public void remove() {
+                                bindings.forEach(x -> x.remove());
+                                arguments = null;
+                                bindings = null;
+                            }
+                        };
+                    }
+
+                    @Override
+                    public Object value(Object[] args) {
+                        return valueCells.stream().map(x -> x.value(args)).toArray(s -> new Object[s]);
+                    }
+                };
             }
 
             @Override
