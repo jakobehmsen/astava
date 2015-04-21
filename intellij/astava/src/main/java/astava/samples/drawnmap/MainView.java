@@ -50,60 +50,60 @@ public class MainView extends JFrame implements Canvas {
 
     private ArrayList<Selection> selections = new ArrayList<>();
 
-    private JPanel overlay;
+    private JPanel selectionsOverlay;
 
     @Override
     public void beginSelect() {
-        overlay = new JPanel();
-        overlay.setSize(canvasView.getSize());
-        overlay.addMouseListener(new MouseListener() {
+        selectionsOverlay = new JPanel();
+        selectionsOverlay.setSize(canvasView.getSize());
+        selectionsOverlay.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                for(MouseListener l: canvasView.getMouseListeners())
+                for (MouseListener l : canvasView.getMouseListeners())
                     l.mouseClicked(e);
             }
 
             @Override
             public void mousePressed(MouseEvent e) {
-                for(MouseListener l: canvasView.getMouseListeners())
+                for (MouseListener l : canvasView.getMouseListeners())
                     l.mousePressed(e);
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                for(MouseListener l: canvasView.getMouseListeners())
+                for (MouseListener l : canvasView.getMouseListeners())
                     l.mouseReleased(e);
             }
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                for(MouseListener l: canvasView.getMouseListeners())
+                for (MouseListener l : canvasView.getMouseListeners())
                     l.mouseEntered(e);
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                for(MouseListener l: canvasView.getMouseListeners())
+                for (MouseListener l : canvasView.getMouseListeners())
                     l.mouseExited(e);
             }
         });
-        overlay.addMouseMotionListener(new MouseMotionListener() {
+        selectionsOverlay.addMouseMotionListener(new MouseMotionListener() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                for(MouseMotionListener l: canvasView.getMouseMotionListeners())
+                for (MouseMotionListener l : canvasView.getMouseMotionListeners())
                     l.mouseDragged(e);
             }
 
             @Override
             public void mouseMoved(MouseEvent e) {
-                for(MouseMotionListener l: canvasView.getMouseMotionListeners())
+                for (MouseMotionListener l : canvasView.getMouseMotionListeners())
                     l.mouseMoved(e);
             }
         });
-        overlay.setOpaque(false);
+        selectionsOverlay.setOpaque(false);
 
-        canvasView.add(overlay);
-        canvasView.setLayer(overlay, JLayeredPane.DRAG_LAYER + 1);
+        canvasView.add(selectionsOverlay);
+        canvasView.setLayer(selectionsOverlay, JLayeredPane.DRAG_LAYER + 1);
 
         seedIndex = 0;
     }
@@ -129,8 +129,8 @@ public class MainView extends JFrame implements Canvas {
 
     @Override
     public void endSelect() {
-        canvasView.remove(overlay);
-        overlay = null;
+        canvasView.remove(selectionsOverlay);
+        selectionsOverlay = null;
     }
 
     @Override
