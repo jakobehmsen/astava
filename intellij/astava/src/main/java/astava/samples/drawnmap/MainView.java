@@ -741,6 +741,7 @@ public class MainView extends JFrame implements Canvas {
 
                     currentTarget = newElement;
                     canvasView.add(newElement);
+                    canvasView.moveToFront(newElement);
 
                     select(variableName, newElement);
                 } else {
