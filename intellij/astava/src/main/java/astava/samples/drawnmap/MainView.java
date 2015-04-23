@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -944,6 +945,9 @@ public class MainView extends JFrame implements Canvas {
             @Override
             public Cell visitString(@NotNull DrawNMapParser.StringContext ctx) {
                 String value = ctx.STRING().getText().substring(1, ctx.STRING().getText().length() - 1);
+
+                value = value.replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t").replace("\\\\", "\\");
+
                 return new Singleton<>(value);
             }
 
