@@ -291,6 +291,9 @@ public class MainView extends JFrame implements Canvas {
     public MainView(java.util.List<Tool> tools) {
         this.tools = tools;
 
+        // Plotabit
+        // Enjuicer "End-user"
+        // Injuicer "Induser"
         setTitle("Draw'n'map");
 
         toolBoxView = createToolBoxView();
@@ -308,6 +311,7 @@ public class MainView extends JFrame implements Canvas {
         define("*", BigDecimal.class, BigDecimal.class, (lhs, rhs) -> lhs.multiply(rhs));
 
         define("+", String.class, String.class, (lhs, rhs) -> lhs.concat(rhs));
+        define("split", String.class, String.class, (lhs, rhs) -> new Tuple(lhs.split(rhs)));
 
         define("size", Tuple.class, tuple -> new BigDecimal(tuple.values.length));
         define("+", Tuple.class, Tuple.class, (lhs, rhs) ->
@@ -548,10 +552,24 @@ public class MainView extends JFrame implements Canvas {
 
     private SlotValueComponent createSlotText(Slot slot, String value) {
         return new SlotValueComponent() {
-            private JFormattedTextField component;
+            //private JFormattedTextField component;
+            private JTextPane component;
 
             {
-                component = new JFormattedTextField(new DefaultFormatter());
+                component = new JTextPane();
+                component.addKeyListener(new KeyAdapter() {
+                    @Override
+                    public void keyPressed(KeyEvent e) {
+                        if(e.isControlDown() && e.getKeyCode() == KeyEvent.VK_ENTER) {
+                            String currentValue = (String) component.getText();
+                            if (currentValue != null)
+                                slot.set(currentValue);
+                        }
+                    }
+                });
+
+
+                /*component = new JFormattedTextField(new DefaultFormatter());
 
                 component.addPropertyChangeListener("value", evt -> {
                     String currentValue = (String) component.getValue();
@@ -559,7 +577,9 @@ public class MainView extends JFrame implements Canvas {
                         slot.set(currentValue);
                 });
 
-                component.setValue(value);
+                component.setValue(value);*/
+                component.setText(value);
+                slot.set(value);
                 component.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
             }
 
@@ -575,7 +595,8 @@ public class MainView extends JFrame implements Canvas {
 
             @Override
             public void setValue(Object value) {
-                component.setValue(value);
+                //component.setValue(value);
+                component.setText((String)value);
             }
         };
     }
