@@ -314,6 +314,8 @@ public class MainView extends JFrame implements Canvas {
         define("+", String.class, String.class, (lhs, rhs) -> lhs.concat(rhs));
         define("split", String.class, String.class, (lhs, rhs) -> new Tuple(lhs.split(rhs)));
 
+        define("range", BigDecimal.class, BigDecimal.class, (start, end) ->
+            new Tuple(IntStream.range(start.intValue(), end.intValue()).mapToObj(x -> new BigDecimal(x)).toArray()));
         define("size", Tuple.class, tuple -> new BigDecimal(tuple.values.length));
         define("+", Tuple.class, Tuple.class, (lhs, rhs) ->
             new Tuple(Stream.concat(Arrays.asList(lhs.values).stream(), Arrays.asList(rhs.values).stream()).toArray())
@@ -553,7 +555,6 @@ public class MainView extends JFrame implements Canvas {
 
     private SlotValueComponent createSlotText(Slot slot, String value) {
         return new SlotValueComponent() {
-            //private JFormattedTextField component;
             private JTextPane component;
 
             {
@@ -569,16 +570,6 @@ public class MainView extends JFrame implements Canvas {
                     }
                 });
 
-
-                /*component = new JFormattedTextField(new DefaultFormatter());
-
-                component.addPropertyChangeListener("value", evt -> {
-                    String currentValue = (String) component.getValue();
-                    if (currentValue != null)
-                        slot.set(currentValue);
-                });
-
-                component.setValue(value);*/
                 component.setText(value);
                 slot.set(value);
                 component.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
@@ -596,28 +587,26 @@ public class MainView extends JFrame implements Canvas {
 
             @Override
             public void setValue(Object value) {
-                //component.setValue(value);
                 component.setText((String)value);
+                slot.set(value);
             }
         };
     }
 
     private SlotValueComponent createSlotDefault(Slot slot, Object value) {
         return new SlotValueComponent() {
-            private JFormattedTextField component;
+            private JTextArea component;
 
             {
-                component = new JFormattedTextField(new DefaultFormatter());
+                component = new JTextArea();
+                component.setLineWrap(true);
+                component.setWrapStyleWord(true);
                 component.setEditable(false);
-
-                component.addPropertyChangeListener("value", evt -> {
-                    Object currentValue = component.getValue();
-                    if (currentValue != null)
-                        slot.set(currentValue);
-                });
-
-                component.setValue(value);
+                component.setForeground(Color.WHITE);
+                component.setBackground(Color.DARK_GRAY);
+                component.setText(value.toString());
                 component.setFont(new Font(Font.MONOSPACED, Font.BOLD, 16));
+                slot.set(value);
             }
 
             @Override
@@ -632,7 +621,8 @@ public class MainView extends JFrame implements Canvas {
 
             @Override
             public void setValue(Object value) {
-                component.setValue(value);
+                component.setText(value.toString());
+                slot.set(value);
             }
         };
     }
