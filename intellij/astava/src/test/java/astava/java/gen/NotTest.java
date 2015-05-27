@@ -10,8 +10,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static astava.java.Factory.literal;
-import static astava.java.Factory.not;
+//import static astava.java.Factory.literal;
+//import static astava.java.Factory.not;
+//import static astava.CommonTest.testExpression;
+import static astava.java.FactoryDom.literal;
+import static astava.java.FactoryDom.not;
+import static astava.CommonTestDom.testExpression;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -31,7 +35,7 @@ public class NotTest {
     public void testNot() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         boolean expectedValue = !value;
 
-        CommonTest.testExpression(not(literal(value)), Descriptor.BOOLEAN, (Boolean actualValue) ->
+        testExpression(not(literal(value)), Descriptor.BOOLEAN, (Boolean actualValue) ->
             assertEquals(expectedValue, actualValue));
     }
 }
