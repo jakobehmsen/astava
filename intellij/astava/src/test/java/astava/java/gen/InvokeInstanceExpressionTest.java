@@ -1,9 +1,8 @@
 package astava.java.gen;
 
-import astava.tree.Node;
-import astava.tree.Tuple;
 import astava.java.Descriptor;
 import astava.java.Invocation;
+import astava.tree.ExpressionDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -16,8 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static astava.CommonTest.testExpression;
-import static astava.java.Factory.*;
+import static astava.CommonTestDom.testExpression;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -108,16 +107,16 @@ public class InvokeInstanceExpressionTest {
     public void testInvokeInstance() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         Method method = type.getMethod(name, parameterTypes.toArray(new Class<?>[parameterTypes.size()]));
         Object[] arguments = argumentProviders.stream().map(ap -> ap.getValue()).toArray(s -> new Object[s]);
-        List<Node> astArguments = argumentProviders.stream().map(ap -> ap.createAST(ap.getValue())).collect(Collectors.toList());
+        List<ExpressionDom> astArguments = argumentProviders.stream().map(ap -> ap.createASTDom(ap.getValue())).collect(Collectors.toList());
 
         Object expectedResult = method.invoke(typeToInstantiate.newInstance(), arguments);
 
-        Tuple expression = invoke(
+        ExpressionDom expression = invokeExpr(
             invocation,
             Descriptor.get(type),
             name,
             Descriptor.getMethodDescriptor(parameterTypes, returnType),
-            newInstance(Descriptor.get(typeToInstantiate), Collections.emptyList(), Collections.emptyList()),
+            newInstanceExpr(Descriptor.get(typeToInstantiate), Collections.emptyList(), Collections.emptyList()),
             astArguments
         );
 
