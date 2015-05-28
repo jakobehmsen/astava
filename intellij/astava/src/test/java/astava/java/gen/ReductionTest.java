@@ -1,8 +1,8 @@
 package astava.java.gen;
 
-import astava.CommonTest;
-import astava.tree.Tuple;
+import astava.CommonTestDom;
 import astava.java.*;
+import astava.tree.ExpressionDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,8 +10,7 @@ import org.junit.runners.Parameterized;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-import static astava.java.Factory.*;
-import static astava.java.Factory.literal;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
@@ -227,11 +226,11 @@ public class ReductionTest {
         boolean expectSuccess = reductionResultType != null && canCreateOperands;
 
         try {
-            Tuple lhsAST = t1.createAST(lhs);
-            Tuple rhsAST = t2.createAST(rhs);
-            Tuple reduction = op.createAST(lhsAST, rhsAST);
+            ExpressionDom lhsAST = t1.createAST(lhs);
+            ExpressionDom rhsAST = t2.createAST(rhs);
+            ExpressionDom reduction = op.createAST(lhsAST, rhsAST);
 
-            CommonTest.testExpression(reduction, reductionResultType, (Object actualValue) ->
+            CommonTestDom.testExpression(reduction, reductionResultType, (Object actualValue) ->
                 assertEquals(expectedValue, op.normalizeValue(actualValue)));
 
             if(!expectSuccess)
@@ -246,7 +245,7 @@ public class ReductionTest {
 
     private interface PrimitiveTest {
         String getDescriptor();
-        Tuple createAST(Object value);
+        ExpressionDom createAST(Object value);
         boolean canCreateAST(Object lhs);
     }
 
@@ -269,7 +268,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object b) {
+        public ExpressionDom createAST(Object b) {
             return literal(((Boolean)b).booleanValue());
         }
     }
@@ -281,7 +280,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object number) {
+        public ExpressionDom createAST(Object number) {
             return literal(((Number)number).byteValue());
         }
     }
@@ -293,7 +292,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object number) {
+        public ExpressionDom createAST(Object number) {
             return literal(((Number)number).shortValue());
         }
     }
@@ -305,7 +304,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object number) {
+        public ExpressionDom createAST(Object number) {
             return literal(((Number)number).intValue());
         }
     }
@@ -317,7 +316,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object number) {
+        public ExpressionDom createAST(Object number) {
             return literal(((Number)number).longValue());
         }
     }
@@ -329,7 +328,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object number) {
+        public ExpressionDom createAST(Object number) {
             return literal(((Number)number).floatValue());
         }
     }
@@ -341,7 +340,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Object number) {
+        public ExpressionDom createAST(Object number) {
             return literal(((Number)number).doubleValue());
         }
     }
@@ -351,7 +350,7 @@ public class ReductionTest {
         default Object getRhs() {return 9;}
         Object getExpectedValue(Object lhs, Object rhs);
         Object normalizeValue(Object value);
-        Tuple createAST(Tuple lhs, Tuple rhs);
+        ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs);
         String resultType(String lhsResultType, String rhsResultType);
     }
 
@@ -383,7 +382,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return add(lhs, rhs);
         }
     }
@@ -395,7 +394,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return sub(lhs, rhs);
         }
     }
@@ -407,7 +406,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return mul(lhs, rhs);
         }
     }
@@ -419,7 +418,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return div(lhs, rhs);
         }
     }
@@ -431,7 +430,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return rem(lhs, rhs);
         }
     }
@@ -450,7 +449,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return shl(lhs, rhs);
         }
     }
@@ -462,7 +461,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return shr(lhs, rhs);
         }
     }
@@ -474,7 +473,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return ushr(lhs, rhs);
         }
     }
@@ -493,7 +492,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return band(lhs, rhs);
         }
     }
@@ -505,7 +504,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return bor(lhs, rhs);
         }
     }
@@ -517,7 +516,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return bxor(lhs, rhs);
         }
     }
@@ -550,7 +549,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return lt(lhs, rhs);
         }
     }
@@ -562,7 +561,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return le(lhs, rhs);
         }
     }
@@ -574,7 +573,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return gt(lhs, rhs);
         }
     }
@@ -586,7 +585,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return ge(lhs, rhs);
         }
     }
@@ -598,7 +597,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return eq(lhs, rhs);
         }
     }
@@ -610,7 +609,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return ne(lhs, rhs);
         }
     }
@@ -636,7 +635,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return and(lhs, rhs);
         }
     }
@@ -648,7 +647,7 @@ public class ReductionTest {
         }
 
         @Override
-        public Tuple createAST(Tuple lhs, Tuple rhs) {
+        public ExpressionDom createAST(ExpressionDom lhs, ExpressionDom rhs) {
             return or(lhs, rhs);
         }
     }
