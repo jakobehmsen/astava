@@ -1,16 +1,15 @@
 package astava.java.gen;
 
-
-import astava.tree.Tuple;
 import astava.java.Descriptor;
+import astava.tree.StatementDom;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
-import static astava.CommonTest.testMethodBody;
-import static astava.CommonTest.whileLoop;
-import static astava.java.Factory.*;
+import static astava.CommonTestDom.testMethodBody;
+import static astava.CommonTestDom.whileLoop;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -37,7 +36,7 @@ public class InvokeStaticStatementTest {
 
     @Test
     public void testInvokeStaticVoid() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             invokeStatic(Descriptor.get(InvokeStaticStatementTest.class), "vToV", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), Arrays.asList()),
             ret()
         ));
@@ -49,7 +48,7 @@ public class InvokeStaticStatementTest {
 
     @Test
     public void testInvokeStaticInt() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             invokeStatic(Descriptor.get(InvokeStaticStatementTest.class), "vToI", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.INT), Arrays.asList()),
             ret()
         ));
@@ -66,9 +65,9 @@ public class InvokeStaticStatementTest {
         // I.e., if the return value isn't implicitly popped, an exception is thrown.
 
         int count = 10;
-        Tuple invocation = invokeStatic(Descriptor.get(InvokeStaticStatementTest.class), "vToI2", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.INT), Arrays.asList());
+        StatementDom invocation = invokeStatic(Descriptor.get(InvokeStaticStatementTest.class), "vToI2", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.INT), Arrays.asList());
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
