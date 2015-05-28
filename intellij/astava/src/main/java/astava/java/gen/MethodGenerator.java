@@ -109,7 +109,7 @@ public class MethodGenerator {
 
             @Override
             public void visitGoTo(String name) {
-                labelScope.goTo2(generator, name);
+                labelScope.goTo(generator, name);
             }
 
             @Override
@@ -215,7 +215,7 @@ public class MethodGenerator {
             } case ASTType.GO_TO: {
                 String name = goToName(statement);
 
-                labelScope.goTo2(generator, name);
+                labelScope.goTo(generator, name);
 
                 break;
             } case ASTType.SWITCH: {

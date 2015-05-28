@@ -40,7 +40,7 @@ public class LabelScope {
         label.isSet = true;
     }
 
-    public void goTo2(GeneratorAdapter generator, String name) {
+    public void goTo(GeneratorAdapter generator, String name) {
         LabelInfo label = getOrCreate(generator, name);
         generator.goTo(label.label);
         label.isUsed = true;
