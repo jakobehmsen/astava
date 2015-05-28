@@ -1,5 +1,6 @@
 package astava.java.gen;
 
+import astava.tree.StatementDom;
 import astava.tree.Tuple;
 import astava.java.Descriptor;
 import org.junit.Rule;
@@ -9,9 +10,9 @@ import org.junit.rules.ExpectedException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
-import static astava.CommonTest.testMethodBody;
-import static astava.CommonTest.whileLoop;
-import static astava.java.Factory.*;
+import static astava.CommonTestDom.testMethodBody;
+import static astava.CommonTestDom.whileLoop;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 public class LabelTest {
@@ -23,7 +24,7 @@ public class LabelTest {
         String labelName = "l";
         int expectedValue = 1;
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             goTo(labelName),
             ret(literal(0)), // This shouldn't be reached
             label(labelName),
@@ -38,7 +39,7 @@ public class LabelTest {
         String labelName = "l";
         int expectedValue = 1;
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             goTo(labelName),
             ret(literal(expectedValue))
         ));
@@ -53,7 +54,7 @@ public class LabelTest {
         String labelName = "l";
         int expectedValue = 1;
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             goTo(labelName),
             ret(literal(0)),
             label(labelName),
@@ -71,7 +72,7 @@ public class LabelTest {
         int count = 10;
         int expectedValue = count;
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             whileLoop(lt(accessVar("i"), literal(count)), intIncVar("i", 1)),
