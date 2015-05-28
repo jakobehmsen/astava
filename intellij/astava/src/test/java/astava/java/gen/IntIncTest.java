@@ -1,7 +1,7 @@
 package astava.java.gen;
 
-import astava.CommonTest;
-import astava.tree.Tuple;
+import astava.CommonTestDom;
+import astava.tree.StatementDom;
 import astava.java.Descriptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static astava.java.Factory.*;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -39,14 +39,14 @@ public class IntIncTest {
         String type = Descriptor.INT;
 
         String varName = "myVar";
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, varName),
             assignVar(varName, literal(varInit)),
             intIncVar(varName, amount),
             ret(accessVar(varName))
         ));
 
-        CommonTest.testMethodBody(ast, type, actualValue ->
+        CommonTestDom.testMethodBody(ast, type, actualValue ->
             assertEquals(varMod, actualValue));
     }
 }
