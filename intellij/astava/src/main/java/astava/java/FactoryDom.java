@@ -190,33 +190,28 @@ public class FactoryDom {
         return (String)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple add(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom add(ExpressionDom lhs, ExpressionDom rhs) {
         return arithmetic(lhs, rhs, ArithmeticOperator.ADD);
     }
 
-    public static Tuple rem(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom rem(ExpressionDom lhs, ExpressionDom rhs) {
         return arithmetic(lhs, rhs, ArithmeticOperator.REM);
     }
 
-    public static Tuple sub(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom sub(ExpressionDom lhs, ExpressionDom rhs) {
         return arithmetic(lhs, rhs, ArithmeticOperator.SUB);
     }
 
-    public static Tuple mul(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom mul(ExpressionDom lhs, ExpressionDom rhs) {
         return arithmetic(lhs, rhs, ArithmeticOperator.MUL);
     }
 
-    public static Tuple div(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom div(ExpressionDom lhs, ExpressionDom rhs) {
         return arithmetic(lhs, rhs, ArithmeticOperator.DIV);
     }
 
-    public static Tuple arithmetic(Tuple lhs, Tuple rhs, int operator) {
-        return new Tuple(
-            new Atom(ASTType.ARITHMETIC),
-            new Atom(operator),
-            lhs,
-            rhs
-        );
+    public static ExpressionDom arithmetic(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        return v -> v.visitArithmetic(operator, lhs, rhs);
     }
 
     public static int arithmeticOperator(Tuple tuple) {
@@ -231,25 +226,20 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple shl(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom shl(ExpressionDom lhs, ExpressionDom rhs) {
         return shift(lhs, rhs, ShiftOperator.SHL);
     }
 
-    public static Tuple shr(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom shr(ExpressionDom lhs, ExpressionDom rhs) {
         return shift(lhs, rhs, ShiftOperator.SHR);
     }
 
-    public static Tuple ushr(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom ushr(ExpressionDom lhs, ExpressionDom rhs) {
         return shift(lhs, rhs, ShiftOperator.USHR);
     }
 
-    public static Tuple shift(Tuple lhs, Tuple rhs, int operator) {
-        return new Tuple(
-            new Atom(ASTType.SHIFT),
-            new Atom(operator),
-            lhs,
-            rhs
-        );
+    public static ExpressionDom shift(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        return v -> v.visitShift(operator, lhs, rhs);
     }
 
     public static int shiftOperator(Tuple tuple) {
@@ -264,25 +254,20 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple band(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom band(ExpressionDom lhs, ExpressionDom rhs) {
         return bitwise(lhs, rhs, BitwiseOperator.AND);
     }
 
-    public static Tuple bor(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom bor(ExpressionDom lhs, ExpressionDom rhs) {
         return bitwise(lhs, rhs, BitwiseOperator.OR);
     }
 
-    public static Tuple bxor(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom bxor(ExpressionDom lhs, ExpressionDom rhs) {
         return bitwise(lhs, rhs, BitwiseOperator.XOR);
     }
 
-    public static Tuple bitwise(Tuple lhs, Tuple rhs, int operator) {
-        return new Tuple(
-            new Atom(ASTType.BITWISE),
-            new Atom(operator),
-            lhs,
-            rhs
-        );
+    public static ExpressionDom bitwise(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        return v -> v.visitBitwise(operator, lhs, rhs);
     }
 
     public static int bitwiseOperator(Tuple tuple) {
