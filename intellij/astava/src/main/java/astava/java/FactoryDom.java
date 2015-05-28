@@ -1,9 +1,13 @@
 package astava.java;
 
+import astava.samples.virela.parser.Expression;
 import astava.tree.*;
 
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FactoryDom {
     public static int astType(Tuple tuple) {
@@ -434,10 +438,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple breakOption() {
-        return new Tuple(Arrays.asList(
-            new Atom(ASTType.BREAK_CASE)
-        ));
+    public static StatementDom breakOption() {
+        return v -> v.visitBreakCase();
     }
 
     public static ExpressionDom instanceOf(ExpressionDom expression, String type) {
@@ -537,13 +539,10 @@ public class FactoryDom {
         return (String)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple select(Tuple expression, List<Node> cases, Tuple defaultBody) {
-        return new Tuple(
-            new Atom(ASTType.SWITCH),
-            expression,
-            new Tuple(cases),
-            defaultBody
-        );
+    // What about support for select expressions?
+    public static StatementDom select(ExpressionDom expression, List<Map.Entry<Integer, StatementDom>> cases, StatementDom defaultBody) {
+        Map<Integer, StatementDom> casesMap = cases.stream().collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+        return v -> v.visitSwitch(expression, casesMap, defaultBody);
     }
 
     public static Tuple selectExpression(Tuple tuple) {
@@ -558,12 +557,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple option(int key, Tuple body) {
-        return new Tuple(
-            new Atom(ASTType.CASE),
-            new Atom(key),
-            body
-        );
+    public static Map.Entry<Integer, StatementDom> option(int key, StatementDom body) {
+        return new AbstractMap.SimpleImmutableEntry<Integer, StatementDom>(key, body);
     }
 
     public static int optionKey(Tuple tuple) {
