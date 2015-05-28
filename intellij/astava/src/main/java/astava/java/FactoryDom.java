@@ -297,21 +297,16 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple and(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom and(ExpressionDom lhs, ExpressionDom rhs) {
         return logical(lhs, rhs, LogicalOperator.AND);
     }
 
-    public static Tuple or(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom or(ExpressionDom lhs, ExpressionDom rhs) {
         return logical(lhs, rhs, LogicalOperator.OR);
     }
 
-    public static Tuple logical(Tuple lhs, Tuple rhs, int operator) {
-        return new Tuple(
-            new Atom(ASTType.LOGICAL),
-            new Atom(operator),
-            lhs,
-            rhs
-        );
+    public static ExpressionDom logical(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        return v -> v.visitLogical(operator, lhs, rhs);
     }
 
     public static int logicalOperator(Tuple tuple) {
@@ -327,36 +322,31 @@ public class FactoryDom {
     }
 
     public static ExpressionDom lt(ExpressionDom lhs, ExpressionDom rhs) {
-        return v -> v.visitCompare(RelationalOperator.LT, lhs, rhs);
+        return compare(lhs, rhs, RelationalOperator.LT);
     }
 
-    public static Tuple le(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom le(ExpressionDom lhs, ExpressionDom rhs) {
         return compare(lhs, rhs, RelationalOperator.LE);
     }
 
-    public static Tuple gt(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom gt(ExpressionDom lhs, ExpressionDom rhs) {
         return compare(lhs, rhs, RelationalOperator.GT);
     }
 
-    public static Tuple ge(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom ge(ExpressionDom lhs, ExpressionDom rhs) {
         return compare(lhs, rhs, RelationalOperator.GE);
     }
 
-    public static Tuple eq(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom eq(ExpressionDom lhs, ExpressionDom rhs) {
         return compare(lhs, rhs, RelationalOperator.EQ);
     }
 
-    public static Tuple ne(Tuple lhs, Tuple rhs) {
+    public static ExpressionDom ne(ExpressionDom lhs, ExpressionDom rhs) {
         return compare(lhs, rhs, RelationalOperator.NE);
     }
 
-    public static Tuple compare(Tuple lhs, Tuple rhs, int operator) {
-        return new Tuple(
-            new Atom(ASTType.COMPARE),
-            new Atom(operator),
-            lhs,
-            rhs
-        );
+    public static ExpressionDom compare(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        return v -> v.visitCompare(operator, lhs, rhs);
     }
 
     public static int compareOperator(Tuple tuple) {
