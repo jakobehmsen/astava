@@ -1,8 +1,7 @@
 package astava.java.gen;
 
-import astava.tree.Node;
-import astava.tree.Tuple;
 import astava.java.Descriptor;
+import astava.tree.ExpressionDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,8 +13,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static astava.CommonTest.testExpression;
-import static astava.java.Factory.invokeStatic;
+import static astava.CommonTestDom.testExpression;
+import static astava.java.FactoryDom.invokeStaticExpr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -67,11 +66,11 @@ public class InvokeStaticExpressionTest {
     public void testInvokeStatic() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Method method = type.getMethod(name, parameterTypes.toArray(new Class<?>[parameterTypes.size()]));
         Object[] arguments = argumentProviders.stream().map(ap -> ap.getValue()).toArray(s -> new Object[s]);
-        List<Node> astArguments = argumentProviders.stream().map(ap -> ap.createAST(ap.getValue())).collect(Collectors.toList());
+        List<ExpressionDom> astArguments = argumentProviders.stream().map(ap -> ap.createASTDom(ap.getValue())).collect(Collectors.toList());
 
         Object expectedResult = method.invoke(null, arguments);
 
-        Tuple expression = invokeStatic(
+        ExpressionDom expression = invokeStaticExpr(
             Descriptor.get(type),
             name,
             Descriptor.getMethodDescriptor(parameterTypes, returnType),
