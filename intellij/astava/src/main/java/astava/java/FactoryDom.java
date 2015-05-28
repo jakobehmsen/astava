@@ -454,28 +454,20 @@ public class FactoryDom {
         return (String)((Atom)tuple.get(2)).getValue();
     }
 
-    public static Tuple invokeInterface(String type, String name, String methodDescriptor, Node target, List<Node> arguments) {
+    public static StatementDom invokeInterface(String type, String name, String methodDescriptor, ExpressionDom target, List<ExpressionDom> arguments) {
         return invoke(Invocation.INTERFACE, type, name, methodDescriptor, target, arguments);
     }
 
-    public static Tuple invokeStatic(String type, String name, String methodDescriptor, List<Node> arguments) {
+    public static StatementDom invokeStatic(String type, String name, String methodDescriptor, List<ExpressionDom> arguments) {
         return invoke(Invocation.STATIC, type, name, methodDescriptor, null, arguments);
     }
 
-    public static Tuple invokeVirtual(String type, String name, String methodDescriptor, Node target, List<Node> arguments) {
+    public static StatementDom invokeVirtual(String type, String name, String methodDescriptor, ExpressionDom target, List<ExpressionDom> arguments) {
         return invoke(Invocation.VIRTUAL, type, name, methodDescriptor, target, arguments);
     }
 
-    public static Tuple invoke(int invocation, String type, String name, String methodDescriptor, Node target /*null for static*/, List<Node> arguments) {
-        return new Tuple(
-            new Atom(ASTType.INVOCATION),
-            new Atom(invocation),
-            new Atom(type),
-            new Atom(name),
-            new Atom(methodDescriptor),
-            target,
-            new Tuple(arguments)
-        );
+    public static StatementDom invoke(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
+        return v -> v.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
     }
 
     public static ExpressionDom invokeExpr(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
