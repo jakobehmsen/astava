@@ -8,8 +8,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static astava.CommonTestDom.testMethodBody;
-import static astava.CommonTestDom.whileLoop;
+import static astava.CommonTest.testMethodBody;
+import static astava.CommonTest.whileLoop;
 import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 

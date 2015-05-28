@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.java.Descriptor;
 import astava.tree.ExpressionDom;
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class MiscTest {
         String resultType = expression.resultType();
         Object expectedResult = expression.evaluate();
         ExpressionDom ast = expression.createAST();
-        CommonTestDom.testExpression(ast, resultType, actualResult ->
+        CommonTest.testExpression(ast, resultType, actualResult ->
             assertEquals(expectedResult, actualResult));
     }
 

@@ -1,8 +1,7 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.tree.ExpressionDom;
-import astava.tree.Tuple;
 import astava.java.Descriptor;
 import org.junit.Test;
 
@@ -19,15 +18,15 @@ public class InstanceOfTest {
     public void testInstanceOfTrue() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         ExpressionDom ast = instanceOf(literal("str"), Descriptor.STRING);
 
-        CommonTestDom.testExpression(ast, Descriptor.BOOLEAN, actualValue ->
-            assertTrue((boolean)actualValue));
+        CommonTest.testExpression(ast, Descriptor.BOOLEAN, actualValue ->
+            assertTrue((boolean) actualValue));
     }
 
     @Test
     public void testInstanceOfFalse() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         ExpressionDom ast = instanceOf(literal("str"), Descriptor.get(Number.class));
 
-        CommonTestDom.testExpression(ast, Descriptor.BOOLEAN, actualValue ->
-            assertFalse((boolean)actualValue));
+        CommonTest.testExpression(ast, Descriptor.BOOLEAN, actualValue ->
+            assertFalse((boolean) actualValue));
     }
 }

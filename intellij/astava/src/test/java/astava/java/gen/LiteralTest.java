@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.java.FactoryDom;
 import astava.tree.ExpressionDom;
 import astava.tree.Tuple;
@@ -221,7 +221,7 @@ public class LiteralTest {
         ExpressionDom ast = literal.createASTDom(expectedValue);
         String type = literal.getType();
 
-        CommonTestDom.testExpression(ast, type, actualValue ->
+        CommonTest.testExpression(ast, type, actualValue ->
             assertEquals(expectedValue, actualValue));
     }
 }

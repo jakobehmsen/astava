@@ -1,6 +1,5 @@
 package astava.java.gen;
 
-import astava.CommonTest;
 import astava.java.Descriptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +14,7 @@ import java.util.Collection;
 //import static astava.CommonTest.testExpression;
 import static astava.java.FactoryDom.literal;
 import static astava.java.FactoryDom.not;
-import static astava.CommonTestDom.testExpression;
+import static astava.CommonTest.testExpression;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

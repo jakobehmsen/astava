@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.tree.ExpressionDom;
 import astava.tree.StatementDom;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class VariableTest {
             ret(accessVar(name))
         ));
 
-        CommonTestDom.testMethodBody(ast, type, actualValue ->
+        CommonTest.testMethodBody(ast, type, actualValue ->
             assertEquals(expectedValue, actualValue));
     }
 }

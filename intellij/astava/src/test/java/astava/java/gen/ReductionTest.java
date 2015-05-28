@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.java.*;
 import astava.tree.ExpressionDom;
 import org.junit.Test;
@@ -230,7 +230,7 @@ public class ReductionTest {
             ExpressionDom rhsAST = t2.createAST(rhs);
             ExpressionDom reduction = op.createAST(lhsAST, rhsAST);
 
-            CommonTestDom.testExpression(reduction, reductionResultType, (Object actualValue) ->
+            CommonTest.testExpression(reduction, reductionResultType, (Object actualValue) ->
                 assertEquals(expectedValue, op.normalizeValue(actualValue)));
 
             if(!expectSuccess)

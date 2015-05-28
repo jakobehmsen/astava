@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static astava.CommonTestDom.testExpression;
+import static astava.CommonTest.testExpression;
 import static astava.java.FactoryDom.invokeStaticExpr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

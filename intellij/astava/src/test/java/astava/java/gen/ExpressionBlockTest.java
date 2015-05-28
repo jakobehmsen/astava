@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.java.Descriptor;
 import astava.tree.ExpressionDom;
 import astava.tree.StatementDom;
@@ -130,7 +130,7 @@ public class ExpressionBlockTest {
         ));
 
         try {
-            CommonTestDom.testMethodBody(ast, type, actualValue ->
+            CommonTest.testMethodBody(ast, type, actualValue ->
                 assertEquals(expectedValue, actualValue));
             if(provider.shouldFail())
                 fail();

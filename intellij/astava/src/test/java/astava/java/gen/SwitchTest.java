@@ -1,8 +1,7 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.tree.StatementDom;
-import astava.tree.Tuple;
 import astava.java.Descriptor;
 import org.junit.Test;
 
@@ -28,7 +27,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(0, actualValue));
     }
 
@@ -47,7 +46,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(1, actualValue));
     }
 
@@ -66,7 +65,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(2, actualValue));
     }
 
@@ -85,7 +84,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(2, actualValue));
     }
 
@@ -104,7 +103,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(-1, actualValue));
     }
 
@@ -123,7 +122,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(-1, actualValue));
     }
 }

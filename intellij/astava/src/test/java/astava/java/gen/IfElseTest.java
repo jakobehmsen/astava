@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import static astava.CommonTestDom.testMethodBody;
+import static astava.CommonTest.testMethodBody;
 import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 

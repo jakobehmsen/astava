@@ -1,6 +1,6 @@
 package astava.java.gen;
 
-import astava.CommonTestDom;
+import astava.CommonTest;
 import astava.tree.StatementDom;
 import astava.java.Descriptor;
 import org.junit.Test;
@@ -46,7 +46,7 @@ public class IntIncTest {
             ret(accessVar(varName))
         ));
 
-        CommonTestDom.testMethodBody(ast, type, actualValue ->
+        CommonTest.testMethodBody(ast, type, actualValue ->
             assertEquals(varMod, actualValue));
     }
 }
