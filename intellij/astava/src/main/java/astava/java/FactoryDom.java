@@ -412,12 +412,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(1);
     }
 
-    public static Tuple intIncVar(String name, int amount) {
-        return new Tuple(
-            new Atom(ASTType.INCREMENT),
-            new Atom(name),
-            new Atom(amount)
-        );
+    public static StatementDom intIncVar(String name, int amount) {
+        return v -> v.visitIncrement(name, amount);
     }
 
     public static String intIncVarName(Tuple tuple) {
