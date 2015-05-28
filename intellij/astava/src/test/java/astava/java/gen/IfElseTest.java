@@ -1,6 +1,7 @@
 package astava.java.gen;
 
-import astava.tree.Tuple;
+import astava.tree.ExpressionDom;
+import astava.tree.StatementDom;
 import astava.java.Descriptor;
 import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;
@@ -13,8 +14,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import static astava.CommonTest.testMethodBody;
-import static astava.java.Factory.*;
+import static astava.CommonTestDom.testMethodBody;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -88,12 +89,12 @@ public class IfElseTest {
 
     @Test
     public void testIfElse() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple condition = conditionProvider.createExpression();
+        ExpressionDom condition = conditionProvider.createExpression();
         boolean conditionValue = conditionProvider.valueBoolean();
 
         Object expectedValue = conditionValue ? true : false;
 
-        Tuple ast = ifElse(
+        StatementDom ast = ifElse(
             condition,
             ret(literal(true)),
             ret(literal(false))
@@ -114,7 +115,7 @@ public class IfElseTest {
         default boolean valueBoolean() {
             return (Boolean)value();
         }
-        Tuple createExpression();
+        ExpressionDom createExpression();
     }
 
     private static class BooleanProvider implements ExpressionProvider {
@@ -130,7 +131,7 @@ public class IfElseTest {
         }
 
         @Override
-        public Tuple createExpression() {
+        public ExpressionDom createExpression() {
             return literal(value);
         }
     }
@@ -148,7 +149,7 @@ public class IfElseTest {
         }
 
         @Override
-        public Tuple createExpression() {
+        public ExpressionDom createExpression() {
             return literal(value);
         }
     }
@@ -188,9 +189,9 @@ public class IfElseTest {
         }
 
         @Override
-        public Tuple createExpression() {
-            Tuple lhs = lhsProvider.createExpression();
-            Tuple rhs = rhsProvider.createExpression();
+        public ExpressionDom createExpression() {
+            ExpressionDom lhs = lhsProvider.createExpression();
+            ExpressionDom rhs = rhsProvider.createExpression();
 
             return compare(lhs, rhs, operator);
         }
@@ -223,9 +224,9 @@ public class IfElseTest {
         }
 
         @Override
-        public Tuple createExpression() {
-            Tuple lhs = lhsProvider.createExpression();
-            Tuple rhs = rhsProvider.createExpression();
+        public ExpressionDom createExpression() {
+            ExpressionDom lhs = lhsProvider.createExpression();
+            ExpressionDom rhs = rhsProvider.createExpression();
 
             return logical(lhs, rhs, operator);
         }
