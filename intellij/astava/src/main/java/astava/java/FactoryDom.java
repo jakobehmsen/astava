@@ -455,12 +455,8 @@ public class FactoryDom {
         ));
     }
 
-    public static Tuple instanceOf(Tuple expression, String type) {
-        return new Tuple(
-            new Atom(ASTType.INSTANCE_OF),
-            expression,
-            new Atom(type)
-        );
+    public static ExpressionDom instanceOf(ExpressionDom expression, String type) {
+        return v -> v.visitInstanceOf(expression, type);
     }
 
     public static Tuple instanceOfExpression(Tuple tuple) {
