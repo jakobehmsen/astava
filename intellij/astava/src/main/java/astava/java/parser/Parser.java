@@ -81,32 +81,7 @@ public class Parser {
                     });
                 });
 
-                return new ClassDom() {
-                    @Override
-                    public int getModifier() {
-                        return modifier;
-                    }
-
-                    @Override
-                    public String getName() {
-                        return name;
-                    }
-
-                    @Override
-                    public String getSuperName() {
-                        return superName;
-                    }
-
-                    @Override
-                    public List<FieldDom> getFields() {
-                        return Arrays.asList();
-                    }
-
-                    @Override
-                    public List<MethodDom> getMethods() {
-                        return methods;
-                    }
-                };
+                return classDeclaration(modifier, name, superName, Arrays.asList(), methods);
             }
         });
     }
@@ -123,32 +98,7 @@ public class Parser {
         List<StatementDom> statements = ctx.statement().stream().map(x -> parseStatement(x)).collect(Collectors.toList());
         StatementDom body = block(statements);
 
-        return new MethodDom() {
-            @Override
-            public int getModifier() {
-                return modifier;
-            }
-
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            @Override
-            public List<String> getParameterTypes() {
-                return parameterTypes;
-            }
-
-            @Override
-            public String getReturnTypeName() {
-                return returnType;
-            }
-
-            @Override
-            public StatementDom getBody() {
-                return body;
-            }
-        };
+        return methodDeclaration(modifier, name, parameterTypes, returnType, body);
     }
 
     public StatementDom parseStatement() {
