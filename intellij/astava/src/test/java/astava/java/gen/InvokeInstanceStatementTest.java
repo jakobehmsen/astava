@@ -1,17 +1,16 @@
 package astava.java.gen;
 
-import astava.tree.Tuple;
 import astava.java.Descriptor;
+import astava.tree.StatementDom;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static astava.CommonTest.testMethodBody;
-import static astava.CommonTest.whileLoop;
-import static astava.java.Factory.*;
-import static astava.java.Factory.ret;
+import static astava.CommonTestDom.testMethodBody;
+import static astava.CommonTestDom.whileLoop;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 public class InvokeInstanceStatementTest {
@@ -43,16 +42,16 @@ public class InvokeInstanceStatementTest {
         // I.e., if the return value isn't implicitly popped, an exception is thrown.
 
         int count = 10;
-        Tuple invocation = invokeVirtual(
+        StatementDom invocation = invokeVirtual(
             Descriptor.get(InvokeInstanceVirtual.class),
             "vToV",
             Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID),
             accessVar("target"),
             Arrays.asList());
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             declareVar(Descriptor.get(InvokeInstanceVirtual.class), "target"),
-            assignVar("target", newInstance(Descriptor.get(InvokeInstanceVirtual.class), Collections.emptyList(), Collections.emptyList())),
+            assignVar("target", newInstanceExpr(Descriptor.get(InvokeInstanceVirtual.class), Collections.emptyList(), Collections.emptyList())),
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
@@ -74,16 +73,16 @@ public class InvokeInstanceStatementTest {
         // I.e., if the return value isn't implicitly popped, an exception is thrown.
 
         int count = 10;
-        Tuple invocation = invokeInterface(
+        StatementDom invocation = invokeInterface(
             Descriptor.get(InvokeInstanceInterface.class),
             "vToV",
             Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID),
             accessVar("target"),
             Arrays.asList());
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             declareVar(Descriptor.get(InvokeInstanceImpl.class), "target"),
-            assignVar("target", newInstance(Descriptor.get(InvokeInstanceImpl.class), Collections.emptyList(), Collections.emptyList())),
+            assignVar("target", newInstanceExpr(Descriptor.get(InvokeInstanceImpl.class), Collections.emptyList(), Collections.emptyList())),
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
