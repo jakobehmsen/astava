@@ -1,7 +1,7 @@
 package astava.parse.tree;
 
-import astava.tree.Node;
-import astava.tree.Tuple;
+import astava.parse.Node;
+import astava.parse.Tuple;
 import astava.parse.*;
 
 import java.util.function.Function;

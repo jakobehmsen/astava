@@ -1,8 +1,8 @@
 package astava.parse.tree;
 
-import astava.tree.Atom;
-import astava.tree.Node;
-import astava.tree.Tuple;
+import astava.parse.Atom;
+import astava.parse.Node;
+import astava.parse.Tuple;
 import astava.parse.Cursor;
 import astava.parse.Matcher;
 import astava.parse.Parser;
