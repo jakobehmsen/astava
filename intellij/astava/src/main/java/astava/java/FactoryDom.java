@@ -108,10 +108,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(5);
     }
 
-    public static Tuple ret() {
-        return new Tuple(Arrays.asList(
-            new Atom(ASTType.RETURN_STATEMENT)
-        ));
+    public static StatementDom ret() {
+        return v -> v.visitReturn();
     }
 
     public static StatementDom ret(ExpressionDom expression) {
