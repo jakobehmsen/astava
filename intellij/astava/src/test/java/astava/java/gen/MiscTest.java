@@ -1,8 +1,8 @@
 package astava.java.gen;
 
-import astava.CommonTest;
-import astava.tree.Tuple;
+import astava.CommonTestDom;
 import astava.java.Descriptor;
+import astava.tree.ExpressionDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static astava.java.Factory.*;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -26,8 +26,8 @@ public class MiscTest {
     public void testExpression() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         String resultType = expression.resultType();
         Object expectedResult = expression.evaluate();
-        Tuple ast = expression.createAST();
-        CommonTest.testExpression(ast, resultType, actualResult ->
+        ExpressionDom ast = expression.createAST();
+        CommonTestDom.testExpression(ast, resultType, actualResult ->
             assertEquals(expectedResult, actualResult));
     }
 
@@ -43,7 +43,7 @@ public class MiscTest {
 
     private interface Expression {
         String resultType();
-        Tuple createAST();
+        ExpressionDom createAST();
         Object evaluate();
     }
 
@@ -62,7 +62,7 @@ public class MiscTest {
         }
 
         @Override
-        public Tuple createAST() {
+        public ExpressionDom createAST() {
             return or(lhs.createAST(), rhs.createAST());
         }
 
@@ -87,7 +87,7 @@ public class MiscTest {
         }
 
         @Override
-        public Tuple createAST() {
+        public ExpressionDom createAST() {
             return gt(lhs.createAST(), rhs.createAST());
         }
 
@@ -110,7 +110,7 @@ public class MiscTest {
         }
 
         @Override
-        public Tuple createAST() {
+        public ExpressionDom createAST() {
             return literal(value);
         }
 
@@ -133,7 +133,7 @@ public class MiscTest {
         }
 
         @Override
-        public Tuple createAST() {
+        public ExpressionDom createAST() {
             return literal(value);
         }
 
