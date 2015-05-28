@@ -326,8 +326,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple lt(Tuple lhs, Tuple rhs) {
-        return compare(lhs, rhs, RelationalOperator.LT);
+    public static ExpressionDom lt(ExpressionDom lhs, ExpressionDom rhs) {
+        return v -> v.visitCompare(RelationalOperator.LT, lhs, rhs);
     }
 
     public static Tuple le(Tuple lhs, Tuple rhs) {
