@@ -15,8 +15,8 @@ public class Descriptor {
     public static final String VOID = "V";
     public static final String STRING = get(String.class);
 
-    public static String get(Class<?> numberClass) {
-        switch(numberClass.getTypeName()) {
+    public static String get(Class<?> c) {
+        /*switch(numberClass.getTypeName()) {
             case "boolean": return Descriptor.BOOLEAN;
             case "byte": return Descriptor.BYTE;
             case "short": return Descriptor.SHORT;
@@ -28,7 +28,25 @@ public class Descriptor {
             case "void": return Descriptor.VOID;
         }
 
-        return numberClass.getName().replace(".", "/");
+        return numberClass.getName().replace(".", "/");*/
+
+        return get(c.getName());
+    }
+
+    public static String get(String typeName) {
+        switch(typeName) {
+            case "boolean": return Descriptor.BOOLEAN;
+            case "byte": return Descriptor.BYTE;
+            case "short": return Descriptor.SHORT;
+            case "int": return Descriptor.INT;
+            case "long": return Descriptor.LONG;
+            case "float": return Descriptor.FLOAT;
+            case "double": return Descriptor.DOUBLE;
+            case "char": return Descriptor.CHAR;
+            case "void": return Descriptor.VOID;
+        }
+
+        return typeName.replace(".", "/");
     }
 
     public static String getMethodDescriptor(List<Class<?>> parameterTypes, Class<?> returnTypes) {
