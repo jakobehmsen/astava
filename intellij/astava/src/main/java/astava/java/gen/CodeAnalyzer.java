@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/*
 import static astava.java.Factory.*;
 import static astava.java.Factory.compareRhs;
 import static astava.java.Factory.logicalRhs;
+*/
 
 public class CodeAnalyzer {
-    private Tuple code;
+    /*private Tuple code;
     private AnalyseScope methodScope;
 
     public CodeAnalyzer(Tuple code) {
@@ -205,5 +207,5 @@ public class CodeAnalyzer {
         }
 
         return null;
-    }
+    }*/
 }
