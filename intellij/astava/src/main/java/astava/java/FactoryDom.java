@@ -131,88 +131,64 @@ public class FactoryDom {
         return (boolean)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(byte value) {
-        return new Tuple(
-            new Atom(ASTType.BYTE_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(byte value) {
+        return v -> v.visitByteLiteral(value);
     }
 
     public static byte literalByte(Tuple tuple) {
         return (byte)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(short value) {
-        return new Tuple(
-            new Atom(ASTType.SHORT_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(short value) {
+        return v -> v.visitShortLiteral(value);
     }
 
     public static short literalShort(Tuple tuple) {
         return (short)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(int value) {
-        return new Tuple(
-            new Atom(ASTType.INT_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(int value) {
+        return v -> v.visitIntLiteral(value);
     }
 
     public static int literalInt(Tuple tuple) {
         return (int)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(long value) {
-        return new Tuple(
-            new Atom(ASTType.LONG_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(long value) {
+        return v -> v.visitLongLiteral(value);
     }
 
     public static long literalLong(Tuple tuple) {
         return (long)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(float value) {
-        return new Tuple(
-            new Atom(ASTType.FLOAT_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(float value) {
+        return v -> v.visitFloatLiteral(value);
     }
 
     public static float literalFloat(Tuple tuple) {
         return (float)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(double value) {
-        return new Tuple(
-            new Atom(ASTType.DOUBLE_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(double value) {
+        return v -> v.visitDoubleLiteral(value);
     }
 
     public static double literalDouble(Tuple tuple) {
         return (double)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(char value) {
-        return new Tuple(
-            new Atom(ASTType.CHAR_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(char value) {
+        return v -> v.visitCharLiteral(value);
     }
 
     public static char literalChar(Tuple tuple) {
         return (char)((Atom)tuple.get(1)).getValue();
     }
 
-    public static Tuple literal(String value) {
-        return new Tuple(
-            new Atom(ASTType.STRING_LITERAL),
-            new Atom(value)
-        );
+    public static ExpressionDom literal(String value) {
+        return v -> v.visitStringLiteral(value);
     }
 
     public static String literalString(Tuple tuple) {
