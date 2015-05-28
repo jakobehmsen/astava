@@ -101,7 +101,7 @@ public class MethodGeneratorFromDom {
 
             @Override
             public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-                populateMethodNewInstance(generator, methodScope, type, parameterTypes, arguments, CODE_LEVEL_EXPRESSION);
+                populateMethodNewInstance(generator, methodScope, type, parameterTypes, arguments, CODE_LEVEL_STATEMENT);
             }
 
             @Override
