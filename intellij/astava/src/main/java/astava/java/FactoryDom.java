@@ -398,6 +398,11 @@ public class FactoryDom {
         return v -> v.visitBlock(statements);
     }
 
+    // At most one expression dom
+    public static ExpressionDom blockExpr(List<CodeDom> codeList) {
+        return v -> v.visitBlock(codeList);
+    }
+
     public static List<Node> blockStatements(Tuple tuple) {
         return (Tuple)tuple.get(1);
     }
@@ -424,6 +429,11 @@ public class FactoryDom {
 
     // If-else-statement (not expression)
     public static StatementDom ifElse(ExpressionDom condition, StatementDom ifTrue, StatementDom ifFalse) {
+        return v -> v.visitIfElse(condition, ifTrue, ifFalse);
+    }
+
+    // If-else-expression (not statement)
+    public static ExpressionDom ifElseExpr(ExpressionDom condition, ExpressionDom ifTrue, ExpressionDom ifFalse) {
         return v -> v.visitIfElse(condition, ifTrue, ifFalse);
     }
 
