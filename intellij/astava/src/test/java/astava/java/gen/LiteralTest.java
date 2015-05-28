@@ -1,9 +1,7 @@
 package astava.java.gen;
 
 import astava.CommonTest;
-import astava.java.FactoryDom;
 import astava.tree.ExpressionDom;
-import astava.tree.Tuple;
 import astava.java.Descriptor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,8 +12,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
-import static astava.java.Factory.literal;
 import static org.junit.Assert.assertEquals;
+import static astava.java.FactoryDom.*;
 
 @RunWith(Parameterized.class)
 public class LiteralTest {
@@ -50,17 +48,11 @@ public class LiteralTest {
         }
 
         public Object getValue() { return value; }
-        public abstract Tuple createAST(Object value);
         public abstract ExpressionDom createASTDom(Object value);
         public String getType() { return type; }
 
-        public static <T> LiteralProvider create(T value, String type, Function<T, Tuple> astFunc, Function<T, ExpressionDom> domFunc) {
+        public static <T> LiteralProvider create(T value, String type, Function<T, ExpressionDom> domFunc) {
             return new LiteralProvider(value, type) {
-                @Override
-                public Tuple createAST(Object value) {
-                    return astFunc.apply((T)value);
-                }
-
                 @Override
                 public ExpressionDom createASTDom(Object value) {
                     return domFunc.apply((T)value);
@@ -75,13 +67,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((boolean)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((boolean)value);
+            return literal((boolean)value);
         }
     }
 
@@ -91,13 +78,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((byte)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((byte) value);
+            return literal((byte) value);
         }
     }
 
@@ -107,13 +89,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((short)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((short) value);
+            return literal((short) value);
         }
     }
 
@@ -123,13 +100,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((int)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((int) value);
+            return literal((int) value);
         }
     }
 
@@ -139,13 +111,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((long)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((long) value);
+            return literal((long) value);
         }
     }
 
@@ -155,13 +122,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((float)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((float) value);
+            return literal((float) value);
         }
     }
 
@@ -171,13 +133,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((double)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((double) value);
+            return literal((double) value);
         }
     }
 
@@ -187,13 +144,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((char)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((char) value);
+            return literal((char) value);
         }
     }
 
@@ -203,13 +155,8 @@ public class LiteralTest {
         }
 
         @Override
-        public Tuple createAST(Object value) {
-            return literal((String)value);
-        }
-
-        @Override
         public ExpressionDom createASTDom(Object value) {
-            return FactoryDom.literal((String) value);
+            return literal((String) value);
         }
     }
 

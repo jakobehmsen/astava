@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static astava.java.Factory.*;
+import static astava.java.FactoryDom.*;
 
 public class MethodGeneratorFromDom {
     private StatementDom body;

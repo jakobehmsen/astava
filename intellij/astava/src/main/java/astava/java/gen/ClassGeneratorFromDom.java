@@ -1,7 +1,6 @@
 package astava.java.gen;
 
 import astava.debug.Debug;
-import astava.java.ASTType;
 import astava.java.Descriptor;
 import astava.tree.*;
 import org.objectweb.asm.ClassReader;
@@ -14,11 +13,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
-import java.awt.datatransfer.DataFlavor;
 import java.io.PrintWriter;
 import java.util.List;
-
-import static astava.java.Factory.*;
 
 public class ClassGeneratorFromDom {
     private ClassDom classDom;
@@ -41,12 +37,7 @@ public class ClassGeneratorFromDom {
         classDom.getFields().forEach(f -> {
         });
         classDom.getMethods().forEach(m -> populateMethod(classNode, m));
-        //members.forEach(m -> populateMember(classNode, (Tuple) m));
     }
-
-    /*public String getClassName() {
-        return classDeclarationName(ast);
-    }*/
 
     public void populateMethod(ClassNode classNode, MethodDom methodDom) {
         int modifier = methodDom.getModifier();
