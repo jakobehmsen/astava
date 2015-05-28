@@ -111,12 +111,7 @@ public class FactoryDom {
     }
 
     public static StatementDom ret(ExpressionDom expression) {
-        return new StatementDom() {
-            @Override
-            public void accept(StatementDomVisitor visitor) {
-                visitor.visitReturnValue(expression);
-            }
-        };
+        return v -> v.visitReturnValue(expression);
     }
 
     public static Tuple retExpression(Tuple tuple) {
@@ -376,12 +371,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(3);
     }
 
-    public static Tuple declareVar(String type, String name) {
-        return new Tuple(
-            new Atom(ASTType.VARIABLE_DECLARATION),
-            new Atom(type),
-            new Atom(name)
-        );
+    public static StatementDom declareVar(String type, String name) {
+        return v -> v.visitVariableDeclaration(type, name);
     }
 
     public static String declareVarType(Tuple tuple) {
@@ -392,12 +383,9 @@ public class FactoryDom {
         return (String)((Atom)tuple.get(2)).getValue();
     }
 
-    public static Tuple assignVar(String name, Tuple expression) {
-        return new Tuple(
-            new Atom(ASTType.VARIABLE_ASSIGNMENT),
-            new Atom(name),
-            expression
-        );
+    // Assign variable as statement (not expression)
+    public static StatementDom assignVar(String name, ExpressionDom expression) {
+        return v -> v.visitVariableAssignment(name, expression);
     }
 
     public static String assignVarName(Tuple tuple) {
@@ -408,11 +396,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(2);
     }
 
-    public static Tuple accessVar(String name) {
-        return new Tuple(
-            new Atom(ASTType.VARIABLE_ACCESS),
-            new Atom(name)
-        );
+    public static ExpressionDom accessVar(String name) {
+        return v -> v.visitVariableAccess(name);
     }
 
     public static String accessVarName(Tuple tuple) {
