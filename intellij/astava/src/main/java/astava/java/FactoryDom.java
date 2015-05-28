@@ -500,13 +500,8 @@ public class FactoryDom {
         return (Tuple)tuple.get(6);
     }
 
-    public static Tuple newInstance(String type, List<String> parameterTypes, List<Node> arguments) {
-        return new Tuple(
-            new Atom(ASTType.NEW_INSTANCE),
-            new Atom(type),
-            new Atom(parameterTypes),
-            new Tuple(arguments)
-        );
+    public static StatementDom newInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+        return v -> v.visitNewInstance(type, parameterTypes, arguments);
     }
 
     public static ExpressionDom newInstanceExpr(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
