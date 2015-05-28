@@ -12,8 +12,8 @@ import java.util.Collection;
 //import static astava.java.Factory.literal;
 //import static astava.java.Factory.not;
 //import static astava.CommonTest.testExpression;
-import static astava.java.FactoryDom.literal;
-import static astava.java.FactoryDom.not;
+import static astava.java.Factory.literal;
+import static astava.java.Factory.not;
 import static astava.CommonTest.testExpression;
 import static org.junit.Assert.assertEquals;
 

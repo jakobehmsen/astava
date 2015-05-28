@@ -8,7 +8,7 @@ import org.junit.Test;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
-import static astava.java.FactoryDom.*;
+import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 
 public class SwitchTest {

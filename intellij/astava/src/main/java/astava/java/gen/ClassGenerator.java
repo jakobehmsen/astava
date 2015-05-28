@@ -16,10 +16,10 @@ import org.objectweb.asm.util.TraceClassVisitor;
 import java.io.PrintWriter;
 import java.util.List;
 
-public class ClassGeneratorFromDom {
+public class ClassGenerator {
     private ClassDom classDom;
 
-    public ClassGeneratorFromDom(ClassDom classDom) {
+    public ClassGenerator(ClassDom classDom) {
         this.classDom = classDom;
     }
 
@@ -56,7 +56,7 @@ public class ClassGeneratorFromDom {
         Method m = new Method(methodName, methodNode.desc);
         GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
 
-        MethodGeneratorFromDom methodGenerator = new MethodGeneratorFromDom(body);
+        MethodGenerator methodGenerator = new MethodGenerator(body);
 
         methodGenerator.generate(generator);
 
@@ -79,7 +79,7 @@ public class ClassGeneratorFromDom {
     }
 
     public ClassLoader newClassLoader() {
-        return new SingleClassLoaderFromDom(this);
+        return new SingleClassLoader(this);
     }
 
     public Class<?> newClass() throws ClassNotFoundException {

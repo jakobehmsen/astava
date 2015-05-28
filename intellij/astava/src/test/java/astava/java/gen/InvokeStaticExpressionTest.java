@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static astava.CommonTest.testExpression;
-import static astava.java.FactoryDom.invokeStaticExpr;
+import static astava.java.Factory.invokeStaticExpr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

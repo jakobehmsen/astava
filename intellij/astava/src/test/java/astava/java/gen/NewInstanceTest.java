@@ -12,7 +12,7 @@ import java.util.Collections;
 import static astava.CommonTest.testExpression;
 import static astava.CommonTest.testMethodBody;
 import static astava.CommonTest.whileLoop;
-import static astava.java.FactoryDom.*;
+import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

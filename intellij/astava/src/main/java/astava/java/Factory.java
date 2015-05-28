@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class FactoryDom {
+public class Factory {
     public static int astType(Tuple tuple) {
         return (int)((Atom)tuple.get(0)).getValue();
     }

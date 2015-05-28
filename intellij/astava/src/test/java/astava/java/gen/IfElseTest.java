@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 import static astava.CommonTest.testMethodBody;
-import static astava.java.FactoryDom.*;
+import static astava.java.Factory.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

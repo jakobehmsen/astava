@@ -1,7 +1,6 @@
 package astava.java.gen;
 
 import astava.java.*;
-import astava.samples.virela.parser.Expression;
 import astava.tree.*;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -13,15 +12,14 @@ import org.objectweb.asm.commons.TableSwitchGenerator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import static astava.java.FactoryDom.*;
+import static astava.java.Factory.*;
 
-public class MethodGeneratorFromDom {
+public class MethodGenerator {
     private StatementDom body;
     private GenerateScope methodScope;
 
-    public MethodGeneratorFromDom(StatementDom body) {
+    public MethodGenerator(StatementDom body) {
         this.body = body;
         this.methodScope = new GenerateScope();
     }

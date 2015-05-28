@@ -1,9 +1,9 @@
 package astava.java.gen;
 
-public class SingleClassLoaderFromDom extends ClassLoader {
-    private ClassGeneratorFromDom generator;
+public class SingleClassLoader extends ClassLoader {
+    private ClassGenerator generator;
 
-    public SingleClassLoaderFromDom(ClassGeneratorFromDom generator) {
+    public SingleClassLoader(ClassGenerator generator) {
         this.generator = generator;
     }
 

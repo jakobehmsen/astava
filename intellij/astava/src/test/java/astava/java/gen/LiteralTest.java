@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
-import static astava.java.FactoryDom.*;
+import static astava.java.Factory.*;
 
 @RunWith(Parameterized.class)
 public class LiteralTest {
