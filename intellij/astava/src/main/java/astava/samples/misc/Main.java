@@ -1,25 +1,5 @@
 package astava.samples.misc;
 
-import astava.tree.Atom;
-import astava.tree.Node;
-
-import astava.tree.Tuple;
-import astava.java.*;
-import astava.parse.*;
-import astava.parse.Cursor;
-import astava.parse.charsequence.CharSequenceCursor;
-import astava.parse.charsequence.LineColumnCursorStateFactory;
-import astava.parse.charsequence.CharParse;
-import astava.parse.tree.NodeParse;
-import astava.parse.tree.OpRouter;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-import java.util.List;
-import java.util.function.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 //import static astava.java.Factory.*;
 
 public class Main {

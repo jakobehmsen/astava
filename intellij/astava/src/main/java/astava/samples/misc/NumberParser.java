@@ -1,7 +1,7 @@
 package astava.samples.misc;
 
-import astava.tree.Atom;
-import astava.tree.Node;
+import astava.parse.Atom;
+import astava.parse.Node;
 import astava.parse.Parse;
 import astava.parse.charsequence.CharParse;
 

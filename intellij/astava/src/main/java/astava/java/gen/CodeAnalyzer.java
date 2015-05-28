@@ -1,14 +1,14 @@
 package astava.java.gen;
 
-import astava.tree.Node;
-import astava.tree.Tuple;
+/*
+import astava.parse.Node;
+import astava.parse.Tuple;
 import astava.java.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/*
 import static astava.java.Factory.*;
 import static astava.java.Factory.compareRhs;
 import static astava.java.Factory.logicalRhs;
