@@ -1,7 +1,6 @@
 package astava;
 
 import astava.java.FactoryDom;
-import astava.java.gen.ClassGenerator;
 import astava.java.gen.ClassGeneratorFromDom;
 import astava.tree.*;
 
