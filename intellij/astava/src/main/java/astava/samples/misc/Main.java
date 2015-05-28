@@ -20,9 +20,10 @@ import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static astava.java.Factory.*;
+//import static astava.java.Factory.*;
 
 public class Main {
+    /*
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Hashtable<String, Object> variables = new Hashtable<>();
         Impava impava = new Impava(variables);
@@ -391,111 +392,6 @@ public class Main {
                             matcher.put(block(listNodes));
                         };
                     });
-
-
-
-                    /*return new DelegateProcessor() {
-                        private Processor createLiteralParser(Function<Number, Node> literalFunction) {
-                            return n -> {
-                                Number number = (Number) ((Atom) ((Tuple) n).get(1)).getValue();
-                                return literalFunction.apply(number);
-                            };
-                        }
-
-                        private Processor arithmeticProcessor(int arithmeticOperator) {
-                            return forOperands(n ->
-                                arithmetic((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), arithmeticOperator));
-                        }
-
-                        private Processor shiftProcessor(int shiftOperator) {
-                            return forOperands(n ->
-                                shift((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), shiftOperator));
-                        }
-
-                        private Processor logicalProcessor(int logicalOperator) {
-                            return forOperands(n ->
-                                logical((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), logicalOperator));
-                        }
-
-                        private Processor compareProcessor(int compareOperator) {
-                            return forOperands(n ->
-                                compare((Tuple) ((Tuple) n).get(1), (Tuple) ((Tuple) n).get(2), compareOperator));
-                        }
-
-                        private Node processDeclareVar(Node n) {
-                            Tuple t = (Tuple)n;
-                            String type = (String)((Atom)t.get(1)).getValue();
-                            String name = (String)((Atom)t.get(2)).getValue();
-                            return declareVar(type, name);
-                        }
-
-                        private Node processAssignVar(Node n) {
-                            Tuple t = (Tuple)n;
-                            String name = (String)((Atom)t.get(1)).getValue();
-                            Tuple value = (Tuple)process(t.get(2));
-                            return assignVar(name, value);
-                        }
-
-                        private Node processAccessVar(Node n) {
-                            Tuple t = (Tuple)n;
-                            String name = (String)((Atom)t.get(1)).getValue();
-                            return accessVar(name);
-                        }
-
-                        @Override
-                        protected Processor createProcessor() {
-                            MapProcessor mp = new MapProcessor()
-                                .put(new Symbol("+"), arithmeticProcessor(ArithmeticOperator.ADD))
-                                .put(new Symbol("-"), arithmeticProcessor(ArithmeticOperator.SUB))
-                                .put(new Symbol("*"), arithmeticProcessor(ArithmeticOperator.MUL))
-                                .put(new Symbol("/"), arithmeticProcessor(ArithmeticOperator.DIV))
-                                .put(new Symbol("%"), arithmeticProcessor(ArithmeticOperator.REM))
-
-                                .put(new Symbol("<<"), shiftProcessor(ShiftOperator.SHL))
-                                .put(new Symbol(">>"), shiftProcessor(ShiftOperator.SHR))
-                                .put(new Symbol(">>>"), shiftProcessor(ShiftOperator.USHR))
-
-                                .put(new Symbol("&&"), logicalProcessor(LogicalOperator.AND))
-                                .put(new Symbol("||"), logicalProcessor(LogicalOperator.OR))
-
-                                .put(new Symbol("<"), compareProcessor(RelationalOperator.LT))
-                                .put(new Symbol("<="), compareProcessor(RelationalOperator.LE))
-                                .put(new Symbol(">"), compareProcessor(RelationalOperator.GT))
-                                .put(new Symbol(">="), compareProcessor(RelationalOperator.GE))
-                                .put(new Symbol("=="), compareProcessor(RelationalOperator.EQ))
-                                .put(new Symbol("!="), compareProcessor(RelationalOperator.NE))
-
-                                .put(new Symbol("byte"), createLiteralParser(number -> literal(number.byteValue())))
-                                .put(new Symbol("short"), createLiteralParser(number -> literal(number.shortValue())))
-                                .put(new Symbol("int"), createLiteralParser(number -> literal(number.intValue())))
-                                .put(new Symbol("long"), createLiteralParser(number -> literal(number.longValue())))
-                                .put(new Symbol("float"), createLiteralParser(number -> literal(number.floatValue())))
-                                .put(new Symbol("double"), createLiteralParser(number -> literal(number.doubleValue())))
-
-                                .put(new Symbol("declareVar"), n -> processDeclareVar(n))
-                                .put(new Symbol("assignVar"), n -> processAssignVar(n))
-                                .put(new Symbol("accessVar"), n -> processAccessVar(n))
-                                ;
-
-                            Processor stringLiteralProcessor = n ->
-                                n instanceof Atom && ((Atom)n).getValue() instanceof String ? literal((String)((Atom)n).getValue()) : null;
-                            Processor booleanLiteralProcessor = n ->
-                                n instanceof Atom && ((Atom)n).getValue() instanceof Boolean ? literal((boolean)((Atom)n).getValue()) : null;
-
-                            Processor fallbackProcessor =
-                                new OperandsProcessor(n ->
-                                    this.process(n))
-                                    // Generate non-operator tuples as blocks
-                                    .or(new TupleProcessor(
-                                        n ->
-                                            this.process(n),
-                                        newElements ->
-                                            block(newElements)))
-                                    .or(n -> n);
-
-                            return mp.or(stringLiteralProcessor).or(booleanLiteralProcessor).or(fallbackProcessor);
-                        }
-                    };*/
                 }
 
                 @Override
@@ -526,4 +422,5 @@ public class Main {
             });
         }
     }
+    */
 }
