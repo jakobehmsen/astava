@@ -1,7 +1,8 @@
 package astava.java.gen;
 
-import astava.CommonTest;
-import astava.tree.Tuple;
+import astava.CommonTestDom;
+import astava.tree.ExpressionDom;
+import astava.tree.StatementDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static astava.java.Factory.*;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -30,17 +31,17 @@ public class VariableTest {
     public void testDeclareAssignAccess()
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Object expectedValue = literal.getValue();
-        Tuple valueAST = literal.createAST(expectedValue);
+        ExpressionDom valueAST = literal.createASTDom(expectedValue);
         String type = literal.getType();
         String name = "myVar";
 
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(type, name),
             assignVar(name, valueAST),
             ret(accessVar(name))
         ));
 
-        CommonTest.testMethodBody(ast, type, actualValue ->
+        CommonTestDom.testMethodBody(ast, type, actualValue ->
             assertEquals(expectedValue, actualValue));
     }
 }
