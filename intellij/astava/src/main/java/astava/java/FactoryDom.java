@@ -478,6 +478,10 @@ public class FactoryDom {
         );
     }
 
+    public static ExpressionDom invokeExpr(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
+        return v -> v.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
+    }
+
     public static int invokeInvocation(Tuple tuple) {
         return (int)((Atom)tuple.get(1)).getValue();
     }
@@ -509,6 +513,10 @@ public class FactoryDom {
             new Atom(parameterTypes),
             new Tuple(arguments)
         );
+    }
+
+    public static ExpressionDom newInstanceExpr(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+        return v -> v.visitNewInstance(type, parameterTypes, arguments);
     }
 
     public static String newInstanceType(Tuple tuple) {
