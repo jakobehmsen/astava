@@ -1,8 +1,9 @@
 package astava.java.gen;
 
-import astava.CommonTest;
-import astava.tree.Tuple;
+import astava.CommonTestDom;
 import astava.java.Descriptor;
+import astava.tree.ExpressionDom;
+import astava.tree.StatementDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -12,8 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import static astava.java.Factory.*;
-import static astava.java.Factory.accessVar;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -32,8 +32,8 @@ public class ExpressionBlockTest {
             // {Declare, assign, *access} as expression should succeed
             new ExpressionBlockProvider(7, Descriptor.INT, false) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
                         declareVar(Descriptor.INT, "myVar"),
                         assignVar("myVar", literal(7)),
                         accessVar("myVar")
@@ -43,8 +43,8 @@ public class ExpressionBlockTest {
             // {Declare,assign} as expression should fail
             new ExpressionBlockProvider(null, Descriptor.INT, true) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
                         declareVar(Descriptor.INT, "myVar"),
                         assignVar("myVar", literal(7))
                     ));
@@ -53,8 +53,8 @@ public class ExpressionBlockTest {
             // {Declare, assign, *access, *access} as expression should fail
             new ExpressionBlockProvider(null, Descriptor.INT, true) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
                         declareVar(Descriptor.INT, "myVar"),
                         assignVar("myVar", literal(7)),
                         accessVar("myVar"),
@@ -66,8 +66,8 @@ public class ExpressionBlockTest {
             // Corresponds to myVar++
             new ExpressionBlockProvider(7, Descriptor.INT, false) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
                         declareVar(Descriptor.INT, "myVar"),
                         assignVar("myVar", literal(7)),
                         accessVar("myVar"),
@@ -79,8 +79,8 @@ public class ExpressionBlockTest {
             // Corresponds to {++myVar}
             new ExpressionBlockProvider(8, Descriptor.INT, false) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
                         declareVar(Descriptor.INT, "myVar"),
                         assignVar("myVar", literal(7)),
                         intIncVar("myVar", 1),
@@ -92,11 +92,11 @@ public class ExpressionBlockTest {
             // Corresponds to {true ? true : false}
             new ExpressionBlockProvider(true, Descriptor.BOOLEAN, false) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
-                        ifElse(literal(true),
-                            block(Arrays.asList(literal(true))),
-                            block(Arrays.asList(literal(false)))
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
+                        ifElseExpr(literal(true),
+                            blockExpr(Arrays.asList(literal(true))),
+                            blockExpr(Arrays.asList(literal(false)))
                         )
                     ));
                 }
@@ -105,11 +105,11 @@ public class ExpressionBlockTest {
             // Corresponds to {false ? true : false}
             new ExpressionBlockProvider(false, Descriptor.BOOLEAN, false) {
                 @Override
-                public Tuple createExpression() {
-                    return block(Arrays.asList(
-                        ifElse(literal(false),
-                            block(Arrays.asList(literal(true))),
-                            block(Arrays.asList(literal(false)))
+                public ExpressionDom createExpression() {
+                    return blockExpr(Arrays.asList(
+                        ifElseExpr(literal(false),
+                            blockExpr(Arrays.asList(literal(true))),
+                            blockExpr(Arrays.asList(literal(false)))
                         )
                     ));
                 }
@@ -123,14 +123,14 @@ public class ExpressionBlockTest {
         Object expectedValue = provider.expectedValue();
         String type = provider.resultType();
 
-        Tuple expressionBlock = provider.createExpression();
+        ExpressionDom expressionBlock = provider.createExpression();
 
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             ret(expressionBlock)
         ));
 
         try {
-            CommonTest.testMethodBody(ast, type, actualValue ->
+            CommonTestDom.testMethodBody(ast, type, actualValue ->
                 assertEquals(expectedValue, actualValue));
             if(provider.shouldFail())
                 fail();
@@ -163,6 +163,6 @@ public class ExpressionBlockTest {
             return shouldFail;
         }
 
-        public abstract Tuple createExpression();
+        public abstract ExpressionDom createExpression();
     }
 }
