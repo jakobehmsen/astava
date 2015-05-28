@@ -1,6 +1,7 @@
 package astava.java.gen;
 
-import astava.tree.Tuple;
+import astava.tree.ExpressionDom;
+import astava.tree.StatementDom;
 import astava.java.Descriptor;
 import org.junit.Test;
 
@@ -8,10 +9,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static astava.CommonTest.testExpression;
-import static astava.CommonTest.testMethodBody;
-import static astava.CommonTest.whileLoop;
-import static astava.java.Factory.*;
+import static astava.CommonTestDom.testExpression;
+import static astava.CommonTestDom.testMethodBody;
+import static astava.CommonTestDom.whileLoop;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -26,7 +27,7 @@ public class NewInstanceTest {
 
     @Test
     public void testNewInstanceExpression() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple expression = newInstance(
+        ExpressionDom expression = newInstanceExpr(
             Descriptor.get(StringBuilder.class),
             Collections.emptyList(),
             Collections.emptyList()
@@ -44,13 +45,13 @@ public class NewInstanceTest {
         // I.e., if the return value isn't implicitly popped, an exception is thrown.
 
         int count = 10;
-        Tuple instantiation = newInstance(
+        StatementDom instantiation = newInstance(
             Descriptor.get(ToInstantiate.class),
             Collections.emptyList(),
             Collections.emptyList()
         );
 
-        Tuple methodBody = block(Arrays.asList(
+        StatementDom methodBody = block(Arrays.asList(
             declareVar(Descriptor.INT, "i"),
             assignVar("i", literal(0)),
             whileLoop(lt(accessVar("i"), literal(count)), block(Arrays.asList(
