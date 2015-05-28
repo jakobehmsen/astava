@@ -1,6 +1,7 @@
 package astava.java.gen;
 
-import astava.CommonTest;
+import astava.CommonTestDom;
+import astava.tree.StatementDom;
 import astava.tree.Tuple;
 import astava.java.Descriptor;
 import org.junit.Test;
@@ -8,13 +9,13 @@ import org.junit.Test;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
-import static astava.java.Factory.*;
+import static astava.java.FactoryDom.*;
 import static org.junit.Assert.assertEquals;
 
 public class SwitchTest {
     @Test
     public void testSwitchFirstCase() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "result"),
             select(literal(0),
                 Arrays.asList(
@@ -27,13 +28,13 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(0, actualValue));
     }
 
     @Test
     public void testSwitchSecondCase() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "result"),
             select(literal(1),
                 Arrays.asList(
@@ -46,13 +47,13 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(1, actualValue));
     }
 
     @Test
     public void testSwitchThirdCase() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "result"),
             select(literal(2),
                 Arrays.asList(
@@ -65,13 +66,13 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(2, actualValue));
     }
 
     @Test
     public void testSwitchFirstToThirdCase() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "result"),
             select(literal(0),
                 Arrays.asList(
@@ -84,13 +85,13 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(2, actualValue));
     }
 
     @Test
     public void testSwitchDefaultCaseByGT() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "result"),
             select(literal(3),
                 Arrays.asList(
@@ -103,13 +104,13 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(-1, actualValue));
     }
 
     @Test
     public void testSwitchDefaultCaseByLT() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Tuple ast = block(Arrays.asList(
+        StatementDom ast = block(Arrays.asList(
             declareVar(Descriptor.INT, "result"),
             select(literal(-1),
                 Arrays.asList(
@@ -122,7 +123,7 @@ public class SwitchTest {
             ret(accessVar("result"))
         ));
 
-        CommonTest.testMethodBody(ast, Descriptor.INT, actualValue ->
+        CommonTestDom.testMethodBody(ast, Descriptor.INT, actualValue ->
             assertEquals(-1, actualValue));
     }
 }
