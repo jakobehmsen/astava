@@ -151,6 +151,14 @@ public class Parser {
     public ExpressionDom parseExpression(JavaParser.ExpressionContext ctx, boolean asStatement) {
         return ctx.accept(new JavaBaseVisitor<ExpressionDom>() {
             @Override
+            public ExpressionDom visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
+                // Only support for variables
+                String name = ctx.ID().get(0).getText();
+
+                return accessVar(name);
+            }
+
+            @Override
             public ExpressionDom visitIntLiteral(@NotNull JavaParser.IntLiteralContext ctx) {
                 int value = Integer.parseInt(ctx.getText());
                 return literal(value);
