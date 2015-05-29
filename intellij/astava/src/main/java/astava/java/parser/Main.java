@@ -21,11 +21,6 @@ public class Main {
             private Set<String> nameSet = simpleNameToNameMap.values().stream().collect(Collectors.toSet());
 
             @Override
-            public void importPackage(String packageName) {
-
-            }
-
-            @Override
             public boolean canResolveAmbiguous(String className) {
                 return nameSet.contains(className);
             }
