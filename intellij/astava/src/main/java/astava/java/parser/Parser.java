@@ -35,7 +35,12 @@ public class Parser {
         parser = new JavaParser(tokenStream);
     }
 
-    private String parseTypeQualifier(String typeQualifier) {
+    private String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {
+        if(!Descriptor.isPrimitiveName(typeQualifier)) {
+            if (!classResolver.canResolveAmbiguous(typeQualifier))
+                typeQualifier = classResolver.resolveSimpleName(typeQualifier);
+        }
+
         return Descriptor.get(typeQualifier);
     }
 
@@ -60,82 +65,103 @@ public class Parser {
         return modifier;
     }
 
-    public ClassDom parseClass() {
-        return parser.classDefinition().accept(new JavaBaseVisitor<ClassDom>() {
+    public MutableClassDomBuilder parseClass() {
+        MutableClassDomBuilder classBuilder = new MutableClassDomBuilder();
+        parseClass(classBuilder);
+        return classBuilder;
+    }
+
+    public void parseClass(MutableClassDomBuilder classBuilder) {
+        parser.classDefinition().accept(new JavaBaseVisitor<Void>() {
             @Override
-            public ClassDom visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
+            public Void visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
                 int modifier = parseModifier(ctx.modifier());
                 String name = ctx.name.getText();
                 String superName = Descriptor.get(Object.class);
-                ArrayList<MethodDom> methods = new ArrayList<MethodDom>();
+
+                classBuilder.setModifier(modifier);
+                classBuilder.setName(name);
+                classBuilder.setSuperName(superName);
+
+                ArrayList<MethodDomBuilder> methodBuilders = new ArrayList<MethodDomBuilder>();
 
                 ctx.classMember().forEach(m -> {
                     m.accept(new JavaBaseVisitor<Void>() {
                         @Override
                         public Void visitMethodDefinition(@NotNull JavaParser.MethodDefinitionContext ctx) {
-                            MethodDom method = parseMethod(ctx);
-                            methods.add(method);
+                            MethodDomBuilder method = parseMethodBuilder(ctx);
+                            classBuilder.addMethod(method);
 
                             return null;
                         }
                     });
                 });
 
-                return classDeclaration(modifier, name, superName, Arrays.asList(), methods);
+                return null;
             }
         });
     }
 
-    public MethodDom parseMethod() {
-        return parseMethod(parser.methodDefinition());
+    public MethodDomBuilder parseMethodBuilder() {
+        return parseMethodBuilder(parser.methodDefinition());
     }
 
-    public MethodDom parseMethod(JavaParser.MethodDefinitionContext ctx) {
-        String returnType = parseTypeQualifier(ctx.returnType.getText());
-        int modifier = parseModifier(ctx.modifier());
-        String name = ctx.name.getText();
-        List<String> parameterTypes = ctx.parameters().parameter().stream().map(x -> parseTypeQualifier(x.type.getText())).collect(Collectors.toList());
-        List<StatementDom> statements = ctx.statement().stream().map(x -> parseStatement(x)).collect(Collectors.toList());
-        StatementDom body = block(statements);
+    public MethodDomBuilder parseMethodBuilder(JavaParser.MethodDefinitionContext ctx) {
+        return (cr, cd) -> {
+            String returnType = parseTypeQualifier(cr, ctx.returnType.getText());
+            int modifier = parseModifier(ctx.modifier());
+            String name = ctx.name.getText();
+            List<String> parameterTypes = ctx.parameters().parameter().stream().map(x -> parseTypeQualifier(cr, x.type.getText())).collect(Collectors.toList());
+            List<StatementDom> statements = ctx.statement().stream().map(x -> parseStatementBuilder(x).build(cr, cd)).collect(Collectors.toList());
+            StatementDom body = block(statements);
 
-        return methodDeclaration(modifier, name, parameterTypes, returnType, body);
+            return methodDeclaration(modifier, name, parameterTypes, returnType, body);
+        };
     }
 
-    public StatementDom parseStatement() {
-        return parseStatement(parser.statement());
-    }
-
-    public StatementDom parseStatement(JavaParser.StatementContext ctx) {
-        return ctx.accept(new JavaBaseVisitor<StatementDom>() {
+    public StatementDomBuilder parseStatementBuilder(JavaParser.StatementContext ctx) {
+        return ctx.accept(new JavaBaseVisitor<StatementDomBuilder>() {
             @Override
-            public StatementDom visitStatement(@NotNull JavaParser.StatementContext ctx) {
+            public StatementDomBuilder visitStatement(@NotNull JavaParser.StatementContext ctx) {
                 return ctx.getChild(0).accept(this);
             }
 
             @Override
-            public StatementDom visitDelimitedStatement(@NotNull JavaParser.DelimitedStatementContext ctx) {
+            public StatementDomBuilder visitDelimitedStatement(@NotNull JavaParser.DelimitedStatementContext ctx) {
                 return ctx.getChild(0).accept(this);
             }
 
             @Override
-            public StatementDom visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
-                ExpressionDom expression = parseExpression(ctx.expression());
-                return ret(expression);
+            public StatementDomBuilder visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
+                ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression());
+                return (cr, cd) -> ret(expression.build(cr, cd));
             }
 
             @Override
-            public StatementDom visitVariableDeclaration(@NotNull JavaParser.VariableDeclarationContext ctx) {
-                String type = ctx.type.getText();
+            public StatementDomBuilder visitVariableDeclaration(@NotNull JavaParser.VariableDeclarationContext ctx) {
+                /*String type = parseTypeQualifier(null, ctx.type.getText());
                 String name = ctx.name.getText();
 
                 StatementDom statement = declareVar(type, name);
 
-                if(ctx.value != null) {
+                if (ctx.value != null) {
                     ExpressionDom value = parseExpression(ctx.value);
                     statement = block(Arrays.asList(statement, assignVar(name, value)));
-                }
+                }*/
 
-                return statement;
+                return (cr, cd) -> {
+                    String type = parseTypeQualifier(cr, ctx.type.getText());
+                    String name = ctx.name.getText();
+
+                    StatementDom statement = declareVar(type, name);
+
+                    if (ctx.value != null) {
+                        ExpressionDomBuilder value = parseExpressionBuilder(ctx.value);
+                        statement = block(Arrays.asList(statement, assignVar(name, value.build(cr, cd))));
+                    }
+
+                    return statement;
+                };
             }
         });
     }
@@ -153,7 +179,8 @@ public class Parser {
             @Override
             public ExpressionDom visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
                 // Only support for variables
-                String name = ctx.ID().get(0).getText();
+
+                String name = ctx.getText();
 
                 return accessVar(name);
             }
@@ -170,6 +197,73 @@ public class Parser {
                 String value = rawString.substring(1, rawString.length() - 1)
                     .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
                 return literal(value);
+            }
+        });
+    }
+
+    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx) {
+        return parseExpressionBuilder(ctx, false);
+    }
+
+    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean asStatement) {
+        return ctx.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
+            @Override
+            public ExpressionDomBuilder visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
+                return (cr, cd) -> {
+                    // Find longest getName that can be resolved
+                    String name;
+
+                    if(ctx.ID().size() > 1) {
+                        name = "";
+                        int i = ctx.ID().size();
+
+                        for (; i > 1; i--) {
+                            name = ctx.ID().subList(0, i).stream().map(x -> x.getText()).collect(Collectors.joining("."));
+                            if (cr.canResolveAmbiguous(name))
+                                break;
+                        }
+
+                        if(i == 1) {
+                            name = ctx.ID().get(0).getText();
+
+                            // Try match with field first
+                            String fieldName = name;
+                            FieldDeclaration fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst().orElse(null);
+                            if(fieldDeclaration == null) {
+                                // What if simple getName cannot be resolved? Then it may be that getName is a field related to the class being defined
+                                name = cr.resolveSimpleName(name);
+                            }
+
+                            // What is required to resolve an ambiguous getName?
+                            // A set of field names and a class getName resolver
+
+                            // So, a parser perhaps shouldn't yield Doms directly but rather something can yield Doms when requested?
+                        }
+
+                        if(i < ctx.ID().size()) {
+                            // The rest should be considered field access
+                            List<String> fieldAccessChain = ctx.ID().subList(i, ctx.ID().size()).stream().map(x -> x.getText()).collect(Collectors.toList());
+                            new String();
+                        }
+                    } else
+                        name = ctx.getText();
+
+                    return accessVar(name);
+                };
+            }
+
+            @Override
+            public ExpressionDomBuilder visitIntLiteral(@NotNull JavaParser.IntLiteralContext ctx) {
+                int value = Integer.parseInt(ctx.getText());
+                return (cr, cd) -> literal(value);
+            }
+
+            @Override
+            public ExpressionDomBuilder visitStringLiteral(@NotNull JavaParser.StringLiteralContext ctx) {
+                String rawString = ctx.getText();
+                String value = rawString.substring(1, rawString.length() - 1)
+                    .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
+                return (cr, cd) -> literal(value);
             }
         });
     }

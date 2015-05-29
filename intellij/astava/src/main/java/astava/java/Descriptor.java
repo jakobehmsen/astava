@@ -49,6 +49,22 @@ public class Descriptor {
         return typeName.replace(".", "/");
     }
 
+    public static boolean isPrimitiveName(String typeName) {
+        switch(typeName) {
+            case "boolean":
+            case "byte":
+            case "short":
+            case "int":
+            case "long":
+            case "float":
+            case "double":
+            case "char":
+            case "void": return true;
+        }
+
+        return false;
+    }
+
     public static String getMethodDescriptor(List<Class<?>> parameterTypes, Class<?> returnTypes) {
         return getMethodDescriptor(parameterTypes.stream().map(c -> get(c)).collect(Collectors.toList()), get(returnTypes));
     }
