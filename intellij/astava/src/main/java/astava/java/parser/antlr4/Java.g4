@@ -18,7 +18,8 @@ returnStatement: KW_RETURN expression;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression);
 expression: variableAssignment | leafExpression;
 variableAssignment: name=ID OP_ASSIGN value=expression;
-leafExpression: intLiteral | stringLiteral;
+leafExpression: ambigousName | intLiteral | stringLiteral;
+ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR}? DOT ID)*;
 intLiteral: INT;
 stringLiteral: STRING;
 
