@@ -10,6 +10,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
 
@@ -34,9 +35,15 @@ public class ClassGenerator {
         classNode.signature = "L" + className + ";";
         classNode.superName = superName;
 
-        classDom.getFields().forEach(f -> {
-        });
+        classDom.getFields().forEach(f -> populateField(classNode, f));
         classDom.getMethods().forEach(m -> populateMethod(classNode, m));
+    }
+
+    public void populateField(ClassNode classNode, FieldDom fieldDom) {
+        String descriptor = Descriptor.getFieldDescriptor(fieldDom.getTypeName());
+        FieldNode f = new FieldNode(fieldDom.getModifier(), fieldDom.getName(), descriptor, null, null);
+
+        classNode.fields.add(f);
     }
 
     public void populateMethod(ClassNode classNode, MethodDom methodDom) {
