@@ -37,6 +37,25 @@ public class Factory {
         };
     }
 
+    public static FieldDom fieldDeclaration(int modifier, String name, String typeName) {
+        return new FieldDom() {
+            @Override
+            public int getModifier() {
+                return modifier;
+            }
+
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public String getTypeName() {
+                return typeName;
+            }
+        };
+    }
+
     public static MethodDom methodDeclaration(int modifier, String name, List<String> parameterTypes, String returnType, StatementDom body) {
         return new MethodDom() {
             @Override
