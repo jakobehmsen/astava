@@ -8,11 +8,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Factory {
-    public static ClassDom classDeclaration(int modifier, String name, String superName, List<FieldDom> fields, List<MethodDom> methods) {
+    public static ClassDom classDeclaration(int modifiers, String name, String superName, List<FieldDom> fields, List<MethodDom> methods) {
         return new ClassDom() {
             @Override
-            public int getModifier() {
-                return modifier;
+            public int getModifiers() {
+                return modifiers;
             }
 
             @Override
@@ -37,11 +37,11 @@ public class Factory {
         };
     }
 
-    public static FieldDom fieldDeclaration(int modifier, String name, String typeName) {
+    public static FieldDom fieldDeclaration(int modifiers, String name, String typeName) {
         return new FieldDom() {
             @Override
-            public int getModifier() {
-                return modifier;
+            public int getModifiers() {
+                return modifiers;
             }
 
             @Override
@@ -56,11 +56,11 @@ public class Factory {
         };
     }
 
-    public static MethodDom methodDeclaration(int modifier, String name, List<String> parameterTypes, String returnType, StatementDom body) {
+    public static MethodDom methodDeclaration(int modifiers, String name, List<String> parameterTypes, String returnType, StatementDom body) {
         return new MethodDom() {
             @Override
-            public int getModifier() {
-                return modifier;
+            public int getModifiers() {
+                return modifiers;
             }
 
             @Override

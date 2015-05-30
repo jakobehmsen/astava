@@ -1,15 +1,15 @@
 grammar Java;
 
 program: classDefinition;
-classDefinition: modifier KW_CLASS name=ID OPEN_BRA classMember* CLOSE_BRA;
+classDefinition: modifiers KW_CLASS name=ID OPEN_BRA classMember* CLOSE_BRA;
 classMember: methodDefinition;
 methodDefinition: 
-    modifier returnType=typeQualifier name=ID parameters 
+    modifiers returnType=typeQualifier name=ID parameters 
     (SEMI_COLON | OPEN_BRA statement+ CLOSE_BRA);
 parameters: OPEN_PAR (parameter (COMMA parameter)*)? CLOSE_PAR;
 parameter: type=typeQualifier name=ID;
 typeQualifier: ID (DOT ID)*;
-modifier: accessModifier? KW_ABSTRACT? KW_STATIC?;
+modifiers: accessModifier? KW_ABSTRACT? KW_STATIC?;
 accessModifier: KW_PUBLIC | KW_PRIVATE | KW_PROTECTED;
 statement: delimitedStatement SEMI_COLON;
 delimitedStatement: 

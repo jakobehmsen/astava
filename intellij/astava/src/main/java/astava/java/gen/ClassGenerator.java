@@ -25,12 +25,12 @@ public class ClassGenerator {
     }
 
     public void populate(ClassNode classNode) {
-        int modifier = classDom.getModifier();
+        int modifiers = classDom.getModifiers();
         String className = classDom.getName();
         String superName = classDom.getSuperName();
 
         classNode.version = Opcodes.V1_8;
-        classNode.access = modifier;
+        classNode.access = modifiers;
         classNode.name = className;
         classNode.signature = "L" + className + ";";
         classNode.superName = superName;
@@ -41,13 +41,13 @@ public class ClassGenerator {
 
     public void populateField(ClassNode classNode, FieldDom fieldDom) {
         String descriptor = Descriptor.getFieldDescriptor(fieldDom.getTypeName());
-        FieldNode f = new FieldNode(fieldDom.getModifier(), fieldDom.getName(), descriptor, null, null);
+        FieldNode f = new FieldNode(fieldDom.getModifiers(), fieldDom.getName(), descriptor, null, null);
 
         classNode.fields.add(f);
     }
 
     public void populateMethod(ClassNode classNode, MethodDom methodDom) {
-        int modifier = methodDom.getModifier();
+        int modifiers = methodDom.getModifiers();
         String methodName = methodDom.getName();
         List<String> parameterTypeNames = methodDom.getParameterTypes();
         String returnTypeName = methodDom.getReturnTypeName();
@@ -58,10 +58,10 @@ public class ClassGenerator {
             parameterTypes[i] = Type.getType(parameterTypeNames.get(i));
 
         String methodDescriptor = Descriptor.getMethodDescriptor(parameterTypeNames, returnTypeName);
-        MethodNode methodNode = new MethodNode(Opcodes.ASM5, modifier, methodName, methodDescriptor, null, null);
+        MethodNode methodNode = new MethodNode(Opcodes.ASM5, modifiers, methodName, methodDescriptor, null, null);
 
         Method m = new Method(methodName, methodNode.desc);
-        GeneratorAdapter generator = new GeneratorAdapter(modifier, m, methodNode);
+        GeneratorAdapter generator = new GeneratorAdapter(modifiers, m, methodNode);
 
         MethodGenerator methodGenerator = new MethodGenerator(body);
 

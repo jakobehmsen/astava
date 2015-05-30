@@ -3,7 +3,7 @@ package astava.tree;
 import java.util.List;
 
 public interface ClassDom {
-    int getModifier();
+    int getModifiers();
     String getName();
     String getSuperName();
     List<FieldDom> getFields();

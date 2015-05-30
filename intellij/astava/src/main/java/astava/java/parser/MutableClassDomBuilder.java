@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MutableClassDomBuilder implements ClassDomBuilder {
-    private int modifier;
+    private int modifiers;
     private String name;
     private String superName;
     private ArrayList<MethodDomBuilder> methodBuilders = new ArrayList<>();
 
-    public void setModifier(int modifier) {
-        this.modifier = modifier;
+    public void setModifiers(int modifiers) {
+        this.modifiers = modifiers;
     }
 
     public void setName(String name) {
@@ -44,8 +44,8 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
 
         return new ClassDom() {
             @Override
-            public int getModifier() {
-                return modifier;
+            public int getModifiers() {
+                return modifiers;
             }
 
             @Override

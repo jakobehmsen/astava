@@ -1,7 +1,7 @@
 package astava.tree;
 
 public interface FieldDom {
-    int getModifier();
+    int getModifiers();
 
     String getName();
 

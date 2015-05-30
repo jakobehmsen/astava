@@ -44,25 +44,25 @@ public class Parser {
         return Descriptor.get(typeQualifier);
     }
 
-    private int parseModifier(JavaParser.ModifierContext ctx) {
-        int modifier = 0;
+    private int parseModifiers(JavaParser.ModifiersContext ctx) {
+        int modifiers = 0;
 
         if(ctx.accessModifier() != null) {
             if(ctx.accessModifier().KW_PRIVATE() != null)
-                modifier |= Modifier.PRIVATE;
+                modifiers |= Modifier.PRIVATE;
             else if(ctx.accessModifier().KW_PROTECTED() != null)
-                modifier |= Modifier.PROTECTED;
+                modifiers |= Modifier.PROTECTED;
             else if(ctx.accessModifier().KW_PUBLIC() != null)
-                modifier |= Modifier.PUBLIC;
+                modifiers |= Modifier.PUBLIC;
         }
 
         if(ctx.KW_ABSTRACT() != null)
-            modifier |= Modifier.ABSTRACT;
+            modifiers |= Modifier.ABSTRACT;
 
         if(ctx.KW_STATIC() != null)
-            modifier |= Modifier.STATIC;
+            modifiers |= Modifier.STATIC;
 
-        return modifier;
+        return modifiers;
     }
 
     public MutableClassDomBuilder parseClass() {
@@ -75,11 +75,11 @@ public class Parser {
         parser.classDefinition().accept(new JavaBaseVisitor<Void>() {
             @Override
             public Void visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
-                int modifier = parseModifier(ctx.modifier());
+                int modifiers = parseModifiers(ctx.modifiers());
                 String name = ctx.name.getText();
                 String superName = Descriptor.get(Object.class);
 
-                classBuilder.setModifier(modifier);
+                classBuilder.setModifiers(modifiers);
                 classBuilder.setName(name);
                 classBuilder.setSuperName(superName);
 
@@ -109,13 +109,13 @@ public class Parser {
     public MethodDomBuilder parseMethodBuilder(JavaParser.MethodDefinitionContext ctx) {
         return (cr, cd) -> {
             String returnType = parseTypeQualifier(cr, ctx.returnType.getText());
-            int modifier = parseModifier(ctx.modifier());
+            int modifiers = parseModifiers(ctx.modifiers());
             String name = ctx.name.getText();
             List<String> parameterTypes = ctx.parameters().parameter().stream().map(x -> parseTypeQualifier(cr, x.type.getText())).collect(Collectors.toList());
             List<StatementDom> statements = ctx.statement().stream().map(x -> parseStatementBuilder(x).build(cr, cd)).collect(Collectors.toList());
             StatementDom body = block(statements);
 
-            return methodDeclaration(modifier, name, parameterTypes, returnType, body);
+            return methodDeclaration(modifiers, name, parameterTypes, returnType, body);
         };
     }
 

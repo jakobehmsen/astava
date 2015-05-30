@@ -19,13 +19,13 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class FieldTest {
-    private int modifier;
+    private int modifiers;
     private String name = "myField";
     private Class<?> type;
     private String typeName;
 
-    public FieldTest(int modifier, Class<?> type) {
-        this.modifier = modifier;
+    public FieldTest(int modifiers, Class<?> type) {
+        this.modifiers = modifiers;
         this.type = type;
         this.typeName = Descriptor.get(type);
     }
@@ -34,15 +34,15 @@ public class FieldTest {
     public static Collection values() {
         List<Integer> accessModifiers = Arrays.asList(Modifier.PUBLIC, Modifier.PRIVATE, Modifier.PROTECTED);
         List<Integer> modifierCombos = accessModifiers.stream().flatMap(accessModifier -> Arrays.asList(
-            accessModifier, // Access modifier in instance context
-            accessModifier & Modifier.STATIC // Access modifier in static context
+            accessModifier, // Access modifiers in instance context
+            accessModifier & Modifier.STATIC // Access modifiers in static context
         ).stream()).collect(Collectors.toList());
         List<Class<?>> types = Arrays.asList(
             Object.class, String.class,
             boolean.class, byte.class, short.class, int.class, long.class, float.class, double.class, char.class
         );
 
-        // Combine modifier combos with types
+        // Combine modifiers combos with types
         return modifierCombos.stream().flatMap(m ->
             types.stream().map(t -> new Object[]{m, t})
         ).collect(Collectors.toList());
@@ -50,12 +50,12 @@ public class FieldTest {
 
     @Test
     public void testField() throws ClassNotFoundException, NoSuchFieldException {
-        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(fieldDeclaration(modifier, name, typeName)), Arrays.asList());
+        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(fieldDeclaration(modifiers, name, typeName)), Arrays.asList());
         ClassGenerator generator = new ClassGenerator(classDeclaration);
         Class<?> c = generator.newClass();
         Field f = c.getDeclaredField(name);
 
-        assertEquals(modifier, f.getModifiers());
+        assertEquals(modifiers, f.getModifiers());
         assertEquals(name, f.getName());
         assertEquals(type, f.getType());
     }
