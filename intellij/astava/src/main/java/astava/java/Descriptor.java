@@ -99,4 +99,8 @@ public class Descriptor {
 
         return "L" + typeName + ";";
     }
+
+    public static String getFieldDescriptor(String typeName) {
+        return getMethodDescriptorPart(typeName);
+    }
 }
