@@ -63,7 +63,7 @@ public class ClassGenerator {
         Method m = new Method(methodName, methodNode.desc);
         GeneratorAdapter generator = new GeneratorAdapter(modifiers, m, methodNode);
 
-        MethodGenerator methodGenerator = new MethodGenerator(body);
+        MethodGenerator methodGenerator = new MethodGenerator(this, body);
 
         methodGenerator.generate(generator);
 

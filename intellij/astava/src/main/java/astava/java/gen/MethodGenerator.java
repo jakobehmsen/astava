@@ -16,10 +16,12 @@ import java.util.Map;
 import static astava.java.Factory.*;
 
 public class MethodGenerator {
+    private ClassGenerator classGenerator;
     private StatementDom body;
     private GenerateScope methodScope;
 
-    public MethodGenerator(StatementDom body) {
+    public MethodGenerator(ClassGenerator classGenerator, StatementDom body) {
+        this.classGenerator = classGenerator;
         this.body = body;
         this.methodScope = new GenerateScope();
     }
@@ -45,6 +47,19 @@ public class MethodGenerator {
                 String valueType = populateMethodExpression(generator, value, null, true);
                 int id = methodScope.getVarId(name);
                 generator.storeLocal(id, Type.getType(valueType));
+            }
+
+            @Override
+            public void visitFieldAssignment(ExpressionDom target, String name, ExpressionDom value) {
+                String targetType = populateMethodExpression(generator, target, null, true);
+                String valueType = populateMethodExpression(generator, value, null, true);
+                generator.putField(Type.getType(targetType), name, Type.getType(Descriptor.getFieldDescriptor(valueType)));
+            }
+
+            @Override
+            public void visitStaticFieldAssignment(String typeName, String name, ExpressionDom value) {
+                String valueType = populateMethodExpression(generator, value, null, true);
+                generator.putStatic(Type.getType(typeName), name, Type.getType(Descriptor.getFieldDescriptor(valueType)));
             }
 
             @Override
@@ -360,6 +375,21 @@ public class MethodGenerator {
             }
 
             @Override
+            public void visitFieldAccess(ExpressionDom target, String name, String fieldTypeName) {
+                String targetType = populateMethodExpression(generator, target, null, true);
+                generator.getField(Type.getType(targetType), name, Type.getType(Descriptor.getFieldDescriptor(fieldTypeName)));
+
+                setResult(fieldTypeName);
+            }
+
+            @Override
+            public void visitStaticFieldAccess(String typeName, String name, String fieldTypeName) {
+                generator.getStatic(Type.getType(typeName), name, Type.getType(Descriptor.getFieldDescriptor(fieldTypeName)));
+
+                setResult(fieldTypeName);
+            }
+
+            @Override
             public void visitNot(ExpressionDom expression) {
                 String resultType = populateMethodExpression(generator, expression, null, true);
 
@@ -442,6 +472,12 @@ public class MethodGenerator {
                 String resultType = populateMethodNewInstance(generator, methodScope, type, parameterTypes, arguments, CODE_LEVEL_EXPRESSION);
                 setResult(resultType);
             }
+
+            @Override
+            public void visitThis() {
+                generator.loadThis();
+                setResult(Descriptor.get(classGenerator.getClassName()));
+            }
         }.returnFrom(expression);
     }
 
@@ -473,6 +509,9 @@ public class MethodGenerator {
                 break;
             case Invocation.VIRTUAL:
                 generator.invokeVirtual(Type.getType(type), new Method(name, descriptor));
+                break;
+            case Invocation.SPECIAL:
+                generator.invokeConstructor(Type.getType(type), new Method(name, descriptor));
                 break;
         }
 
