@@ -33,6 +33,10 @@ public interface ExpressionDomVisitor {
 
     void visitVariableAccess(String name);
 
+    void visitFieldAccess(ExpressionDom target, String name, String fieldTypeName);
+
+    void visitStaticFieldAccess(String typeName, String name, String fieldTypeName);
+
     void visitNot(ExpressionDom expression);
 
     void visitInstanceOf(ExpressionDom expression, String type);
@@ -44,6 +48,8 @@ public interface ExpressionDomVisitor {
     void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments);
 
     void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments);
+
+    void visitThis();
 
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
