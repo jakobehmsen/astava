@@ -1,5 +1,6 @@
 package astava.java;
 
+import astava.samples.virela.parser.Expression;
 import astava.tree.*;
 
 import java.util.AbstractMap;
@@ -234,8 +235,28 @@ public class Factory {
         return v -> v.visitVariableAssignment(name, expression);
     }
 
+    public static StatementDom assignField(ExpressionDom target, String name, ExpressionDom expression) {
+        return v -> v.visitFieldAssignment(target, name, expression);
+    }
+
+    public static StatementDom assignStaticField(String targetTypeName, String name, ExpressionDom expression) {
+        return v -> v.visitStaticFieldAssignment(targetTypeName, name, expression);
+    }
+
     public static ExpressionDom accessVar(String name) {
         return v -> v.visitVariableAccess(name);
+    }
+
+    public static ExpressionDom accessField(ExpressionDom target, String name, String fieldTypeName) {
+        return v -> v.visitFieldAccess(target, name, fieldTypeName);
+    }
+
+    public static ExpressionDom accessStaticField(String targetTypeName, String name, String fieldTypeName) {
+        return v -> v.visitStaticFieldAccess(targetTypeName, name, fieldTypeName);
+    }
+
+    public static ExpressionDom self() {
+        return v -> v.visitThis();
     }
 
     public static StatementDom block(List<StatementDom> statements) {
@@ -283,6 +304,10 @@ public class Factory {
 
     public static StatementDom invokeVirtual(String type, String name, String methodDescriptor, ExpressionDom target, List<ExpressionDom> arguments) {
         return invoke(Invocation.VIRTUAL, type, name, methodDescriptor, target, arguments);
+    }
+
+    public static StatementDom invokeSpecial(String type, String name, String methodDescriptor, ExpressionDom target, List<ExpressionDom> arguments) {
+        return invoke(Invocation.SPECIAL, type, name, methodDescriptor, target, arguments);
     }
 
     public static StatementDom invoke(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
