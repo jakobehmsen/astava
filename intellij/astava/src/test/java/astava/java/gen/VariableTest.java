@@ -32,7 +32,7 @@ public class VariableTest {
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Object expectedValue = literal.getValue();
         ExpressionDom valueAST = literal.createASTDom(expectedValue);
-        String type = literal.getType();
+        String type = literal.getDescriptor();
         String name = "myVar";
 
         StatementDom ast = block(Arrays.asList(
