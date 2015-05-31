@@ -8,8 +8,8 @@ public class Debug {
     public static final int LEVEL_HIGH = 1;
     public static final int LEVEL_LOW = 0;
 
-    public static final int LEVEL = LEVEL_LOW;
-    //public static final int LEVEL = LEVEL_HIGH;
+    //public static final int LEVEL = LEVEL_LOW;
+    public static final int LEVEL = LEVEL_HIGH;
 
     private static final PrintStream NULL_PRINT_STREAM = new PrintStream(new OutputStream() {
         @Override

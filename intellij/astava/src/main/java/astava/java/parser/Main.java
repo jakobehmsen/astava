@@ -10,6 +10,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
+    public int i;
+    public void seti(int x) { i = x; }
+
     public static void main(String[] args) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         ClassResolver classResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
@@ -39,9 +42,13 @@ public class Main {
         System.out.println(actualValue);*/
 
         MutableClassDomBuilder classBuilder = new Parser("public class MyClass { }").parseClass();
-        classBuilder.addMethod(new Parser("public static int myMethod1() { int i = 777; return i; }").parseMethodBuilder());
-        classBuilder.addMethod(new Parser("public static String myMethod2() { String str = \"A string\"; return str; }").parseMethodBuilder());
+        //classBuilder.addMethod(new Parser("public static int myMethod1() { int i = 777; return i; }").parseMethodBuilder());
+        //classBuilder.addMethod(new Parser("public static String myMethod2() { String str = \"A string\"; return str; }").parseMethodBuilder());
         //classBuilder.addMethod(new Parser("public static int myMethod3() { return Modifier.ABSTRACT; }").parseMethodBuilder());
+
+        classBuilder.addField(new Parser("public int i;").parseFieldBuilder());
+        classBuilder.addMethod(new Parser("public int geti() { return i; }").parseMethodBuilder());
+        classBuilder.addMethod(new Parser("public void seti(int x) { i = x; }").parseMethodBuilder());
 
         /*ClassDomBuilder_OLD classBuilder = new ClassDomBuilder_OLD();
 
@@ -54,9 +61,12 @@ public class Main {
 
         ClassGenerator generator = new ClassGenerator(classDom);
         Class<?> gc = generator.newClass();
-        Object actualValue = gc.getMethod("myMethod1").invoke(null, null);
-        System.out.println(actualValue);
-        actualValue = gc.getMethod("myMethod2").invoke(null, null);
+        Object instance = gc.newInstance();
+        //Object actualValue = gc.getMethod("myMethod1").invoke(null, null);
+        //System.out.println(actualValue);
+        //actualValue = gc.getMethod("myMethod2").invoke(null, null);
+        gc.getMethod("seti", new Class<?>[]{int.class}).invoke(instance, new Object[]{666});
+        Object actualValue = gc.getMethod("geti").invoke(instance, null);
         System.out.println(actualValue);
     }
 }

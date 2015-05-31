@@ -2,7 +2,8 @@ grammar Java;
 
 program: classDefinition;
 classDefinition: modifiers KW_CLASS name=ID OPEN_BRA classMember* CLOSE_BRA;
-classMember: methodDefinition;
+classMember: fieldDefinition | methodDefinition;
+fieldDefinition: modifiers type=typeQualifier name=ID;
 methodDefinition: 
     modifiers returnType=typeQualifier name=ID parameters 
     (SEMI_COLON | OPEN_BRA statement+ CLOSE_BRA);
@@ -16,8 +17,8 @@ delimitedStatement:
     returnStatement | variableDeclaration | expression;
 returnStatement: KW_RETURN expression;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression);
-expression: variableAssignment | leafExpression;
-variableAssignment: name=ID OP_ASSIGN value=expression;
+expression: assignment | leafExpression;
+assignment: name=ambigousName OP_ASSIGN value=expression;
 leafExpression: ambigousName | intLiteral | stringLiteral;
 ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR}? DOT ID)*;
 intLiteral: INT;

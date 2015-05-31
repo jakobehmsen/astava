@@ -9,9 +9,8 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.IntStream;
 
 import static astava.java.Factory.*;
 
@@ -19,14 +18,18 @@ public class MethodGenerator {
     private ClassGenerator classGenerator;
     private StatementDom body;
     private GenerateScope methodScope;
+    private List<ParameterInfo> parameters;
 
-    public MethodGenerator(ClassGenerator classGenerator, StatementDom body) {
+    public MethodGenerator(ClassGenerator classGenerator, List<ParameterInfo> parameters, StatementDom body) {
         this.classGenerator = classGenerator;
+        this.parameters = parameters;
         this.body = body;
         this.methodScope = new GenerateScope();
     }
 
     public void generate(GeneratorAdapter generator) {
+        //parameters.forEach(x -> methodScope.declareVar(generator, x.descriptor, x.name));
+
         LabelScope labelScope = new LabelScope();
         generator.visitCode();
         populateMethodStatement(generator, body, null, labelScope);
@@ -368,10 +371,17 @@ public class MethodGenerator {
 
             @Override
             public void visitVariableAccess(String name) {
-                int id = methodScope.getVarId(name);
-                generator.loadLocal(id);
+                OptionalInt parameterOrdinal = IntStream.range(0, parameters.size()).filter(x -> parameters.get(x).name.equals(name)).findFirst();
 
-                setResult(methodScope.getVarType(name));
+                if(parameterOrdinal.isPresent()) {
+                    generator.loadArg(parameterOrdinal.getAsInt());
+                    setResult(parameters.get(parameterOrdinal.getAsInt()).descriptor);
+                } else {
+                    int id = methodScope.getVarId(name);
+                    generator.loadLocal(id);
+
+                    setResult(methodScope.getVarType(name));
+                }
             }
 
             @Override

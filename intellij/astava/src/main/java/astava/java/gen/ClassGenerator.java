@@ -16,6 +16,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ClassGenerator {
     private ClassDom classDom;
@@ -49,21 +50,22 @@ public class ClassGenerator {
     public void populateMethod(ClassNode classNode, MethodDom methodDom) {
         int modifiers = methodDom.getModifiers();
         String methodName = methodDom.getName();
-        List<String> parameterTypeNames = methodDom.getParameterTypes();
+        List<ParameterInfo> parameters = methodDom.getParameterTypes();
         String returnTypeName = methodDom.getReturnTypeName();
         StatementDom body = methodDom.getBody();
 
-        Type[] parameterTypes = new Type[parameterTypeNames.size()];
-        for(int i = 0; i < parameterTypeNames.size(); i++)
-            parameterTypes[i] = Type.getType(parameterTypeNames.get(i));
+        Type[] parameterTypes = new Type[parameters.size()];
+        for(int i = 0; i < parameters.size(); i++)
+            parameterTypes[i] = Type.getType(parameters.get(i).descriptor);
 
+        List<String> parameterTypeNames = parameters.stream().map(x -> x.descriptor).collect(Collectors.toList());
         String methodDescriptor = Descriptor.getMethodDescriptor(parameterTypeNames, returnTypeName);
         MethodNode methodNode = new MethodNode(Opcodes.ASM5, modifiers, methodName, methodDescriptor, null, null);
 
         Method m = new Method(methodName, methodNode.desc);
         GeneratorAdapter generator = new GeneratorAdapter(modifiers, m, methodNode);
 
-        MethodGenerator methodGenerator = new MethodGenerator(this, body);
+        MethodGenerator methodGenerator = new MethodGenerator(this, parameters, body);
 
         methodGenerator.generate(generator);
 

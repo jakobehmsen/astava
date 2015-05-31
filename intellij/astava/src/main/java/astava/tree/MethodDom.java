@@ -7,7 +7,7 @@ public interface MethodDom {
 
     String getName();
 
-    List<String> getParameterTypes();
+    List<ParameterInfo> getParameterTypes();
 
     String getReturnTypeName();
 

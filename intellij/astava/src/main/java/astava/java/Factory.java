@@ -57,7 +57,7 @@ public class Factory {
         };
     }
 
-    public static MethodDom methodDeclaration(int modifiers, String name, List<String> parameterTypes, String returnType, StatementDom body) {
+    public static MethodDom methodDeclaration(int modifiers, String name, List<ParameterInfo> parameters, String returnType, StatementDom body) {
         return new MethodDom() {
             @Override
             public int getModifiers() {
@@ -70,8 +70,8 @@ public class Factory {
             }
 
             @Override
-            public List<String> getParameterTypes() {
-                return parameterTypes;
+            public List<ParameterInfo> getParameterTypes() {
+                return parameters;
             }
 
             @Override

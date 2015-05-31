@@ -2,6 +2,9 @@ package astava.java.parser;
 
 import astava.tree.StatementDom;
 
+import java.util.Set;
+
 public interface StatementDomBuilder {
-    StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration);
+    default void appendLocals(Set<String> locals) { }
+    StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals);
 }
