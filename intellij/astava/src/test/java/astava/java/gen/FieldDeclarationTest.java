@@ -18,13 +18,13 @@ import static astava.java.Factory.fieldDeclaration;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class FieldTest {
+public class FieldDeclarationTest {
     private int modifiers;
     private String name = "myField";
     private Class<?> type;
     private String typeName;
 
-    public FieldTest(int modifiers, Class<?> type) {
+    public FieldDeclarationTest(int modifiers, Class<?> type) {
         this.modifiers = modifiers;
         this.type = type;
         this.typeName = Descriptor.get(type);
