@@ -4,7 +4,11 @@ import astava.tree.StatementDom;
 
 import java.util.Set;
 
-public interface StatementDomBuilder {
+public interface StatementDomBuilder extends DomBuilder {
+    default void accept(DomBuilderVisitor visitor) {
+        visitor.visitStatementBuilder(this);
+    }
+
     default void appendLocals(Set<String> locals) { }
     StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals);
 }

@@ -33,4 +33,20 @@ public interface StatementDomVisitor {
     void visitGoTo(String name);
 
     void visitSwitch(ExpressionDom expression, Map<Integer, StatementDom> cases, StatementDom defaultBody);
+
+    public static abstract class Return<T> implements StatementDomVisitor {
+        private boolean setResult;
+        private T result;
+
+        public void setResult(T result) {
+            this.result = result;
+            setResult = true;
+        }
+
+
+        public T returnFrom(T defaultValue, StatementDom statement) {
+            statement.accept(this);
+            return setResult ? result : defaultValue;
+        }
+    }
 }

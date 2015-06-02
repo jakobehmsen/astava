@@ -1,9 +1,11 @@
 grammar Java;
 
-program: classDefinition;
+classFile: classDefinition;
+script: element*;
+element: classDefinition | fieldDefinition | methodDefinition | statement | expression;
 classDefinition: modifiers KW_CLASS name=ID OPEN_BRA classMember* CLOSE_BRA;
 classMember: fieldDefinition | methodDefinition;
-fieldDefinition: modifiers type=typeQualifier name=ID;
+fieldDefinition: modifiers type=typeQualifier name=ID (OP_ASSIGN value=expression)? SEMI_COLON;
 methodDefinition: 
     modifiers returnType=typeQualifier name=ID parameters 
     (SEMI_COLON | OPEN_BRA statement+ CLOSE_BRA);
@@ -16,7 +18,7 @@ statement: delimitedStatement SEMI_COLON;
 delimitedStatement: 
     returnStatement | variableDeclaration | expression;
 returnStatement: KW_RETURN expression;
-variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression);
+variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 expression: assignment | leafExpression;
 assignment: name=ambigousName OP_ASSIGN value=expression;
 leafExpression: ambigousName | intLiteral | stringLiteral;

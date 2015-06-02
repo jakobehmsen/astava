@@ -57,7 +57,7 @@ public class Main {
         //classBuilder.getMethods().add(new Parser(cs, "public static String myMethod2() { String str = \"A string\"; return str; }").parseMethod());
         classBuilder.getMethods().add(new Parser("public static int myMethod3() { return Modifier.ABSTRACT; }").parseMethod());*/
 
-        ClassDom classDom = classBuilder.build(classResolver);
+        ClassDom classDom = classBuilder.build(classResolver).build();
 
         ClassGenerator generator = new ClassGenerator(classDom);
         Class<?> gc = generator.newClass();

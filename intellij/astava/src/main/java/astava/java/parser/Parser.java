@@ -37,6 +37,37 @@ public class Parser {
         parser = new JavaParser(tokenStream);
     }
 
+    public List<DomBuilder> parse() {
+        return parser.script().element().stream().map(x -> x.accept(new JavaBaseVisitor<DomBuilder>() {
+            @Override
+            public DomBuilder visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
+                MutableClassDomBuilder classBuilder = new MutableClassDomBuilder();
+                parseClass(classBuilder);
+                return classBuilder;
+            }
+
+            @Override
+            public DomBuilder visitFieldDefinition(@NotNull JavaParser.FieldDefinitionContext ctx) {
+                return parseFieldBuilder(ctx);
+            }
+
+            @Override
+            public DomBuilder visitMethodDefinition(@NotNull JavaParser.MethodDefinitionContext ctx) {
+                return parseMethodBuilder(ctx);
+            }
+
+            @Override
+            public DomBuilder visitStatement(@NotNull JavaParser.StatementContext ctx) {
+                return parseStatementBuilder(ctx);
+            }
+
+            @Override
+            public DomBuilder visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
+                return parseExpressionBuilder(ctx);
+            }
+        })).collect(Collectors.toList());
+    }
+
     private String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {
         if(!Descriptor.isPrimitiveName(typeQualifier)) {
             if (!classResolver.canResolveAmbiguous(typeQualifier))
@@ -250,7 +281,7 @@ public class Parser {
                 }*/
                 String name = ctx.name.getText();
 
-                ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value);
+                ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value) : null;
 
                 return new StatementDomBuilder() {
                     @Override
@@ -264,7 +295,7 @@ public class Parser {
 
                         StatementDom statement = declareVar(type, name);
 
-                        if (ctx.value != null) {
+                        if (valueBuilder != null) {
                             statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, locals))));
                         }
 
@@ -405,8 +436,8 @@ public class Parser {
                     return parseAmbiguousName(ctx.ID(), cr, cd,
                         name -> {
                             Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
-                            if(fieldDeclaration.isPresent()) {
-                                if(Modifier.isStatic(fieldDeclaration.get().getModifiers()))
+                            if (fieldDeclaration.isPresent()) {
+                                if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
                                     return accessStaticField(cd.getName(), name, fieldDeclaration.get().getTypeName());
                                 return accessField(self(), name, fieldDeclaration.get().getTypeName());
                             }

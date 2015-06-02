@@ -43,12 +43,14 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
         methodBuilders.add(methodBuilder);
     }
 
+
+
     @Override
-    public ClassDom build(ClassResolver classResolver) {
+    public ClassDeclaration build(ClassResolver classResolver) {
         List<FieldDeclaration> fieldDeclarations = fieldBuilders.stream().map(x -> x.declare(classResolver)).collect(Collectors.toList());
         List<MethodDeclaration> methodDeclarations = methodBuilders.stream().map(x -> x.declare(classResolver)).collect(Collectors.toList());
 
-        // Add default constructor if necessary
+        /*// Add default constructor if necessary
         boolean hasConstructors = methodDeclarations.stream().anyMatch(x -> x.getName().equals("<init>"));
         if(!hasConstructors) {
             methodDeclarations.add(new MethodDeclaration() {
@@ -80,9 +82,9 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
                     )));
                 }
             });
-        }
+        }*/
 
-        ClassDeclaration cd = new ClassDeclaration() {
+        return new ClassDeclaration() {
             @Override
             public List<FieldDeclaration> getFields() {
                 return fieldDeclarations;
@@ -94,12 +96,22 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
             }
 
             @Override
+            public int getModifiers() {
+                return modifiers;
+            }
+
+            @Override
             public String getName() {
                 return name;
             }
+
+            @Override
+            public String getSuperName() {
+                return superName;
+            }
         };
 
-        List<FieldDom> fields = fieldDeclarations.stream().map(x -> x.build(cd)).collect(Collectors.toList());
+        /*List<FieldDom> fields = fieldDeclarations.stream().map(x -> x.build(cd)).collect(Collectors.toList());
         List<MethodDom> methods = methodDeclarations.stream().map(x -> x.build(cd)).collect(Collectors.toList());
 
         return new ClassDom() {
@@ -127,6 +139,6 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
             public List<MethodDom> getMethods() {
                 return methods;
             }
-        };
+        };*/
     }
 }
