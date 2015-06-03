@@ -78,84 +78,13 @@ public class Main {
 
                             @Override
                             public void visitExpressionBuilder(ExpressionDomBuilder expressionBuilder) {
-                                ClassDeclaration rootClassDeclaration = rootClassBuilder.build(classResolver);
-
-                                rootClassDeclaration = rootClassDeclaration.withDefaultConstructor();
-
-                                // Add entry point method
-                                ExpressionDom expr = expressionBuilder.build(classResolver, rootClassDeclaration, new HashSet<>());
-
-                                String exprResultType = expressionResultType(rootClassDeclaration, expr);
-
-                                rootClassDeclaration = new ClassDeclaration.Mod(rootClassDeclaration) {
+                                Object result = exec(new StatementDomBuilder() {
                                     @Override
-                                    protected List<MethodDeclaration> newMethods() {
-                                        return Arrays.asList(new MethodDeclaration() {
-                                            @Override
-                                            public int getModifiers() {
-                                                return Modifier.PUBLIC;
-                                            }
-
-                                            @Override
-                                            public String getName() {
-                                                return "exec";
-                                            }
-
-                                            @Override
-                                            public List<ParameterInfo> getParameterTypes() {
-                                                return Arrays.asList();
-                                            }
-
-                                            @Override
-                                            public String getReturnTypeName() {
-                                                return exprResultType;
-                                            }
-
-                                            @Override
-                                            public MethodDom build(ClassDeclaration classDeclaration) {
-                                                return methodDeclaration(Modifier.PUBLIC, "exec", Arrays.asList(), exprResultType, block(Arrays.asList(
-                                                    ret(expr)
-                                                )));
-                                            }
-                                        });
+                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
+                                        return ret(expressionBuilder.build(classResolver, classDeclaration, locals));
                                     }
-                                };
-
-                                ClassDom classDom = rootClassDeclaration.build();
-
-                                ClassGenerator generator = new ClassGenerator(classDom);
-
-                                try {
-                                    Class<?> gc = generator.newClass();
-                                    Object oldRoot = currentRoot;
-                                    currentRoot = gc.newInstance();
-
-                                    if(oldRoot != null) {
-                                        for(Field f: oldRoot.getClass().getDeclaredFields()) {
-                                            f.setAccessible(true);
-                                            Field nf = gc.getDeclaredField(f.getName());
-                                            nf.setAccessible(true);
-                                            nf.set(currentRoot, f.get(oldRoot));
-                                        }
-                                    }
-
-                                    Method execMethod = gc.getMethod("exec");
-                                    Object result = execMethod.invoke(currentRoot);
-
-                                    output.append(result);
-                                } catch (ClassNotFoundException e1) {
-                                    e1.printStackTrace();
-                                } catch (InstantiationException e1) {
-                                    e1.printStackTrace();
-                                } catch (IllegalAccessException e1) {
-                                    e1.printStackTrace();
-                                } catch (NoSuchFieldException e1) {
-                                    e1.printStackTrace();
-                                } catch (NoSuchMethodException e1) {
-                                    e1.printStackTrace();
-                                } catch (InvocationTargetException e1) {
-                                    e1.printStackTrace();
-                                }
+                                }, classResolver, rootClassBuilder);
+                                output.append(result);
                             }
 
                             @Override
@@ -170,89 +99,12 @@ public class Main {
 
                             @Override
                             public void visitStatementBuilder(StatementDomBuilder statementBuilder) {
-                                ClassDeclaration rootClassDeclaration = rootClassBuilder.build(classResolver);
-
-
-
-
-
-
-
-                                rootClassDeclaration = rootClassDeclaration.withDefaultConstructor();
-
-                                // Add entry point method
-                                StatementDom stmt = statementBuilder.build(classResolver, rootClassDeclaration, new HashSet<>());
-
-                                rootClassDeclaration = new ClassDeclaration.Mod(rootClassDeclaration) {
+                                exec(new StatementDomBuilder() {
                                     @Override
-                                    protected List<MethodDeclaration> newMethods() {
-                                        return Arrays.asList(new MethodDeclaration() {
-                                            @Override
-                                            public int getModifiers() {
-                                                return Modifier.PUBLIC;
-                                            }
-
-                                            @Override
-                                            public String getName() {
-                                                return "exec";
-                                            }
-
-                                            @Override
-                                            public List<ParameterInfo> getParameterTypes() {
-                                                return Arrays.asList();
-                                            }
-
-                                            @Override
-                                            public String getReturnTypeName() {
-                                                return Descriptor.VOID;
-                                            }
-
-                                            @Override
-                                            public MethodDom build(ClassDeclaration classDeclaration) {
-                                                return methodDeclaration(Modifier.PUBLIC, "exec", Arrays.asList(), Descriptor.VOID, block(Arrays.asList(
-                                                    stmt,
-                                                    ret()
-                                                )));
-                                            }
-                                        });
+                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
+                                        return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, locals), ret()));
                                     }
-                                };
-
-                                ClassDom classDom = rootClassDeclaration.build();
-
-                                ClassGenerator generator = new ClassGenerator(classDom);
-
-                                try {
-                                    Class<?> gc = generator.newClass();
-                                    Object oldRoot = currentRoot;
-                                    currentRoot = gc.newInstance();
-
-                                    if(oldRoot != null) {
-                                        for(Field f: oldRoot.getClass().getDeclaredFields()) {
-                                            f.setAccessible(true);
-                                            Field nf = gc.getDeclaredField(f.getName());
-                                            nf.setAccessible(true);
-                                            nf.set(currentRoot, f.get(oldRoot));
-                                        }
-                                    }
-
-                                    Method execMethod = gc.getMethod("exec");
-                                    execMethod.invoke(currentRoot);
-
-                                    //output.append("");
-                                } catch (ClassNotFoundException e1) {
-                                    e1.printStackTrace();
-                                } catch (InstantiationException e1) {
-                                    e1.printStackTrace();
-                                } catch (IllegalAccessException e1) {
-                                    e1.printStackTrace();
-                                } catch (NoSuchFieldException e1) {
-                                    e1.printStackTrace();
-                                } catch (NoSuchMethodException e1) {
-                                    e1.printStackTrace();
-                                } catch (InvocationTargetException e1) {
-                                    e1.printStackTrace();
-                                }
+                                }, classResolver, rootClassBuilder);
                             }
                         }));
                     } catch (IOException e1) {
@@ -278,6 +130,169 @@ public class Main {
         frame.setSize(1028, 768);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder) {
+        ClassDeclaration rootClassDeclaration = rootClassBuilder.build(classResolver);
+
+        rootClassDeclaration = rootClassDeclaration.withDefaultConstructor();
+
+        // Add entry point method
+        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, new HashSet<>());
+
+        String exprResultType = statementReturnType(rootClassDeclaration, stmt);
+
+        rootClassDeclaration = new ClassDeclaration.Mod(rootClassDeclaration) {
+            @Override
+            protected List<MethodDeclaration> newMethods() {
+                return Arrays.asList(new MethodDeclaration() {
+                    @Override
+                    public int getModifiers() {
+                        return Modifier.PUBLIC;
+                    }
+
+                    @Override
+                    public String getName() {
+                        return "exec";
+                    }
+
+                    @Override
+                    public List<ParameterInfo> getParameterTypes() {
+                        return Arrays.asList();
+                    }
+
+                    @Override
+                    public String getReturnTypeName() {
+                        return exprResultType;
+                    }
+
+                    @Override
+                    public MethodDom build(ClassDeclaration classDeclaration) {
+                        return methodDeclaration(Modifier.PUBLIC, "exec", Arrays.asList(), exprResultType, block(Arrays.asList(
+                            stmt
+                        )));
+                    }
+                });
+            }
+        };
+
+        ClassDom classDom = rootClassDeclaration.build();
+
+        ClassGenerator generator = new ClassGenerator(classDom);
+
+        try {
+            Class<?> gc = generator.newClass();
+            Object oldRoot = currentRoot;
+            currentRoot = gc.newInstance();
+
+            if(oldRoot != null) {
+                for(Field f: oldRoot.getClass().getDeclaredFields()) {
+                    f.setAccessible(true);
+                    Field nf = gc.getDeclaredField(f.getName());
+                    nf.setAccessible(true);
+                    nf.set(currentRoot, f.get(oldRoot));
+                }
+            }
+
+            Method execMethod = gc.getMethod("exec");
+            return execMethod.invoke(currentRoot);
+        } catch (ClassNotFoundException e1) {
+            e1.printStackTrace();
+        } catch (InstantiationException e1) {
+            e1.printStackTrace();
+        } catch (IllegalAccessException e1) {
+            e1.printStackTrace();
+        } catch (NoSuchFieldException e1) {
+            e1.printStackTrace();
+        } catch (NoSuchMethodException e1) {
+            e1.printStackTrace();
+        } catch (InvocationTargetException e1) {
+            e1.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private static String statementReturnType(ClassDeclaration self, StatementDom stmt) {
+        String returnType = new StatementDomVisitor.Return<String>() {
+            @Override
+            public void visitVariableDeclaration(String type, String name) {
+
+            }
+
+            @Override
+            public void visitVariableAssignment(String name, ExpressionDom value) {
+
+            }
+
+            @Override
+            public void visitFieldAssignment(ExpressionDom target, String name, ExpressionDom value) {
+
+            }
+
+            @Override
+            public void visitStaticFieldAssignment(String typeName, String name, ExpressionDom value) {
+
+            }
+
+            @Override
+            public void visitIncrement(String name, int amount) {
+
+            }
+
+            @Override
+            public void visitReturnValue(ExpressionDom expression) {
+                String resultType = expressionResultType(self, expression);
+                setResult(resultType);
+            }
+
+            @Override
+            public void visitBlock(List<StatementDom> statements) {
+
+            }
+
+            @Override
+            public void visitIfElse(ExpressionDom condition, StatementDom ifTrue, StatementDom ifFalse) {
+
+            }
+
+            @Override
+            public void visitBreakCase() {
+
+            }
+
+            @Override
+            public void visitReturn() {
+
+            }
+
+            @Override
+            public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
+
+            }
+
+            @Override
+            public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+
+            }
+
+            @Override
+            public void visitLabel(String name) {
+
+            }
+
+            @Override
+            public void visitGoTo(String name) {
+
+            }
+
+            @Override
+            public void visitSwitch(ExpressionDom expression, Map<Integer, StatementDom> cases, StatementDom defaultBody) {
+
+            }
+        }.returnFrom(stmt);
+
+        return returnType != null ? returnType : Descriptor.VOID;
     }
 
     private static String expressionResultType(ClassDeclaration self, ExpressionDom expr) {
