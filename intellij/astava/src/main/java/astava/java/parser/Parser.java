@@ -48,7 +48,7 @@ public class Parser {
 
             @Override
             public DomBuilder visitFieldDefinition(@NotNull JavaParser.FieldDefinitionContext ctx) {
-                return parseFieldBuilder(ctx);
+                return parseFieldBuilder(ctx, true);
             }
 
             @Override
@@ -58,12 +58,12 @@ public class Parser {
 
             @Override
             public DomBuilder visitStatement(@NotNull JavaParser.StatementContext ctx) {
-                return parseStatementBuilder(ctx);
+                return parseStatementBuilder(ctx, true);
             }
 
             @Override
             public DomBuilder visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
-                return parseExpressionBuilder(ctx);
+                return parseExpressionBuilder(ctx, true);
             }
         })).collect(Collectors.toList());
     }
@@ -122,7 +122,7 @@ public class Parser {
                     m.accept(new JavaBaseVisitor<Void>() {
                         @Override
                         public Void visitFieldDefinition(@NotNull JavaParser.FieldDefinitionContext ctx) {
-                            FieldDomBuilder field = parseFieldBuilder(ctx);
+                            FieldDomBuilder field = parseFieldBuilder(ctx, false);
                             classBuilder.addField(field);
 
                             return null;
@@ -144,15 +144,22 @@ public class Parser {
     }
 
     public FieldDomBuilder parseFieldBuilder() {
-        return parseFieldBuilder(parser.fieldDefinition());
+        return parseFieldBuilder(parser.fieldDefinition(), true);
     }
 
-    public FieldDomBuilder parseFieldBuilder(JavaParser.FieldDefinitionContext ctx) {
+    public FieldDomBuilder parseFieldBuilder(JavaParser.FieldDefinitionContext ctx, boolean atRoot) {
         return new FieldDomBuilder() {
             @Override
             public FieldDeclaration declare(ClassResolver classResolver) {
                 String typeName = parseTypeQualifier(classResolver, ctx.type.getText());
-                int modifiers = parseModifiers(ctx.modifiers());
+                int modifiersTmp = parseModifiers(ctx.modifiers());
+
+                int modifiers;
+                if(atRoot)
+                    modifiers = modifiersTmp | Modifier.PUBLIC;
+                else
+                    modifiers = modifiersTmp;
+
                 String name = ctx.name.getText();
 
                 return new FieldDeclaration() {
@@ -221,7 +228,7 @@ public class Parser {
                     public MethodDom build(ClassDeclaration classDeclaration) {
                         HashSet<String> locals = new HashSet<>();
                         locals.addAll(parameters.stream().map(x -> x.name).collect(Collectors.toList()));
-                        List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x)).collect(Collectors.toList());
+                        List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
                         statementBuilders.forEach(x -> x.appendLocals(locals));
                         List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, locals)).collect(Collectors.toList());
                         StatementDom body = block(statements);
@@ -240,7 +247,7 @@ public class Parser {
         };
     }
 
-    public StatementDomBuilder parseStatementBuilder(JavaParser.StatementContext ctx) {
+    public StatementDomBuilder parseStatementBuilder(JavaParser.StatementContext ctx, boolean atRoot) {
         return ctx.accept(new JavaBaseVisitor<StatementDomBuilder>() {
             @Override
             public StatementDomBuilder visitStatement(@NotNull JavaParser.StatementContext ctx) {
@@ -254,7 +261,7 @@ public class Parser {
 
             @Override
             public StatementDomBuilder visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
-                ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression());
+                ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
                 return new StatementDomBuilder() {
                     @Override
                     public void appendLocals(Set<String> locals) {
@@ -281,7 +288,7 @@ public class Parser {
                 }*/
                 String name = ctx.name.getText();
 
-                ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value) : null;
+                ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value, atRoot) : null;
 
                 return new StatementDomBuilder() {
                     @Override
@@ -306,7 +313,7 @@ public class Parser {
 
             @Override
             public StatementDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
-                ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value);
+                ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot);
 
                 return new StatementDomBuilder() {
                     @Override
@@ -324,7 +331,11 @@ public class Parser {
                                 if (fieldDeclaration.isPresent()) {
                                     if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
                                         return assignStaticField(classDeclaration.getName(), name, value);
-                                    return assignField(self(), name, value);
+
+                                    if(!atRoot)
+                                        return assignField(self(), name, value);
+                                    else
+                                        return assignField(accessVar("self"), name, value); // "self" is passed as argument
                                 }
 
                                 return assignVar(name, value);
@@ -374,8 +385,8 @@ public class Parser {
         });
     }
 
-    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx) {
-        return parseExpressionBuilder(ctx, false);
+    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {
+        return parseExpressionBuilder(ctx, atRoot, false);
     }
 
     private static final int NAME_VARIABLE = 0;
@@ -428,7 +439,7 @@ public class Parser {
         return nameHandler.apply(name);
     }
 
-    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean asStatement) {
+    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot, boolean asStatement) {
         return ctx.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
             @Override
             public ExpressionDomBuilder visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
@@ -439,7 +450,13 @@ public class Parser {
                             if (fieldDeclaration.isPresent()) {
                                 if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
                                     return accessStaticField(cd.getName(), name, fieldDeclaration.get().getTypeName());
-                                return accessField(self(), name, fieldDeclaration.get().getTypeName());
+
+                                if(!atRoot)
+                                    return accessField(self(), name, fieldDeclaration.get().getTypeName());
+                                else
+                                    return accessField(accessVar("self"), name, fieldDeclaration.get().getTypeName());
+
+                                //return accessField(self(), name, fieldDeclaration.get().getTypeName());
                             }
 
                             return accessVar(name);

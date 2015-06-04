@@ -2,7 +2,9 @@ package astava.java.ijava;
 
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
+import astava.java.gen.SingleClassLoader;
 import astava.java.parser.*;
+import astava.java.parser.antlr4.JavaParser;
 import astava.tree.*;
 
 import javax.swing.*;
@@ -57,6 +59,27 @@ public class Main {
         //MutableClassDomBuilder rootClassBuilder = new MutableClassDomBuilder();
 
         MutableClassDomBuilder rootClassBuilder = new Parser("public class Root { }").parseClass();
+        MutableClassDomBuilder scriptClassBuilder = new Parser("public class Script { }").parseClass();
+
+        ijavaClassLoader = new IJAVAClassLoader(classResolver);
+
+        ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
+            @Override
+            public ClassDeclaration build(ClassResolver classResolver) {
+                return rootClassBuilder.build(classResolver).withDefaultConstructor();
+            }
+        });
+        try {
+            currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        ArrayList<StatementDomBuilder> executions = new ArrayList<>();
 
         pendingScript.addKeyListener(new KeyAdapter() {
             @Override
@@ -83,13 +106,35 @@ public class Main {
                                     public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
                                         return ret(expressionBuilder.build(classResolver, classDeclaration, locals));
                                     }
-                                }, classResolver, rootClassBuilder);
+                                }, classResolver, rootClassBuilder, executions);
                                 output.append(result);
                             }
 
                             @Override
                             public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
                                 rootClassBuilder.addField(fieldBuilder);
+
+                                ijavaClassLoader = new IJAVAClassLoader(classResolver);
+
+                                ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
+                                    @Override
+                                    public ClassDeclaration build(ClassResolver classResolver) {
+                                        return rootClassBuilder.build(classResolver).withDefaultConstructor();
+                                    }
+                                });
+
+                                try {
+                                    currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
+                                } catch (ClassNotFoundException e1) {
+                                    e1.printStackTrace();
+                                } catch (InstantiationException e1) {
+                                    e1.printStackTrace();
+                                } catch (IllegalAccessException e1) {
+                                    e1.printStackTrace();
+                                }
+
+                                // Replay all script
+                                executions.forEach(x -> exec(x, classResolver, rootClassBuilder));
                             }
 
                             @Override
@@ -104,7 +149,7 @@ public class Main {
                                     public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
                                         return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, locals), ret()));
                                     }
-                                }, classResolver, rootClassBuilder);
+                                }, classResolver, rootClassBuilder, executions);
                             }
                         }));
                     } catch (IOException e1) {
@@ -132,17 +177,76 @@ public class Main {
         frame.setVisible(true);
     }
 
-    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder) {
-        ClassDeclaration rootClassDeclaration = rootClassBuilder.build(classResolver);
+    private static Map<String, ClassDomBuilder> classBuilders = new Hashtable<>();
+    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder, java.util.List<StatementDomBuilder> script) {
+        script.add(statementDomBuilder);
 
-        rootClassDeclaration = rootClassDeclaration.withDefaultConstructor();
+        return exec(statementDomBuilder, classResolver, rootClassBuilder);
+    }
+
+    private static IJAVAClassLoader ijavaClassLoader;
+
+    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder) {
+        MutableClassDomBuilder exeClassBuilder = null;
+
+        try {
+            exeClassBuilder = new Parser("public class Exec { }").parseClass();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //ClassDeclaration rootClassDeclaration = rootClassBuilder.build(classResolver);
+
+        //rootClassDeclaration = rootClassDeclaration.withDefaultConstructor();
 
         // Add entry point method
+
+        ClassDeclaration rootClassDeclaration = ijavaClassLoader.getClassDeclaration("Root");
+
         StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, new HashSet<>());
 
         String exprResultType = statementReturnType(rootClassDeclaration, stmt);
 
-        rootClassDeclaration = new ClassDeclaration.Mod(rootClassDeclaration) {
+        exeClassBuilder.addMethod(new MethodDomBuilder() {
+            @Override
+            public MethodDeclaration declare(ClassResolver classResolver) {
+                return new MethodDeclaration() {
+                    @Override
+                    public int getModifiers() {
+                        return Modifier.PUBLIC | Modifier.STATIC;
+                    }
+
+                    @Override
+                    public String getName() {
+                        return "exec";
+                    }
+
+                    @Override
+                    public List<ParameterInfo> getParameterTypes() {
+                        return Arrays.asList(new ParameterInfo(Descriptor.get("Root"), "self"));
+                    }
+
+                    @Override
+                    public String getReturnTypeName() {
+                        return exprResultType;
+                    }
+
+                    @Override
+                    public MethodDom build(ClassDeclaration classDeclaration) {
+                        return methodDeclaration(getModifiers(), getName(), getParameterTypes(), getReturnTypeName(), block(Arrays.asList(
+                            stmt
+                        )));
+                    }
+                };
+            }
+        });
+
+        ClassDeclaration execClassDeclaration = exeClassBuilder.build(classResolver);
+
+
+
+
+        /*rootClassDeclaration = new ClassDeclaration.Mod(rootClassDeclaration) {
             @Override
             protected List<MethodDeclaration> newMethods() {
                 return Arrays.asList(new MethodDeclaration() {
@@ -174,14 +278,24 @@ public class Main {
                     }
                 });
             }
-        };
+        };*/
 
-        ClassDom classDom = rootClassDeclaration.build();
+        //ClassDom classDom = rootClassDeclaration.build();
+        Map<String, ClassDomBuilder> classBuilders2 = new Hashtable<>();
+        classBuilders2.putAll(classBuilders);
+        classBuilders2.put("Exec", exeClassBuilder);
+
+        ClassDom classDom = execClassDeclaration.build();
 
         ClassGenerator generator = new ClassGenerator(classDom);
 
+        ClassLoader classLoader = new SingleClassLoader(ijavaClassLoader, generator);
+
         try {
-            Class<?> gc = generator.newClass();
+            Class<?> execClass = classLoader.loadClass("Exec");
+            Class<?> rootClass = classLoader.loadClass("Root");
+
+            /*Class<?> gc = generator.newClass();
             Object oldRoot = currentRoot;
             currentRoot = gc.newInstance();
 
@@ -192,17 +306,13 @@ public class Main {
                     nf.setAccessible(true);
                     nf.set(currentRoot, f.get(oldRoot));
                 }
-            }
+            }*/
 
-            Method execMethod = gc.getMethod("exec");
-            return execMethod.invoke(currentRoot);
+            Method execMethod = execClass.getMethod("exec", new Class<?>[]{rootClass});
+            return execMethod.invoke(null, currentRoot);
         } catch (ClassNotFoundException e1) {
             e1.printStackTrace();
-        } catch (InstantiationException e1) {
-            e1.printStackTrace();
         } catch (IllegalAccessException e1) {
-            e1.printStackTrace();
-        } catch (NoSuchFieldException e1) {
             e1.printStackTrace();
         } catch (NoSuchMethodException e1) {
             e1.printStackTrace();

@@ -3,6 +3,11 @@ package astava.java.gen;
 public class SingleClassLoader extends ClassLoader {
     private ClassGenerator generator;
 
+    public SingleClassLoader(ClassLoader parent, ClassGenerator generator) {
+        super(parent);
+        this.generator = generator;
+    }
+
     public SingleClassLoader(ClassGenerator generator) {
         this.generator = generator;
     }
