@@ -7,7 +7,7 @@ public interface ClassDomBuilder extends DomBuilder {
         visitor.visitClassBuilder(this);
     }
 
-    //ClassDom build(ClassResolver classResolver);
-
     ClassDeclaration build(ClassResolver classResolver);
+
+    String getName();
 }

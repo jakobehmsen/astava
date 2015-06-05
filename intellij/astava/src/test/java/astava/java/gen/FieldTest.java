@@ -64,7 +64,7 @@ public class FieldTest {
         if(Modifier.isStatic(modifiers)) {
             memberModifiers |= Modifier.STATIC;
             methods = Arrays.asList(
-                methodDeclaration(memberModifiers, setFieldMethodName, Arrays.asList(), Descriptor.VOID, block(Arrays.asList(assignStaticField(Descriptor.get(className), name, typeInfo.createASTDom(expectedValue)), ret()))),
+                methodDeclaration(memberModifiers, setFieldMethodName, Arrays.asList(), Descriptor.VOID, block(Arrays.asList(assignStaticField(Descriptor.get(className), name, typeInfo.getDescriptor(), typeInfo.createASTDom(expectedValue)), ret()))),
                 methodDeclaration(memberModifiers, getFieldMethodName, Arrays.asList(), descriptor, ret(accessStaticField(Descriptor.get(className), name, descriptor)))
             );
         } else {
@@ -73,7 +73,7 @@ public class FieldTest {
                     invokeSpecial(Descriptor.get("java/lang/Object"), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), self(), Arrays.asList()),
                     ret()
                 ))),
-                methodDeclaration(memberModifiers, setFieldMethodName, Arrays.asList(), Descriptor.VOID, block(Arrays.asList(assignField(self(), name, typeInfo.createASTDom(expectedValue)), ret()))),
+                methodDeclaration(memberModifiers, setFieldMethodName, Arrays.asList(), Descriptor.VOID, block(Arrays.asList(assignField(self(), name, typeInfo.getDescriptor(), typeInfo.createASTDom(expectedValue)), ret()))),
                 methodDeclaration(memberModifiers, getFieldMethodName, Arrays.asList(), descriptor, ret(accessField(self(), name, descriptor)))
             );
         }

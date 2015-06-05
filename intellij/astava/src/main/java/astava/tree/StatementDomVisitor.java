@@ -8,9 +8,9 @@ public interface StatementDomVisitor {
 
     void visitVariableAssignment(String name, ExpressionDom value);
 
-    void visitFieldAssignment(ExpressionDom target, String name, ExpressionDom value);
+    void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value);
 
-    void visitStaticFieldAssignment(String typeName, String name, ExpressionDom value);
+    void visitStaticFieldAssignment(String typeName, String name, String type, ExpressionDom value);
 
     void visitIncrement(String name, int amount);
 

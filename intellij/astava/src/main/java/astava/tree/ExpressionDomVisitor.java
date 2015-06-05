@@ -51,6 +51,8 @@ public interface ExpressionDomVisitor {
 
     void visitThis();
 
+    void visitNull();
+
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
 

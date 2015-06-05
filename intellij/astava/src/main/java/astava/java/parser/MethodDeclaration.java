@@ -10,5 +10,5 @@ public interface MethodDeclaration {
     String getName();
     List<ParameterInfo> getParameterTypes();
     String getReturnTypeName();
-    MethodDom build(ClassDeclaration classDeclaration);
+    MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector);
 }

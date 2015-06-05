@@ -27,6 +27,11 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
         this.modifiers = modifiers;
     }
 
+    @Override
+    public String getName() {
+        return name;
+    }
+
     public void setName(String name) {
         this.name = name;
     }

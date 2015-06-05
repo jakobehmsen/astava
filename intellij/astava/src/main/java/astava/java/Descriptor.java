@@ -103,4 +103,20 @@ public class Descriptor {
     public static String getFieldDescriptor(String typeName) {
         return getMethodDescriptorPart(typeName);
     }
+
+    public static String getName(String descriptor) {
+        switch(descriptor) {
+            case Descriptor.VOID: return "void";
+            case Descriptor.BOOLEAN: return "boolean";
+            case Descriptor.CHAR: return "char";
+            case Descriptor.BYTE: return "byte";
+            case Descriptor.SHORT: return "short";
+            case Descriptor.INT: return "int";
+            case Descriptor.FLOAT: return "float";
+            case Descriptor.LONG: return "long";
+            case Descriptor.DOUBLE: return "double";
+        }
+
+        return descriptor.substring(1, descriptor.length() - 2);
+    }
 }

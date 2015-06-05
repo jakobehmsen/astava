@@ -4,7 +4,6 @@ import astava.java.Descriptor;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
-import astava.samples.drawnmap.lang.antlr4.DrawNMapParser;
 import astava.tree.*;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
@@ -20,6 +19,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static astava.java.Factory.*;
 
@@ -37,12 +37,223 @@ public class Parser {
         parser = new JavaParser(tokenStream);
     }
 
+    public static String expressionResultType(ClassDeclaration self, ExpressionDom expr) {
+        return new ExpressionDomVisitor.Return<String>() {
+            @Override
+            public void visitBooleanLiteral(boolean value) {
+                setResult(Descriptor.BOOLEAN);
+            }
+
+            @Override
+            public void visitByteLiteral(byte value) {
+                setResult(Descriptor.BYTE);
+            }
+
+            @Override
+            public void visitShortLiteral(short value) {
+                setResult(Descriptor.SHORT);
+            }
+
+            @Override
+            public void visitIntLiteral(int value) {
+                setResult(Descriptor.INT);
+            }
+
+            @Override
+            public void visitLongLiteral(long value) {
+                setResult(Descriptor.LONG);
+            }
+
+            @Override
+            public void visitFloatLiteral(float value) {
+                setResult(Descriptor.FLOAT);
+            }
+
+            @Override
+            public void visitDoubleLiteral(double value) {
+                setResult(Descriptor.DOUBLE);
+            }
+
+            @Override
+            public void visitCharLiteral(char value) {
+                setResult(Descriptor.CHAR);
+            }
+
+            @Override
+            public void visitStringLiteral(String value) {
+                setResult(Descriptor.STRING);
+            }
+
+            @Override
+            public void visitNull() {
+                setResult(Descriptor.get(Object.class));
+            }
+
+            @Override
+            public void visitArithmetic(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+            }
+
+            @Override
+            public void visitShift(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+            }
+
+            @Override
+            public void visitBitwise(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+            }
+
+            @Override
+            public void visitCompare(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+            }
+
+            @Override
+            public void visitLogical(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+            }
+
+            @Override
+            public void visitVariableAccess(String name) {
+
+            }
+
+            @Override
+            public void visitFieldAccess(ExpressionDom target, String name, String fieldTypeName) {
+                setResult(fieldTypeName);
+            }
+
+            @Override
+            public void visitStaticFieldAccess(String typeName, String name, String fieldTypeName) {
+                setResult(fieldTypeName);
+            }
+
+            @Override
+            public void visitNot(ExpressionDom expression) {
+
+            }
+
+            @Override
+            public void visitInstanceOf(ExpressionDom expression, String type) {
+
+            }
+
+            @Override
+            public void visitBlock(List<CodeDom> codeList) {
+
+            }
+
+            @Override
+            public void visitIfElse(ExpressionDom condition, ExpressionDom ifTrue, ExpressionDom ifFalse) {
+
+            }
+
+            @Override
+            public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
+
+            }
+
+            @Override
+            public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+
+            }
+
+            @Override
+            public void visitThis() {
+                setResult(Descriptor.get(self.getName()));
+            }
+        }.returnFrom(expr);
+    }
+
+    public static String statementReturnType(ClassDeclaration self, StatementDom stmt) {
+        String returnType = new StatementDomVisitor.Return<String>() {
+            @Override
+            public void visitVariableDeclaration(String type, String name) {
+
+            }
+
+            @Override
+            public void visitVariableAssignment(String name, ExpressionDom value) {
+
+            }
+
+            @Override
+            public void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value) {
+
+            }
+
+            @Override
+            public void visitStaticFieldAssignment(String typeName, String name, String type, ExpressionDom value) {
+
+            }
+
+            @Override
+            public void visitIncrement(String name, int amount) {
+
+            }
+
+            @Override
+            public void visitReturnValue(ExpressionDom expression) {
+                String resultType = expressionResultType(self, expression);
+                setResult(resultType);
+            }
+
+            @Override
+            public void visitBlock(List<StatementDom> statements) {
+
+            }
+
+            @Override
+            public void visitIfElse(ExpressionDom condition, StatementDom ifTrue, StatementDom ifFalse) {
+
+            }
+
+            @Override
+            public void visitBreakCase() {
+
+            }
+
+            @Override
+            public void visitReturn() {
+
+            }
+
+            @Override
+            public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
+
+            }
+
+            @Override
+            public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+
+            }
+
+            @Override
+            public void visitLabel(String name) {
+
+            }
+
+            @Override
+            public void visitGoTo(String name) {
+
+            }
+
+            @Override
+            public void visitSwitch(ExpressionDom expression, Map<Integer, StatementDom> cases, StatementDom defaultBody) {
+
+            }
+        }.returnFrom(stmt);
+
+        return returnType != null ? returnType : Descriptor.VOID;
+    }
+
     public List<DomBuilder> parse() {
         return parser.script().element().stream().map(x -> x.accept(new JavaBaseVisitor<DomBuilder>() {
             @Override
             public DomBuilder visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
                 MutableClassDomBuilder classBuilder = new MutableClassDomBuilder();
-                parseClass(classBuilder);
+                parseClass(ctx, classBuilder);
                 return classBuilder;
             }
 
@@ -100,12 +311,12 @@ public class Parser {
 
     public MutableClassDomBuilder parseClass() {
         MutableClassDomBuilder classBuilder = new MutableClassDomBuilder();
-        parseClass(classBuilder);
+        parseClass(parser.classDefinition(), classBuilder);
         return classBuilder;
     }
 
-    public void parseClass(MutableClassDomBuilder classBuilder) {
-        parser.classDefinition().accept(new JavaBaseVisitor<Void>() {
+    public void parseClass(JavaParser.ClassDefinitionContext ctx, MutableClassDomBuilder classBuilder) {
+        ctx.accept(new JavaBaseVisitor<Void>() {
             @Override
             public Void visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
                 int modifiers = parseModifiers(ctx.modifiers());
@@ -225,12 +436,12 @@ public class Parser {
                     }
 
                     @Override
-                    public MethodDom build(ClassDeclaration classDeclaration) {
+                    public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
                         HashSet<String> locals = new HashSet<>();
                         locals.addAll(parameters.stream().map(x -> x.name).collect(Collectors.toList()));
                         List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
                         statementBuilders.forEach(x -> x.appendLocals(locals));
-                        List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, locals)).collect(Collectors.toList());
+                        List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals)).collect(Collectors.toList());
                         StatementDom body = block(statements);
 
                         // Ugly hack
@@ -269,8 +480,8 @@ public class Parser {
                     }
 
                     @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
-                        return ret(expression.build(classResolver, classDeclaration, locals));
+                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                        return ret(expression.build(classResolver, classDeclaration, classInspector, locals));
                     }
                 };
             }
@@ -297,13 +508,13 @@ public class Parser {
                     }
 
                     @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
+                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
                         String type = parseTypeQualifier(classResolver, ctx.type.getText());
 
                         StatementDom statement = declareVar(type, name);
 
                         if (valueBuilder != null) {
-                            statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, locals))));
+                            statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, classInspector, locals))));
                         }
 
                         return statement;
@@ -322,20 +533,20 @@ public class Parser {
                     }
 
                     @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
-                        ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, locals);
+                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                        ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
 
                         return parseAmbiguousName(ctx.name.ID(), classResolver, classDeclaration,
                             name -> {
                                 Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                                 if (fieldDeclaration.isPresent()) {
                                     if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
-                                        return assignStaticField(classDeclaration.getName(), name, value);
+                                        return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
 
                                     if(!atRoot)
-                                        return assignField(self(), name, value);
+                                        return assignField(self(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
                                     else
-                                        return assignField(accessVar("self"), name, value); // "self" is passed as argument
+                                        return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
                                 }
 
                                 return assignVar(name, value);
@@ -350,7 +561,7 @@ public class Parser {
         });
     }
 
-    public ExpressionDom parseExpression() {
+    /*public ExpressionDom parseExpression() {
         return parseExpression(parser.expression());
     }
 
@@ -382,8 +593,13 @@ public class Parser {
                     .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
                 return literal(value);
             }
+
+            @Override
+            public ExpressionDom visitNullLiteral(@NotNull JavaParser.NullLiteralContext ctx) {
+                return nil();
+            }
         });
-    }
+    }*/
 
     public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {
         return parseExpressionBuilder(ctx, atRoot, false);
@@ -443,7 +659,7 @@ public class Parser {
         return ctx.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
             @Override
             public ExpressionDomBuilder visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
-                return (cr, cd, locals) -> {
+                return (cr, cd, ci, locals) -> {
                     return parseAmbiguousName(ctx.ID(), cr, cd,
                         name -> {
                             Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
@@ -472,7 +688,7 @@ public class Parser {
             public ExpressionDomBuilder visitIntLiteral(@NotNull JavaParser.IntLiteralContext ctx) {
                 int value = Integer.parseInt(ctx.getText());
 
-                return (cr, cd, locals) -> literal(value);
+                return (cr, cd, ci, locals) -> literal(value);
             }
 
             @Override
@@ -480,7 +696,64 @@ public class Parser {
                 String rawString = ctx.getText();
                 String value = rawString.substring(1, rawString.length() - 1)
                     .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
-                return (cr, cd, locals) -> literal(value);
+                return (cr, cd, ci, locals) -> literal(value);
+            }
+
+            @Override
+            public ExpressionDomBuilder visitNullLiteral(@NotNull JavaParser.NullLiteralContext ctx) {
+                return (cr, cd, ci, locals) -> nil();
+            }
+
+            @Override
+            public ExpressionDomBuilder visitNewInstance(@NotNull JavaParser.NewInstanceContext ctx) {
+                List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
+                        .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
+
+                return (cr, cd, ci, locals) -> {
+                    List<ExpressionDom> arguments = argumentBuilders.stream()
+                        .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
+
+                    ClassDeclaration targetClassDeclaration = parseAmbiguousName(ctx.name.ID(), cr, cd,
+                        name -> ci.getClassDeclaration(name), (x, fieldChain) -> x);
+
+                    List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
+                        String expressionResultType = expressionResultType(cd, x);
+                        String expressionResultTypeName = Descriptor.getName(expressionResultType);
+
+                        return ci.getClassDeclaration(expressionResultTypeName);
+                    }).collect(Collectors.toList());
+
+                    // Find best matching constructor
+
+
+                    List<MethodDeclaration> constructors = targetClassDeclaration.getMethods().stream()
+                        .filter(x -> x.getName().equals("<init>"))
+                        .filter(x -> x.getParameterTypes().size() == arguments.size())
+                        .filter(x -> IntStream.range(0, arguments.size()).allMatch(i ->
+                            // Compare full inheritance
+                            x.getParameterTypes().get(0).name.equals(argumentTypes.get(i).getName())))
+                        .collect(Collectors.toList());
+
+                    // For now, just pick the first
+                    MethodDeclaration constructor = constructors.get(0);
+
+                    /*if(asStatement) {
+                        return newInstance(
+                            targetClassDeclaration.getName(),
+                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                            arguments);
+                    } else {
+                        return newInstanceExpr(
+                            targetClassDeclaration.getName(),
+                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                            arguments);
+                    }*/
+
+                    return newInstanceExpr(
+                        targetClassDeclaration.getName(),
+                        constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                        arguments);
+                };
             }
         });
     }

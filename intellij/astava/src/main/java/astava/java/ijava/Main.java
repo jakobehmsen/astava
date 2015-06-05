@@ -4,7 +4,6 @@ import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
 import astava.java.parser.*;
-import astava.java.parser.antlr4.JavaParser;
 import astava.tree.*;
 
 import javax.swing.*;
@@ -15,7 +14,6 @@ import java.awt.event.KeyEvent;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -30,10 +28,11 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        ClassResolver classResolver = new ClassResolver() {
+        ClassResolver baseClassResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
                 String.class,
-                Modifier.class
+                Modifier.class,
+                Object.class
             )
                 .stream().map(x -> new AbstractMap.SimpleImmutableEntry<>(x.getSimpleName(), x.getName()))
                 .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
@@ -61,9 +60,14 @@ public class Main {
         MutableClassDomBuilder rootClassBuilder = new Parser("public class Root { }").parseClass();
         MutableClassDomBuilder scriptClassBuilder = new Parser("public class Script { }").parseClass();
 
-        ijavaClassLoader = new IJAVAClassLoader(classResolver);
+        ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
 
         ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
+            @Override
+            public String getName() {
+                return "Root";
+            }
+
             @Override
             public ClassDeclaration build(ClassResolver classResolver) {
                 return rootClassBuilder.build(classResolver).withDefaultConstructor();
@@ -96,17 +100,29 @@ public class Main {
                         script.forEach(x -> x.accept(new DomBuilderVisitor() {
                             @Override
                             public void visitClassBuilder(ClassDomBuilder classBuilder) {
+                                ijavaClassLoader.putClassBuilder(classBuilder.getName(), new ClassDomBuilder() {
+                                    @Override
+                                    public ClassDeclaration build(ClassResolver classResolver) {
+                                        return classBuilder.build(classResolver).withDefaultConstructor();
+                                    }
 
+                                    @Override
+                                    public String getName() {
+                                        return classBuilder.getName();
+                                    }
+                                });
+
+                                resetClassLoader(baseClassResolver, rootClassBuilder, executions);
                             }
 
                             @Override
                             public void visitExpressionBuilder(ExpressionDomBuilder expressionBuilder) {
                                 Object result = exec(new StatementDomBuilder() {
                                     @Override
-                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
-                                        return ret(expressionBuilder.build(classResolver, classDeclaration, locals));
+                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                                        return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
                                     }
-                                }, classResolver, rootClassBuilder, executions);
+                                }, ijavaClassLoader, rootClassBuilder, executions);
                                 output.append(result);
                             }
 
@@ -114,27 +130,7 @@ public class Main {
                             public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
                                 rootClassBuilder.addField(fieldBuilder);
 
-                                ijavaClassLoader = new IJAVAClassLoader(classResolver);
-
-                                ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
-                                    @Override
-                                    public ClassDeclaration build(ClassResolver classResolver) {
-                                        return rootClassBuilder.build(classResolver).withDefaultConstructor();
-                                    }
-                                });
-
-                                try {
-                                    currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
-                                } catch (ClassNotFoundException e1) {
-                                    e1.printStackTrace();
-                                } catch (InstantiationException e1) {
-                                    e1.printStackTrace();
-                                } catch (IllegalAccessException e1) {
-                                    e1.printStackTrace();
-                                }
-
-                                // Replay all script
-                                executions.forEach(x -> exec(x, classResolver, rootClassBuilder));
+                                resetClassLoader(baseClassResolver, rootClassBuilder, executions);
                             }
 
                             @Override
@@ -146,10 +142,10 @@ public class Main {
                             public void visitStatementBuilder(StatementDomBuilder statementBuilder) {
                                 exec(new StatementDomBuilder() {
                                     @Override
-                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals) {
-                                        return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, locals), ret()));
+                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                                        return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, classInspector, locals), ret()));
                                     }
-                                }, classResolver, rootClassBuilder, executions);
+                                }, ijavaClassLoader, rootClassBuilder, executions);
                             }
                         }));
                     } catch (IOException e1) {
@@ -175,6 +171,42 @@ public class Main {
         frame.setSize(1028, 768);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    private static void resetClassLoader(ClassResolver baseClassResolver, final MutableClassDomBuilder rootClassBuilder, java.util.List<StatementDomBuilder> executions) {
+        Map<String, ClassDomBuilder> classBuilders = ijavaClassLoader.getClassBuilders();
+
+        ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
+
+        classBuilders.entrySet().stream().forEach(x -> {
+            if(x.getKey().equals("Root")) {
+                ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
+                    @Override
+                    public ClassDeclaration build(ClassResolver classResolver) {
+                        return rootClassBuilder.build(classResolver).withDefaultConstructor();
+                    }
+
+                    @Override
+                    public String getName() {
+                        return "Root";
+                    }
+                });
+            } else
+                ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());
+        });
+
+        try {
+            currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
+        } catch (ClassNotFoundException e1) {
+            e1.printStackTrace();
+        } catch (InstantiationException e1) {
+            e1.printStackTrace();
+        } catch (IllegalAccessException e1) {
+            e1.printStackTrace();
+        }
+
+        // Replay all script
+        executions.forEach(x -> exec(x, ijavaClassLoader, rootClassBuilder));
     }
 
     private static Map<String, ClassDomBuilder> classBuilders = new Hashtable<>();
@@ -203,9 +235,9 @@ public class Main {
 
         ClassDeclaration rootClassDeclaration = ijavaClassLoader.getClassDeclaration("Root");
 
-        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, new HashSet<>());
+        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, ijavaClassLoader, new HashSet<>());
 
-        String exprResultType = statementReturnType(rootClassDeclaration, stmt);
+        String exprResultType = Parser.statementReturnType(rootClassDeclaration, stmt);
 
         exeClassBuilder.addMethod(new MethodDomBuilder() {
             @Override
@@ -232,7 +264,7 @@ public class Main {
                     }
 
                     @Override
-                    public MethodDom build(ClassDeclaration classDeclaration) {
+                    public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
                         return methodDeclaration(getModifiers(), getName(), getParameterTypes(), getReturnTypeName(), block(Arrays.asList(
                             stmt
                         )));
@@ -281,11 +313,8 @@ public class Main {
         };*/
 
         //ClassDom classDom = rootClassDeclaration.build();
-        Map<String, ClassDomBuilder> classBuilders2 = new Hashtable<>();
-        classBuilders2.putAll(classBuilders);
-        classBuilders2.put("Exec", exeClassBuilder);
 
-        ClassDom classDom = execClassDeclaration.build();
+        ClassDom classDom = execClassDeclaration.build(ijavaClassLoader);
 
         ClassGenerator generator = new ClassGenerator(classDom);
 
@@ -323,209 +352,4 @@ public class Main {
         return null;
     }
 
-    private static String statementReturnType(ClassDeclaration self, StatementDom stmt) {
-        String returnType = new StatementDomVisitor.Return<String>() {
-            @Override
-            public void visitVariableDeclaration(String type, String name) {
-
-            }
-
-            @Override
-            public void visitVariableAssignment(String name, ExpressionDom value) {
-
-            }
-
-            @Override
-            public void visitFieldAssignment(ExpressionDom target, String name, ExpressionDom value) {
-
-            }
-
-            @Override
-            public void visitStaticFieldAssignment(String typeName, String name, ExpressionDom value) {
-
-            }
-
-            @Override
-            public void visitIncrement(String name, int amount) {
-
-            }
-
-            @Override
-            public void visitReturnValue(ExpressionDom expression) {
-                String resultType = expressionResultType(self, expression);
-                setResult(resultType);
-            }
-
-            @Override
-            public void visitBlock(List<StatementDom> statements) {
-
-            }
-
-            @Override
-            public void visitIfElse(ExpressionDom condition, StatementDom ifTrue, StatementDom ifFalse) {
-
-            }
-
-            @Override
-            public void visitBreakCase() {
-
-            }
-
-            @Override
-            public void visitReturn() {
-
-            }
-
-            @Override
-            public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-
-            }
-
-            @Override
-            public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-
-            }
-
-            @Override
-            public void visitLabel(String name) {
-
-            }
-
-            @Override
-            public void visitGoTo(String name) {
-
-            }
-
-            @Override
-            public void visitSwitch(ExpressionDom expression, Map<Integer, StatementDom> cases, StatementDom defaultBody) {
-
-            }
-        }.returnFrom(stmt);
-
-        return returnType != null ? returnType : Descriptor.VOID;
-    }
-
-    private static String expressionResultType(ClassDeclaration self, ExpressionDom expr) {
-        return new ExpressionDomVisitor.Return<String>() {
-            @Override
-            public void visitBooleanLiteral(boolean value) {
-                setResult(Descriptor.BOOLEAN);
-            }
-
-            @Override
-            public void visitByteLiteral(byte value) {
-                setResult(Descriptor.BYTE);
-            }
-
-            @Override
-            public void visitShortLiteral(short value) {
-                setResult(Descriptor.SHORT);
-            }
-
-            @Override
-            public void visitIntLiteral(int value) {
-                setResult(Descriptor.INT);
-            }
-
-            @Override
-            public void visitLongLiteral(long value) {
-                setResult(Descriptor.LONG);
-            }
-
-            @Override
-            public void visitFloatLiteral(float value) {
-                setResult(Descriptor.FLOAT);
-            }
-
-            @Override
-            public void visitDoubleLiteral(double value) {
-                setResult(Descriptor.DOUBLE);
-            }
-
-            @Override
-            public void visitCharLiteral(char value) {
-                setResult(Descriptor.CHAR);
-            }
-
-            @Override
-            public void visitStringLiteral(String value) {
-                setResult(Descriptor.STRING);
-            }
-
-            @Override
-            public void visitArithmetic(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-
-            }
-
-            @Override
-            public void visitShift(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-
-            }
-
-            @Override
-            public void visitBitwise(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-
-            }
-
-            @Override
-            public void visitCompare(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-
-            }
-
-            @Override
-            public void visitLogical(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-
-            }
-
-            @Override
-            public void visitVariableAccess(String name) {
-
-            }
-
-            @Override
-            public void visitFieldAccess(ExpressionDom target, String name, String fieldTypeName) {
-                setResult(fieldTypeName);
-            }
-
-            @Override
-            public void visitStaticFieldAccess(String typeName, String name, String fieldTypeName) {
-                setResult(fieldTypeName);
-            }
-
-            @Override
-            public void visitNot(ExpressionDom expression) {
-
-            }
-
-            @Override
-            public void visitInstanceOf(ExpressionDom expression, String type) {
-
-            }
-
-            @Override
-            public void visitBlock(List<CodeDom> codeList) {
-
-            }
-
-            @Override
-            public void visitIfElse(ExpressionDom condition, ExpressionDom ifTrue, ExpressionDom ifFalse) {
-
-            }
-
-            @Override
-            public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-
-            }
-
-            @Override
-            public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-
-            }
-
-            @Override
-            public void visitThis() {
-                setResult(Descriptor.get(self.getName()));
-            }
-        }.returnFrom(expr);
-    }
 }

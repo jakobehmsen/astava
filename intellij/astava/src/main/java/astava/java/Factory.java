@@ -130,6 +130,10 @@ public class Factory {
         return v -> v.visitStringLiteral(value);
     }
 
+    public static ExpressionDom nil() {
+        return v -> v.visitNull();
+    }
+
     public static ExpressionDom add(ExpressionDom lhs, ExpressionDom rhs) {
         return arithmetic(lhs, rhs, ArithmeticOperator.ADD);
     }
@@ -235,12 +239,12 @@ public class Factory {
         return v -> v.visitVariableAssignment(name, expression);
     }
 
-    public static StatementDom assignField(ExpressionDom target, String name, ExpressionDom expression) {
-        return v -> v.visitFieldAssignment(target, name, expression);
+    public static StatementDom assignField(ExpressionDom target, String name, String type, ExpressionDom expression) {
+        return v -> v.visitFieldAssignment(target, name, type, expression);
     }
 
-    public static StatementDom assignStaticField(String targetTypeName, String name, ExpressionDom expression) {
-        return v -> v.visitStaticFieldAssignment(targetTypeName, name, expression);
+    public static StatementDom assignStaticField(String targetTypeName, String name, String type, ExpressionDom expression) {
+        return v -> v.visitStaticFieldAssignment(targetTypeName, name, type, expression);
     }
 
     public static ExpressionDom accessVar(String name) {

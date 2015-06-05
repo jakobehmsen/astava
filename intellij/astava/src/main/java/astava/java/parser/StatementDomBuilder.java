@@ -10,5 +10,5 @@ public interface StatementDomBuilder extends DomBuilder {
     }
 
     default void appendLocals(Set<String> locals) { }
-    StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, Set<String> locals);
+    StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals);
 }

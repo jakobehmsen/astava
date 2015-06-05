@@ -93,9 +93,9 @@ public interface ClassDeclaration {
         }
     }
 
-    default ClassDom build() {
+    default ClassDom build(ClassInspector classInspector) {
         List<FieldDom> fields = getFields().stream().map(x -> x.build(this)).collect(Collectors.toList());
-        List<MethodDom> methods = getMethods().stream().map(x -> x.build(this)).collect(Collectors.toList());
+        List<MethodDom> methods = getMethods().stream().map(x -> x.build(this, classInspector)).collect(Collectors.toList());
 
         return new ClassDom() {
             @Override
@@ -154,7 +154,7 @@ public interface ClassDeclaration {
                         }
 
                         @Override
-                        public MethodDom build(ClassDeclaration classDeclaration) {
+                        public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
                             return methodDeclaration(Modifier.PUBLIC, "<init>", Arrays.asList(), Descriptor.VOID, block(Arrays.asList(
                                 invokeSpecial(Descriptor.get("java/lang/Object"), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), self(), Arrays.asList()),
                                 ret()

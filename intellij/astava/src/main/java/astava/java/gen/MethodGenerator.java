@@ -53,16 +53,16 @@ public class MethodGenerator {
             }
 
             @Override
-            public void visitFieldAssignment(ExpressionDom target, String name, ExpressionDom value) {
+            public void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value) {
                 String targetType = populateMethodExpression(generator, target, null, true);
                 String valueType = populateMethodExpression(generator, value, null, true);
-                generator.putField(Type.getType(targetType), name, Type.getType(Descriptor.getFieldDescriptor(valueType)));
+                generator.putField(Type.getType(targetType), name, Type.getType(Descriptor.getFieldDescriptor(type)));
             }
 
             @Override
-            public void visitStaticFieldAssignment(String typeName, String name, ExpressionDom value) {
+            public void visitStaticFieldAssignment(String typeName, String name, String type, ExpressionDom value) {
                 String valueType = populateMethodExpression(generator, value, null, true);
-                generator.putStatic(Type.getType(typeName), name, Type.getType(Descriptor.getFieldDescriptor(valueType)));
+                generator.putStatic(Type.getType(typeName), name, Type.getType(Descriptor.getFieldDescriptor(type)));
             }
 
             @Override
@@ -230,6 +230,14 @@ public class MethodGenerator {
                 generator.push(value);
 
                 setResult(Descriptor.STRING);
+            }
+
+            @Override
+            public void visitNull() {
+                generator.visitInsn(Opcodes.ACONST_NULL);
+
+                // Cannot determine type? // Object is the most specific type?
+                setResult(Descriptor.get(Object.class));
             }
 
             @Override
