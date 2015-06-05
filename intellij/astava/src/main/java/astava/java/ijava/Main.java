@@ -7,7 +7,11 @@ import astava.java.parser.*;
 import astava.tree.*;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -19,15 +23,19 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static astava.java.Factory.*;
 
 public class Main {
     private static Object currentRoot = null;
+    private static int startIndex = 0;
+
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) throws IOException {
-
         ClassResolver baseClassResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
                 String.class,
@@ -53,12 +61,16 @@ public class Main {
         frame.setTitle("IJAVA");
 
         JTextPane pendingScript = new JTextPane();
-        JTextPane historyScript = new JTextPane();
 
-        //MutableClassDomBuilder rootClassBuilder = new MutableClassDomBuilder();
+        Color bgColor = Color.BLACK;
+        Color fgColor = Color.WHITE;
+
+        pendingScript.setBackground(bgColor);
+        pendingScript.setForeground(fgColor);
+        pendingScript.setCaretColor(fgColor);
+        pendingScript.setSelectionColor(fgColor.darker());
 
         MutableClassDomBuilder rootClassBuilder = new Parser("public class Root { }").parseClass();
-        MutableClassDomBuilder scriptClassBuilder = new Parser("public class Script { }").parseClass();
 
         ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
 
@@ -83,15 +95,44 @@ public class Main {
             e.printStackTrace();
         }
 
+        String shellPrefix = "> ";
         ArrayList<StatementDomBuilder> executions = new ArrayList<>();
+
+        pendingScript.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        pendingScript.setDocument(new DefaultStyledDocument() {
+            @Override
+            public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
+                if(offs >= startIndex)
+                    super.insertString(offs, str, a);
+            }
+
+            @Override
+            public void remove(int offs, int len) throws BadLocationException {
+                if(offs >= startIndex)
+                    super.remove(offs, len);
+            }
+        });
+
+        try {
+            pendingScript.getDocument().insertString(0, shellPrefix, null);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+        startIndex = pendingScript.getDocument().getLength();
+        pendingScript.setCaretPosition(startIndex);
 
         pendingScript.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    String code = pendingScript.getText();
+                    String code = null;
+                    try {
+                        code = pendingScript.getDocument().getText(startIndex, pendingScript.getDocument().getLength() - startIndex);
+                    } catch (BadLocationException e1) {
+                        e1.printStackTrace();
+                    }
 
-                    StringBuilder output = new StringBuilder(code + "\n=>\n");
+                    StringBuilder output = new StringBuilder();
                     InputStream inputStream = new ByteArrayInputStream(code.getBytes());
 
                     try {
@@ -123,7 +164,7 @@ public class Main {
                                         return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
                                     }
                                 }, ijavaClassLoader, rootClassBuilder, executions);
-                                output.append(result);
+                                output.append("\n" + result);
                             }
 
                             @Override
@@ -154,18 +195,18 @@ public class Main {
 
                     // Can the code be parsed? Then run it.
                     try {
-                        historyScript.getDocument().insertString(0, output + "\n", null);
+                        pendingScript.getDocument().insertString(pendingScript.getDocument().getLength(), output + "\n" + shellPrefix, null);
                     } catch (BadLocationException e1) {
                         e1.printStackTrace();
                     }
 
-                    pendingScript.setText("");
+                    startIndex = pendingScript.getDocument().getLength();
+                    pendingScript.setCaretPosition(startIndex);
                 }
             }
         });
 
-        frame.getContentPane().add(pendingScript, BorderLayout.NORTH);
-        frame.getContentPane().add(historyScript, BorderLayout.CENTER);
+        frame.getContentPane().add(new JScrollPane(pendingScript), BorderLayout.CENTER);
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1028, 768);
