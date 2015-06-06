@@ -406,9 +406,12 @@ public class Parser {
         return new MethodDomBuilder() {
             @Override
             public MethodDeclaration declare(ClassResolver classResolver) {
-                String returnType = parseTypeQualifier(classResolver, ctx.returnType.getText());
+                boolean isConstructor = ctx.returnType == null;
+
+                String returnType = isConstructor ? Descriptor.VOID : parseTypeQualifier(classResolver, ctx.returnType.getText());
                 int modifiers = parseModifiers(ctx.modifiers());
-                String name = ctx.name.getText();
+                // Somehow, the name should checked as to the class name
+                String name = isConstructor ? "<init>" : ctx.name.getText();
                 //List<String> parameterTypes = ctx.parameters().parameter().stream().map(x -> parseTypeQualifier(classResolver, x.type.getText())).collect(Collectors.toList());
                 List<ParameterInfo> parameters = ctx.parameters().parameter().stream()
                     .map(x -> new ParameterInfo(parseTypeQualifier(classResolver, x.type.getText()), x.name.getText()))
@@ -449,6 +452,13 @@ public class Parser {
                         // This logic probably shouldn't be located here?
                         if(returnType.equals(Descriptor.VOID)) {
                             statements.add(ret());
+                        }
+
+                        if(isConstructor) {
+                            // Call super constructor
+                            statements.add(0,
+                                invokeSpecial(Descriptor.get(classDeclaration.getSuperName()), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), self(), Arrays.asList())
+                            );
                         }
 
                         return methodDeclaration(modifiers, name, parameters, returnType, body);
@@ -731,7 +741,7 @@ public class Parser {
                         .filter(x -> x.getParameterTypes().size() == arguments.size())
                         .filter(x -> IntStream.range(0, arguments.size()).allMatch(i ->
                             // Compare full inheritance
-                            x.getParameterTypes().get(0).name.equals(argumentTypes.get(i).getName())))
+                            Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
                         .collect(Collectors.toList());
 
                     // For now, just pick the first

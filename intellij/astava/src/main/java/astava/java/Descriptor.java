@@ -117,6 +117,6 @@ public class Descriptor {
             case Descriptor.DOUBLE: return "double";
         }
 
-        return descriptor.substring(1, descriptor.length() - 2);
+        return descriptor.replace('/', '.');
     }
 }
