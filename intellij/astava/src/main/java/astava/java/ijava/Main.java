@@ -30,10 +30,12 @@ import java.util.stream.Collectors;
 import static astava.java.Factory.*;
 
 public class Main {
+    private static MutableClassDomBuilder rootClassBuilder;
+    private static IJAVAClassLoader ijavaClassLoader;
     private static Object currentRoot = null;
     private static int startIndex = 0;
 
-    private ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) throws IOException {
         ClassResolver baseClassResolver = new ClassResolver() {
@@ -65,50 +67,18 @@ public class Main {
         Color bgColor = Color.BLACK;
         Color fgColor = Color.WHITE;
 
-        pendingScript.setBackground(bgColor);
-        pendingScript.setForeground(fgColor);
-        pendingScript.setCaretColor(fgColor);
-        pendingScript.setSelectionColor(fgColor);
-
-        MutableClassDomBuilder rootClassBuilder = new Parser("public class Root { }").parseClass();
-
-        ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
-
-        ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
-            @Override
-            public String getName() {
-                return "Root";
-            }
-
-            @Override
-            public ClassDeclaration build(ClassResolver classResolver) {
-                return rootClassBuilder.build(classResolver).withDefaultConstructor();
-            }
-        });
-        try {
-            currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
         String shellPrefix = "> ";
-        ArrayList<StatementDomBuilder> executions = new ArrayList<>();
 
-        pendingScript.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
         pendingScript.setDocument(new DefaultStyledDocument() {
             @Override
             public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
-                if(offs >= startIndex)
+                if (offs >= startIndex)
                     super.insertString(offs, str, a);
             }
 
             @Override
             public void remove(int offs, int len) throws BadLocationException {
-                if(offs >= startIndex)
+                if (offs >= startIndex)
                     super.remove(offs, len);
             }
         });
@@ -121,87 +91,128 @@ public class Main {
         startIndex = pendingScript.getDocument().getLength();
         pendingScript.setCaretPosition(startIndex);
 
+        executor.execute(() -> {
+            pendingScript.setBackground(bgColor);
+            pendingScript.setForeground(fgColor);
+            pendingScript.setCaretColor(fgColor);
+            pendingScript.setSelectionColor(fgColor);
+
+            pendingScript.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+
+            try {
+                rootClassBuilder = new Parser("public class Root { }").parseClass();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
+
+            ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
+                @Override
+                public String getName() {
+                    return "Root";
+                }
+
+                @Override
+                public ClassDeclaration build(ClassResolver classResolver) {
+                    return rootClassBuilder.build(classResolver).withDefaultConstructor();
+                }
+            });
+            try {
+                currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        });
+        ArrayList<StatementDomBuilder> executions = new ArrayList<>();
+
         pendingScript.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    String code = null;
-                    try {
-                        code = pendingScript.getDocument().getText(startIndex, pendingScript.getDocument().getLength() - startIndex);
-                    } catch (BadLocationException e1) {
-                        e1.printStackTrace();
-                    }
+                    executor.execute(() -> {
+                        String code = null;
+                        try {
+                            code = pendingScript.getDocument().getText(startIndex, pendingScript.getDocument().getLength() - startIndex);
+                        } catch (BadLocationException e1) {
+                            e1.printStackTrace();
+                        }
 
-                    StringBuilder output = new StringBuilder();
-                    InputStream inputStream = new ByteArrayInputStream(code.getBytes());
+                        StringBuilder output = new StringBuilder();
+                        InputStream inputStream = new ByteArrayInputStream(code.getBytes());
 
-                    try {
-                        java.util.List<DomBuilder> script = new Parser(inputStream).parse();
+                        try {
+                            java.util.List<DomBuilder> script = new Parser(inputStream).parse();
 
-                        script.forEach(x -> x.accept(new DomBuilderVisitor() {
-                            @Override
-                            public void visitClassBuilder(ClassDomBuilder classBuilder) {
-                                ijavaClassLoader.putClassBuilder(classBuilder.getName(), new ClassDomBuilder() {
-                                    @Override
-                                    public ClassDeclaration build(ClassResolver classResolver) {
-                                        return classBuilder.build(classResolver).withDefaultConstructor();
-                                    }
+                            script.forEach(x -> x.accept(new DomBuilderVisitor() {
+                                @Override
+                                public void visitClassBuilder(ClassDomBuilder classBuilder) {
+                                    ijavaClassLoader.putClassBuilder(classBuilder.getName(), new ClassDomBuilder() {
+                                        @Override
+                                        public ClassDeclaration build(ClassResolver classResolver) {
+                                            return classBuilder.build(classResolver).withDefaultConstructor();
+                                        }
 
-                                    @Override
-                                    public String getName() {
-                                        return classBuilder.getName();
-                                    }
-                                });
+                                        @Override
+                                        public String getName() {
+                                            return classBuilder.getName();
+                                        }
+                                    });
 
-                                resetClassLoader(baseClassResolver, rootClassBuilder, executions);
-                            }
+                                    resetClassLoader(baseClassResolver, rootClassBuilder, executions);
+                                }
 
-                            @Override
-                            public void visitExpressionBuilder(ExpressionDomBuilder expressionBuilder) {
-                                Object result = exec(new StatementDomBuilder() {
-                                    @Override
-                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
-                                        return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
-                                    }
-                                }, ijavaClassLoader, rootClassBuilder, executions);
-                                output.append("\n" + result);
-                            }
+                                @Override
+                                public void visitExpressionBuilder(ExpressionDomBuilder expressionBuilder) {
+                                    Object result = exec(new StatementDomBuilder() {
+                                        @Override
+                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                                            return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
+                                        }
+                                    }, ijavaClassLoader, rootClassBuilder, executions);
+                                    output.append("\n" + result);
+                                }
 
-                            @Override
-                            public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
-                                rootClassBuilder.addField(fieldBuilder);
+                                @Override
+                                public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
+                                    rootClassBuilder.addField(fieldBuilder);
 
-                                resetClassLoader(baseClassResolver, rootClassBuilder, executions);
-                            }
+                                    resetClassLoader(baseClassResolver, rootClassBuilder, executions);
+                                }
 
-                            @Override
-                            public void visitMethodBuilder(MethodDomBuilder methodBuilder) {
+                                @Override
+                                public void visitMethodBuilder(MethodDomBuilder methodBuilder) {
 
-                            }
+                                }
 
-                            @Override
-                            public void visitStatementBuilder(StatementDomBuilder statementBuilder) {
-                                exec(new StatementDomBuilder() {
-                                    @Override
-                                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
-                                        return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, classInspector, locals), ret()));
-                                    }
-                                }, ijavaClassLoader, rootClassBuilder, executions);
-                            }
-                        }));
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    }
+                                @Override
+                                public void visitStatementBuilder(StatementDomBuilder statementBuilder) {
+                                    exec(new StatementDomBuilder() {
+                                        @Override
+                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                                            return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, classInspector, locals), ret()));
+                                        }
+                                    }, ijavaClassLoader, rootClassBuilder, executions);
+                                }
+                            }));
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
 
-                    // Can the code be parsed? Then run it.
-                    try {
-                        pendingScript.getDocument().insertString(pendingScript.getDocument().getLength(), output + "\n" + shellPrefix, null);
-                    } catch (BadLocationException e1) {
-                        e1.printStackTrace();
-                    }
+                        // Can the code be parsed? Then run it.
+                        try {
+                            pendingScript.getDocument().insertString(pendingScript.getDocument().getLength(), output + "\n" + shellPrefix, null);
+                        } catch (BadLocationException e1) {
+                            e1.printStackTrace();
+                        }
 
-                    startIndex = pendingScript.getDocument().getLength();
-                    pendingScript.setCaretPosition(startIndex);
+                        startIndex = pendingScript.getDocument().getLength();
+                        pendingScript.setCaretPosition(startIndex);
+                    });
                 }
             }
         });
@@ -256,8 +267,6 @@ public class Main {
 
         return exec(statementDomBuilder, classResolver, rootClassBuilder);
     }
-
-    private static IJAVAClassLoader ijavaClassLoader;
 
     private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder) {
         MutableClassDomBuilder exeClassBuilder = null;
