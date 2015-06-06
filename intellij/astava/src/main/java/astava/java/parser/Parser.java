@@ -5,6 +5,7 @@ import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
 import astava.tree.*;
+import com.sun.java.browser.plugin2.DOM;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -249,34 +250,41 @@ public class Parser {
     }
 
     public List<DomBuilder> parse() {
-        return parser.script().element().stream().map(x -> x.accept(new JavaBaseVisitor<DomBuilder>() {
+        return parser.script().element().stream().map(x -> x.accept(new JavaBaseVisitor<List<DomBuilder>>() {
             @Override
-            public DomBuilder visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
+            public List<DomBuilder> visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
                 MutableClassDomBuilder classBuilder = new MutableClassDomBuilder();
                 parseClass(ctx, classBuilder);
-                return classBuilder;
+                return Arrays.asList(classBuilder);
             }
 
             @Override
-            public DomBuilder visitFieldDefinition(@NotNull JavaParser.FieldDefinitionContext ctx) {
-                return parseFieldBuilder(ctx, true);
+            public List<DomBuilder> visitFieldDefinition(@NotNull JavaParser.FieldDefinitionContext ctx) {
+                DomBuilder fieldBuilder = parseFieldBuilder(ctx, true);
+                if (ctx.value != null) {
+                    DomBuilder fieldAssignBuilder = buildAssignment(Arrays.asList(ctx.ID()), ctx.value, true);
+                    return Arrays.asList(fieldBuilder, fieldAssignBuilder);
+                    //ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, true);
+                    //DomBuilder fieldAssignBuilder = return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
+                }
+                return Arrays.asList(fieldBuilder);
             }
 
             @Override
-            public DomBuilder visitMethodDefinition(@NotNull JavaParser.MethodDefinitionContext ctx) {
-                return parseMethodBuilder(ctx);
+            public List<DomBuilder> visitMethodDefinition(@NotNull JavaParser.MethodDefinitionContext ctx) {
+                return Arrays.asList(parseMethodBuilder(ctx));
             }
 
             @Override
-            public DomBuilder visitStatement(@NotNull JavaParser.StatementContext ctx) {
-                return parseStatementBuilder(ctx, true);
+            public List<DomBuilder> visitStatement(@NotNull JavaParser.StatementContext ctx) {
+                return Arrays.asList(parseStatementBuilder(ctx, true));
             }
 
             @Override
-            public DomBuilder visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
-                return parseExpressionBuilder(ctx, true);
+            public List<DomBuilder> visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
+                return Arrays.asList(parseExpressionBuilder(ctx, true));
             }
-        })).collect(Collectors.toList());
+        })).flatMap(x -> x.stream()).collect(Collectors.toList());
     }
 
     private String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {
@@ -534,7 +542,9 @@ public class Parser {
 
             @Override
             public StatementDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
-                ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot);
+                return buildAssignment(ctx.name.ID(), ctx.value, atRoot);
+
+                /*ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot);
 
                 return new StatementDomBuilder() {
                     @Override
@@ -566,9 +576,45 @@ public class Parser {
                             }
                         );
                     }
-                };
+                };*/
             }
         });
+    }
+
+    private StatementDomBuilder buildAssignment(List<TerminalNode> name, JavaParser.ExpressionContext valueCtx, boolean atRoot) {
+        ExpressionDomBuilder valueBuilder = parseExpressionBuilder(valueCtx, atRoot);
+
+        return new StatementDomBuilder() {
+            @Override
+            public void appendLocals(Set<String> locals) {
+
+            }
+
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return parseAmbiguousName(name, classResolver, classDeclaration,
+                    name -> {
+                        Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                        if (fieldDeclaration.isPresent()) {
+                            if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
+                                return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+
+                            if(!atRoot)
+                                return assignField(self(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+                            else
+                                return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
+                        }
+
+                        return assignVar(name, value);
+                    },
+                    (target, fieldChainAccess) -> {
+                        return target;
+                    }
+                );
+            }
+        };
     }
 
     /*public ExpressionDom parseExpression() {
