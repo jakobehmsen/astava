@@ -68,7 +68,7 @@ public class Main {
         pendingScript.setBackground(bgColor);
         pendingScript.setForeground(fgColor);
         pendingScript.setCaretColor(fgColor);
-        pendingScript.setSelectionColor(fgColor.darker());
+        pendingScript.setSelectionColor(fgColor);
 
         MutableClassDomBuilder rootClassBuilder = new Parser("public class Root { }").parseClass();
 
