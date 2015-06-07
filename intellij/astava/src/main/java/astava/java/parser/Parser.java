@@ -143,7 +143,8 @@ public class Parser {
 
             @Override
             public void visitBlock(List<CodeDom> codeList) {
-
+                ExpressionDom singleExpression = (ExpressionDom)codeList.stream().filter(x -> x instanceof ExpressionDom).findFirst().get();
+                setResult(expressionResultType(classInspector, self, singleExpression));
             }
 
             @Override
@@ -273,7 +274,17 @@ public class Parser {
             public List<DomBuilder> visitFieldDefinition(@NotNull JavaParser.FieldDefinitionContext ctx) {
                 DomBuilder fieldBuilder = parseFieldBuilder(ctx, true);
                 if (ctx.value != null) {
-                    DomBuilder fieldAssignBuilder = buildAssignment(Arrays.asList(ctx.ID()), ctx.value, true);
+                    String name = ctx.name.getText();
+
+                    ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, true);
+
+                    StatementDomBuilder fieldAssignBuilder = (cr, cd, ci, locals) -> {
+                        ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
+
+                        Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                        return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
+                    };
+
                     return Arrays.asList(fieldBuilder, fieldAssignBuilder);
                 }
                 return Arrays.asList(fieldBuilder);
@@ -497,6 +508,12 @@ public class Parser {
             }
 
             @Override
+            public StatementDomBuilder visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
+                // How to convert expression into statement?
+                return super.visitExpression(ctx);
+            }
+
+            @Override
             public StatementDomBuilder visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
                 ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
                 return new StatementDomBuilder() {
@@ -541,12 +558,12 @@ public class Parser {
 
             @Override
             public StatementDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
-                return buildAssignment(ctx.name.ID(), ctx.value, atRoot);
+                return buildAssignment(ctx.name.getText(), ctx.value, atRoot);
             }
         });
     }
 
-    private StatementDomBuilder buildAssignment(List<TerminalNode> name, JavaParser.ExpressionContext valueCtx, boolean atRoot) {
+    private StatementDomBuilder buildAssignment(String name, JavaParser.ExpressionContext valueCtx, boolean atRoot) {
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(valueCtx, atRoot);
 
         return new StatementDomBuilder() {
@@ -559,25 +576,18 @@ public class Parser {
             public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
                 ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
 
-                return parseAmbiguousName(name, classResolver, classDeclaration,
-                    name -> {
-                        Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
-                        if (fieldDeclaration.isPresent()) {
-                            if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
-                                return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+                Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                if (fieldDeclaration.isPresent()) {
+                    if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
+                        return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
 
-                            if(!atRoot)
-                                return assignField(self(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
-                            else
-                                return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
-                        }
+                    if(!atRoot)
+                        return assignField(self(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+                    else
+                        return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
+                }
 
-                        return assignVar(name, value);
-                    },
-                    (target, fieldChainAccess) -> {
-                        return target;
-                    }
-                );
+                return assignVar(name, value);
             }
         };
     }
@@ -646,6 +656,34 @@ public class Parser {
                     ExpressionDomBuilder targetBuilder = expressionBuilder;
                     expressionBuilder = chainElement.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
                         @Override
+                        public ExpressionDomBuilder visitFieldAssignment(@NotNull JavaParser.FieldAssignmentContext ctx) {
+                            String name = ctx.ID().getText();
+                            ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
+
+                            return (cr, cd, ci, locals) -> {
+                                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
+                                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
+                                String targetType = expressionResultType(ci, cd, target);
+                                ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+                                Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+
+                                // How to avoid target being evaluated twice (other than having special assignFieldExpr)?
+                                return blockExpr(Arrays.asList(
+                                    assignField(target, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value), // "self" is passed as argument
+                                    fieldAccess(cr, cd, ci, locals, target, name)
+                                ));
+                            };
+                        }
+
+                        @Override
+                        public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
+                            String name = ctx.ID().getText();
+
+                            return (cr, cd, ci, locals) ->
+                                fieldAccess(cr, cd, ci, locals, targetBuilder.build(cr, cd, ci, locals), name);
+                        }
+
+                        @Override
                         public ExpressionDomBuilder visitInvocation(@NotNull JavaParser.InvocationContext ctx) {
                             List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
                                 .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
@@ -679,11 +717,6 @@ public class Parser {
                                 });
                             };
                         }
-
-                        @Override
-                        public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
-                            return super.visitFieldAccess(ctx);
-                        }
                     });
                 }
 
@@ -709,6 +742,9 @@ public class Parser {
                             return accessVar(name);
                         },
                         (target, fieldChainAccess) -> {
+                            for(String fieldName: fieldChainAccess)
+                                target = fieldAccess(cr, cd, ci, locals, target, fieldName);
+
                             return target;
                         }
                     );
@@ -773,6 +809,28 @@ public class Parser {
                 };
             }
         });
+    }
+
+    private static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Set<String> locals, ExpressionDom target, String fieldName) {
+        /*return (cr, cd, ci, locals) -> {
+            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
+            String targetType = expressionResultType(ci, cd, target);
+            ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+
+            // Should investigate hierachy
+            Optional<FieldDeclaration> field = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
+
+            return accessField(target, fieldName, Descriptor.get(field.get().getTypeName()));
+        };*/
+
+        //ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
+        String targetType = expressionResultType(ci, cd, target);
+        ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+
+        // Should investigate hierachy
+        Optional<FieldDeclaration> field = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
+
+        return accessField(target, fieldName, Descriptor.get(field.get().getTypeName()));
     }
 
     private static <T> T resolveDeclaredMethod(ClassInspector classInspector, ClassDeclaration targetClass, String methodName, List<ClassDeclaration> argumentTypes, BiFunction<ClassDeclaration, MethodDeclaration, T> reducer) {
