@@ -20,14 +20,15 @@ delimitedStatement:
 returnStatement: KW_RETURN expression;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 expression: assignment | leafExpression;
-assignment: name=ambigousName OP_ASSIGN value=expression;
+assignment: name=ID OP_ASSIGN value=expression;
 leafExpression: 
     (invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | newInstance)
     chainElement*;
 invocation: ID arguments;
-chainElement: DOT (fieldAccess | invocation);
+chainElement: DOT (fieldAssignment | fieldAccess | invocation);
+fieldAssignment: ID OP_ASSIGN value=expression;
 fieldAccess: ID;
-ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR}? DOT ID)*;
+ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR && _input.LT(2).getType() != OP_ASSIGN}? DOT ID)*;
 intLiteral: INT;
 stringLiteral: STRING;
 nullLiteral: KW_NULL;
