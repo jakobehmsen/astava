@@ -22,7 +22,11 @@ variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 expression: assignment | leafExpression;
 assignment: name=ambigousName OP_ASSIGN value=expression;
 leafExpression: 
-    ambigousName | intLiteral | stringLiteral | nullLiteral | newInstance;
+    (invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | newInstance)
+    chainElement*;
+invocation: ID arguments;
+chainElement: DOT (fieldAccess | invocation);
+fieldAccess: ID;
 ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR}? DOT ID)*;
 intLiteral: INT;
 stringLiteral: STRING;
