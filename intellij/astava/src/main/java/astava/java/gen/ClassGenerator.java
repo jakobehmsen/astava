@@ -27,8 +27,8 @@ public class ClassGenerator {
 
     public void populate(ClassNode classNode) {
         int modifiers = classDom.getModifiers();
-        String className = classDom.getName();
-        String superName = classDom.getSuperName();
+        String className = Descriptor.get(classDom.getName());
+        String superName = Descriptor.get(classDom.getSuperName());
 
         classNode.version = Opcodes.V1_8;
         classNode.access = modifiers;

@@ -1,14 +1,19 @@
 package astava.java.ijava;
 
+import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.parser.*;
 import astava.tree.ClassDom;
+import astava.tree.MethodDom;
+import astava.tree.ParameterInfo;
 
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class IJAVAClassLoader extends ClassLoader implements ClassResolver, ClassInspector {
     private ClassResolver classResolver;
@@ -96,7 +101,34 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
 
                     @Override
                     public List<MethodDeclaration> getMethods() {
-                        return null;
+                        return Arrays.asList(c.getDeclaredMethods()).stream().map(x -> new MethodDeclaration() {
+                            @Override
+                            public int getModifiers() {
+                                return x.getModifiers();
+                            }
+
+                            @Override
+                            public String getName() {
+                                return x.getName();
+                            }
+
+                            @Override
+                            public List<ParameterInfo> getParameterTypes() {
+                                return Arrays.asList(x.getParameterTypes()).stream()
+                                    .map(x -> new ParameterInfo(Descriptor.get(x), "<NA>"))
+                                    .collect(Collectors.toList());
+                            }
+
+                            @Override
+                            public String getReturnTypeName() {
+                                return x.getReturnType().getName();
+                            }
+
+                            @Override
+                            public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
+                                return null;
+                            }
+                        }).collect(Collectors.toList());
                     }
 
                     @Override
@@ -112,6 +144,11 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
                     @Override
                     public String getSuperName() {
                         return c.getSuperclass().getName();
+                    }
+
+                    @Override
+                    public boolean isInterface() {
+                        return c.isInterface();
                     }
                 };
                 classDeclarationCache.put(name, classDeclaration);

@@ -22,6 +22,7 @@ public interface ClassDeclaration {
     int getModifiers();
     String getName();
     String getSuperName();
+    boolean isInterface();
 
     class Primitive implements ClassDeclaration {
         private String name;
@@ -53,6 +54,11 @@ public interface ClassDeclaration {
         @Override
         public String getSuperName() {
             return null;
+        }
+
+        @Override
+        public boolean isInterface() {
+            return false;
         }
     }
 
@@ -90,6 +96,11 @@ public interface ClassDeclaration {
         @Override
         public String getSuperName() {
             return source.getSuperName();
+        }
+
+        @Override
+        public boolean isInterface() {
+            return source.isInterface();
         }
     }
 

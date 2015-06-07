@@ -1,6 +1,7 @@
 package astava.java.parser;
 
 import astava.java.Descriptor;
+import astava.java.Invocation;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
@@ -9,6 +10,7 @@ import com.sun.java.browser.plugin2.DOM;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -38,7 +40,7 @@ public class Parser {
         parser = new JavaParser(tokenStream);
     }
 
-    public static String expressionResultType(ClassDeclaration self, ExpressionDom expr) {
+    public static String expressionResultType(ClassInspector classInspector, ClassDeclaration self, ExpressionDom expr) {
         return new ExpressionDomVisitor.Return<String>() {
             @Override
             public void visitBooleanLiteral(boolean value) {
@@ -152,12 +154,31 @@ public class Parser {
 
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
+                // Only instance invocations
+                String targetResultType = expressionResultType(classInspector, self, target);
+                ClassDeclaration targetClass = classInspector.getClassDeclaration(Descriptor.getName(targetResultType));
+                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
+                    String expressionResultType = expressionResultType(classInspector, self, x);
+                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
 
+                    return classInspector.getClassDeclaration(expressionResultTypeName);
+                }).collect(Collectors.toList());
+                String resultTypeName = resolveMethod(classInspector, targetClass, name, argumentTypes, (c, m) -> m.getReturnTypeName());
+                setResult(Descriptor.get(resultTypeName));
             }
 
             @Override
             public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+                /*String targetResultType = type;
+                ClassDeclaration targetClass = classInspector.getClassDeclaration(Descriptor.getName(targetResultType));
+                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
+                    String expressionResultType = expressionResultType(classInspector, self, x);
+                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
 
+                    return classInspector.getClassDeclaration(expressionResultTypeName);
+                }).collect(Collectors.toList());
+                String resultTypeName = resolveDeclaredMethod(classInspector, targetClass, "<init>", argumentTypes, (c, m) -> m.getReturnTypeName());*/
+                setResult(type);
             }
 
             @Override
@@ -167,7 +188,7 @@ public class Parser {
         }.returnFrom(expr);
     }
 
-    public static String statementReturnType(ClassDeclaration self, StatementDom stmt) {
+    public static String statementReturnType(ClassInspector classInspector, ClassDeclaration self, StatementDom stmt) {
         String returnType = new StatementDomVisitor.Return<String>() {
             @Override
             public void visitVariableDeclaration(String type, String name) {
@@ -196,7 +217,7 @@ public class Parser {
 
             @Override
             public void visitReturnValue(ExpressionDom expression) {
-                String resultType = expressionResultType(self, expression);
+                String resultType = expressionResultType(classInspector, self, expression);
                 setResult(resultType);
             }
 
@@ -329,7 +350,7 @@ public class Parser {
             public Void visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
                 int modifiers = parseModifiers(ctx.modifiers());
                 String name = ctx.name.getText();
-                String superName = Descriptor.get(Object.class);
+                String superName = Object.class.getName();
 
                 classBuilder.setModifiers(modifiers);
                 classBuilder.setName(name);
@@ -711,8 +732,97 @@ public class Parser {
         return nameHandler.apply(name);
     }
 
-    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot, boolean asStatement) {
+    public ExpressionDomBuilder parseExpressionBuilder(ParserRuleContext ctx, boolean atRoot, boolean asStatement) {
         return ctx.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
+            @Override
+            public ExpressionDomBuilder visitLeafExpression(@NotNull JavaParser.LeafExpressionContext ctx) {
+                ExpressionDomBuilder expressionBuilder = parseExpressionBuilder((ParserRuleContext) ctx.getChild(0), atRoot, asStatement);
+
+                for (JavaParser.ChainElementContext chainElement : ctx.chainElement()) {
+                    ExpressionDomBuilder targetBuilder = expressionBuilder;
+                    expressionBuilder = chainElement.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
+                        @Override
+                        public ExpressionDomBuilder visitInvocation(@NotNull JavaParser.InvocationContext ctx) {
+                            List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
+                                .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
+
+                            return (cr, cd, ci, locals) -> {
+                                String methodName = ctx.ID().getText();
+                                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
+                                List<ExpressionDom> arguments = argumentBuilders.stream()
+                                    .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
+
+                                String targetType = expressionResultType(ci, cd, target);
+                                ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+
+                                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
+                                    String expressionResultType = expressionResultType(ci, cd, x);
+                                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
+
+                                    return ci.getClassDeclaration(expressionResultTypeName);
+                                }).collect(Collectors.toList());
+
+                                return resolveMethod(ci, targetClassDeclaration, methodName, argumentTypes, (c, m) -> {
+                                    /*if(asStatement) {
+                                        return newInstance(
+                                            targetClassDeclaration.getName(),
+                                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                                            arguments);methd
+                                    } else {
+                                        return newInstanceExpr(
+                                            targetClassDeclaration.getName(),
+                                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                                            arguments);
+                                    }*/
+
+                                    int invocation = c.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
+
+                                    String methodDescriptor =
+                                        Descriptor.getMethodDescriptor(m.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                                            Descriptor.get(m.getReturnTypeName())
+                                        );
+
+                                    String declaringClassDescriptor = Descriptor.get(c.getName());
+                                    return invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
+                                });
+
+                                /*
+                                // Find best matching method
+                                List<MethodDeclaration> methods = targetClassDeclaration.getMethods().stream()
+                                    .filter(x -> x.getName().equals(methodName))
+                                    .filter(x -> x.getParameterTypes().size() == arguments.size())
+                                    .filter(x -> IntStream.range(0, arguments.size()).allMatch(i ->
+                                        // Compare full inheritance
+                                        Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
+                                    .collect(Collectors.toList());
+
+                                // For now, just pick the first
+                                MethodDeclaration method = methods.get(0);
+
+                                int invocation =
+                                    targetClassDeclaration.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
+
+                                String methodDescriptor =
+                                    Descriptor.getMethodDescriptor(method.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                                        Descriptor.get(method.getReturnTypeName())
+                                    );
+
+                                String declaringClassName = method.getDeclaringClass().getName();
+                                return invokeExpr(invocation, declaringClassName, methodName, methodDescriptor, target, arguments);
+                                */
+                            };
+                        }
+
+                        @Override
+                        public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
+                            return super.visitFieldAccess(ctx);
+                        }
+                    });
+                }
+
+                return expressionBuilder;
+            }
+
             @Override
             public ExpressionDomBuilder visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
                 return (cr, cd, ci, locals) -> {
@@ -723,7 +833,7 @@ public class Parser {
                                 if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
                                     return accessStaticField(cd.getName(), name, fieldDeclaration.get().getTypeName());
 
-                                if(!atRoot)
+                                if (!atRoot)
                                     return accessField(self(), name, fieldDeclaration.get().getTypeName());
                                 else
                                     return accessField(accessVar("self"), name, fieldDeclaration.get().getTypeName());
@@ -763,7 +873,7 @@ public class Parser {
             @Override
             public ExpressionDomBuilder visitNewInstance(@NotNull JavaParser.NewInstanceContext ctx) {
                 List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
-                        .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
+                    .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
                 return (cr, cd, ci, locals) -> {
                     List<ExpressionDom> arguments = argumentBuilders.stream()
@@ -773,15 +883,13 @@ public class Parser {
                         name -> ci.getClassDeclaration(name), (x, fieldChain) -> x);
 
                     List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
-                        String expressionResultType = expressionResultType(cd, x);
+                        String expressionResultType = expressionResultType(ci, cd, x);
                         String expressionResultTypeName = Descriptor.getName(expressionResultType);
 
                         return ci.getClassDeclaration(expressionResultTypeName);
                     }).collect(Collectors.toList());
 
                     // Find best matching constructor
-
-
                     List<MethodDeclaration> constructors = targetClassDeclaration.getMethods().stream()
                         .filter(x -> x.getName().equals("<init>"))
                         .filter(x -> x.getParameterTypes().size() == arguments.size())
@@ -812,5 +920,46 @@ public class Parser {
                 };
             }
         });
+    }
+
+    private static <T> T resolveDeclaredMethod(ClassInspector classInspector, ClassDeclaration targetClass, String methodName, List<ClassDeclaration> argumentTypes, BiFunction<ClassDeclaration, MethodDeclaration, T> reducer) {
+        List<MethodDeclaration> methods = targetClass.getMethods().stream()
+            .filter(x -> x.getName().equals(methodName))
+            .filter(x -> x.getParameterTypes().size() == argumentTypes.size())
+            .filter(x -> IntStream.range(0, argumentTypes.size()).allMatch(i ->
+                // Compare full inheritance
+                Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
+            .collect(Collectors.toList());
+
+        if(methods.size() > 0) {
+            // For now, just pick the first
+            MethodDeclaration method = methods.get(0);
+            return reducer.apply(targetClass, method);
+        }
+
+        return null;
+    }
+
+    private static <T> T resolveMethod(ClassInspector classInspector, ClassDeclaration targetClass, String methodName, List<ClassDeclaration> argumentTypes, BiFunction<ClassDeclaration, MethodDeclaration, T> reducer) {
+        List<MethodDeclaration> methods = targetClass.getMethods().stream()
+            .filter(x -> x.getName().equals(methodName))
+            .filter(x -> x.getParameterTypes().size() == argumentTypes.size())
+            .filter(x -> IntStream.range(0, argumentTypes.size()).allMatch(i ->
+                // Compare full inheritance
+                Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
+            .collect(Collectors.toList());
+
+        if(methods.size() > 0) {
+            // For now, just pick the first
+            MethodDeclaration method = methods.get(0);
+            return reducer.apply(targetClass, method);
+        }
+
+        if(targetClass.getSuperName() != null) {
+            ClassDeclaration superClass = classInspector.getClassDeclaration(targetClass.getSuperName());
+            return resolveMethod(classInspector, superClass, methodName, argumentTypes, reducer);
+        }
+
+        return null;
     }
 }

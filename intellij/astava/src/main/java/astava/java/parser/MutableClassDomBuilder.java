@@ -114,6 +114,11 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
             public String getSuperName() {
                 return superName;
             }
+
+            @Override
+            public boolean isInterface() {
+                return false;
+            }
         };
 
         /*List<FieldDom> fields = fieldDeclarations.stream().map(x -> x.build(cd)).collect(Collectors.toList());

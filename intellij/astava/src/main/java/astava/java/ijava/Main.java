@@ -287,7 +287,7 @@ public class Main {
 
         StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, ijavaClassLoader, new HashSet<>());
 
-        String exprResultType = Parser.statementReturnType(rootClassDeclaration, stmt);
+        String exprResultType = Parser.statementReturnType(ijavaClassLoader, rootClassDeclaration, stmt);
 
         exeClassBuilder.addMethod(new MethodDomBuilder() {
             @Override
