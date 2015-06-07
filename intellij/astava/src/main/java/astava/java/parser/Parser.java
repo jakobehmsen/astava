@@ -6,7 +6,6 @@ import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
 import astava.tree.*;
-import com.sun.java.browser.plugin2.DOM;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -169,15 +168,6 @@ public class Parser {
 
             @Override
             public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-                /*String targetResultType = type;
-                ClassDeclaration targetClass = classInspector.getClassDeclaration(Descriptor.getName(targetResultType));
-                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
-                    String expressionResultType = expressionResultType(classInspector, self, x);
-                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
-
-                    return classInspector.getClassDeclaration(expressionResultTypeName);
-                }).collect(Collectors.toList());
-                String resultTypeName = resolveDeclaredMethod(classInspector, targetClass, "<init>", argumentTypes, (c, m) -> m.getReturnTypeName());*/
                 setResult(type);
             }
 
@@ -285,8 +275,6 @@ public class Parser {
                 if (ctx.value != null) {
                     DomBuilder fieldAssignBuilder = buildAssignment(Arrays.asList(ctx.ID()), ctx.value, true);
                     return Arrays.asList(fieldBuilder, fieldAssignBuilder);
-                    //ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, true);
-                    //DomBuilder fieldAssignBuilder = return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
                 }
                 return Arrays.asList(fieldBuilder);
             }
@@ -441,7 +429,6 @@ public class Parser {
                 int modifiers = parseModifiers(ctx.modifiers());
                 // Somehow, the name should checked as to the class name
                 String name = isConstructor ? "<init>" : ctx.name.getText();
-                //List<String> parameterTypes = ctx.parameters().parameter().stream().map(x -> parseTypeQualifier(classResolver, x.type.getText())).collect(Collectors.toList());
                 List<ParameterInfo> parameters = ctx.parameters().parameter().stream()
                     .map(x -> new ParameterInfo(parseTypeQualifier(classResolver, x.type.getText()), x.name.getText()))
                     .collect(Collectors.toList());
@@ -527,15 +514,6 @@ public class Parser {
 
             @Override
             public StatementDomBuilder visitVariableDeclaration(@NotNull JavaParser.VariableDeclarationContext ctx) {
-                /*String type = parseTypeQualifier(null, ctx.type.getText());
-                String name = ctx.name.getText();
-
-                StatementDom statement = declareVar(type, name);
-
-                if (ctx.value != null) {
-                    ExpressionDom value = parseExpression(ctx.value);
-                    statement = block(Arrays.asList(statement, assignVar(name, value)));
-                }*/
                 String name = ctx.name.getText();
 
                 ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value, atRoot) : null;
@@ -564,40 +542,6 @@ public class Parser {
             @Override
             public StatementDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
                 return buildAssignment(ctx.name.ID(), ctx.value, atRoot);
-
-                /*ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot);
-
-                return new StatementDomBuilder() {
-                    @Override
-                    public void appendLocals(Set<String> locals) {
-
-                    }
-
-                    @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
-                        ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
-
-                        return parseAmbiguousName(ctx.name.ID(), classResolver, classDeclaration,
-                            name -> {
-                                Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
-                                if (fieldDeclaration.isPresent()) {
-                                    if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
-                                        return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
-
-                                    if(!atRoot)
-                                        return assignField(self(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
-                                    else
-                                        return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
-                                }
-
-                                return assignVar(name, value);
-                            },
-                            (target, fieldChainAccess) -> {
-                                return target;
-                            }
-                        );
-                    }
-                };*/
             }
         });
     }
@@ -637,46 +581,6 @@ public class Parser {
             }
         };
     }
-
-    /*public ExpressionDom parseExpression() {
-        return parseExpression(parser.expression());
-    }
-
-    public ExpressionDom parseExpression(JavaParser.ExpressionContext ctx) {
-        return parseExpression(ctx, false);
-    }
-
-    public ExpressionDom parseExpression(JavaParser.ExpressionContext ctx, boolean asStatement) {
-        return ctx.accept(new JavaBaseVisitor<ExpressionDom>() {
-            @Override
-            public ExpressionDom visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
-                // Only support for variables
-
-                String name = ctx.getText();
-
-                return accessVar(name);
-            }
-
-            @Override
-            public ExpressionDom visitIntLiteral(@NotNull JavaParser.IntLiteralContext ctx) {
-                int value = Integer.parseInt(ctx.getText());
-                return literal(value);
-            }
-
-            @Override
-            public ExpressionDom visitStringLiteral(@NotNull JavaParser.StringLiteralContext ctx) {
-                String rawString = ctx.getText();
-                String value = rawString.substring(1, rawString.length() - 1)
-                    .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
-                return literal(value);
-            }
-
-            @Override
-            public ExpressionDom visitNullLiteral(@NotNull JavaParser.NullLiteralContext ctx) {
-                return nil();
-            }
-        });
-    }*/
 
     public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {
         return parseExpressionBuilder(ctx, atRoot, false);
@@ -763,18 +667,6 @@ public class Parser {
                                 }).collect(Collectors.toList());
 
                                 return resolveMethod(ci, targetClassDeclaration, methodName, argumentTypes, (c, m) -> {
-                                    /*if(asStatement) {
-                                        return newInstance(
-                                            targetClassDeclaration.getName(),
-                                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                                            arguments);methd
-                                    } else {
-                                        return newInstanceExpr(
-                                            targetClassDeclaration.getName(),
-                                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                                            arguments);
-                                    }*/
-
                                     int invocation = c.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
 
                                     String methodDescriptor =
@@ -785,31 +677,6 @@ public class Parser {
                                     String declaringClassDescriptor = Descriptor.get(c.getName());
                                     return invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
                                 });
-
-                                /*
-                                // Find best matching method
-                                List<MethodDeclaration> methods = targetClassDeclaration.getMethods().stream()
-                                    .filter(x -> x.getName().equals(methodName))
-                                    .filter(x -> x.getParameterTypes().size() == arguments.size())
-                                    .filter(x -> IntStream.range(0, arguments.size()).allMatch(i ->
-                                        // Compare full inheritance
-                                        Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
-                                    .collect(Collectors.toList());
-
-                                // For now, just pick the first
-                                MethodDeclaration method = methods.get(0);
-
-                                int invocation =
-                                    targetClassDeclaration.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
-
-                                String methodDescriptor =
-                                    Descriptor.getMethodDescriptor(method.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                                        Descriptor.get(method.getReturnTypeName())
-                                    );
-
-                                String declaringClassName = method.getDeclaringClass().getName();
-                                return invokeExpr(invocation, declaringClassName, methodName, methodDescriptor, target, arguments);
-                                */
                             };
                         }
 
@@ -837,8 +704,6 @@ public class Parser {
                                     return accessField(self(), name, fieldDeclaration.get().getTypeName());
                                 else
                                     return accessField(accessVar("self"), name, fieldDeclaration.get().getTypeName());
-
-                                //return accessField(self(), name, fieldDeclaration.get().getTypeName());
                             }
 
                             return accessVar(name);
@@ -900,18 +765,6 @@ public class Parser {
 
                     // For now, just pick the first
                     MethodDeclaration constructor = constructors.get(0);
-
-                    /*if(asStatement) {
-                        return newInstance(
-                            targetClassDeclaration.getName(),
-                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                            arguments);
-                    } else {
-                        return newInstanceExpr(
-                            targetClassDeclaration.getName(),
-                            constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                            arguments);
-                    }*/
 
                     return newInstanceExpr(
                         targetClassDeclaration.getName(),
