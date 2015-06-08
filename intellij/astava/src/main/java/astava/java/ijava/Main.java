@@ -7,8 +7,6 @@ import astava.java.parser.*;
 import astava.tree.*;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
@@ -170,7 +168,7 @@ public class Main {
                                 public void visitExpressionBuilder(ExpressionDomBuilder expressionBuilder) {
                                     Object result = exec(new StatementDomBuilder() {
                                         @Override
-                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                                             return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
                                         }
                                     }, ijavaClassLoader, rootClassBuilder, executions);
@@ -193,7 +191,7 @@ public class Main {
                                 public void visitStatementBuilder(StatementDomBuilder statementBuilder) {
                                     exec(new StatementDomBuilder() {
                                         @Override
-                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Set<String> locals) {
+                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                                             return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, classInspector, locals), ret()));
                                         }
                                     }, ijavaClassLoader, rootClassBuilder, executions);
@@ -285,9 +283,11 @@ public class Main {
 
         ClassDeclaration rootClassDeclaration = ijavaClassLoader.getClassDeclaration("Root");
 
-        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, ijavaClassLoader, new HashSet<>());
+        Hashtable<String, String> locals = new Hashtable<>();
+        locals.put("self", rootClassDeclaration.getName());
+        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, ijavaClassLoader, locals);
 
-        String exprResultType = Parser.statementReturnType(ijavaClassLoader, rootClassDeclaration, stmt);
+        String exprResultType = Parser.statementReturnType(ijavaClassLoader, rootClassDeclaration, stmt, locals);
 
         exeClassBuilder.addMethod(new MethodDomBuilder() {
             @Override
