@@ -1,6 +1,7 @@
 package astava.tree;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 public interface ExpressionDomVisitor {
     void visitBooleanLiteral(boolean value);
@@ -52,6 +53,12 @@ public interface ExpressionDomVisitor {
     void visitThis();
 
     void visitNull();
+
+    void visitTop(ExpressionDom expression, BiFunction<ExpressionDom, ExpressionDom, ExpressionDom> usage);
+
+    void visitDup(String type);
+
+    void visitLetBe(String type);
 
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;

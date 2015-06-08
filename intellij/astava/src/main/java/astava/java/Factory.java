@@ -1,11 +1,11 @@
 package astava.java;
 
-import astava.samples.virela.parser.Expression;
 import astava.tree.*;
 
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class Factory {
@@ -270,6 +270,10 @@ public class Factory {
     // At most one expression dom
     public static ExpressionDom blockExpr(List<CodeDom> codeList) {
         return v -> v.visitBlock(codeList);
+    }
+
+    public static ExpressionDom top(ExpressionDom expression, BiFunction<ExpressionDom, ExpressionDom, ExpressionDom> usage) {
+        return v -> v.visitTop(expression, usage);
     }
 
     public static StatementDom intIncVar(String name, int amount) {

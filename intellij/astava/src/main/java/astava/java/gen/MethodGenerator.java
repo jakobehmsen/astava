@@ -10,6 +10,7 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 
 import static astava.java.Factory.*;
@@ -28,8 +29,6 @@ public class MethodGenerator {
     }
 
     public void generate(GeneratorAdapter generator) {
-        //parameters.forEach(x -> methodScope.declareVar(generator, x.descriptor, x.name));
-
         LabelScope labelScope = new LabelScope();
         generator.visitCode();
         populateMethodStatement(generator, body, null, labelScope);
@@ -495,6 +494,27 @@ public class MethodGenerator {
             public void visitThis() {
                 generator.loadThis();
                 setResult(Descriptor.get(classGenerator.getClassName()));
+            }
+
+            @Override
+            public void visitTop(ExpressionDom expression, BiFunction<ExpressionDom, ExpressionDom, ExpressionDom> usage) {
+                String topResultType = populateMethodExpression(generator, expression, ifFalseLabel, reifyCondition);
+                ExpressionDom dup = v -> v.visitDup(topResultType);
+                ExpressionDom last = v -> v.visitLetBe(topResultType);
+                ExpressionDom usageExpression = usage.apply(dup, last);
+                String resultType = populateMethodExpression(generator, usageExpression, ifFalseLabel, reifyCondition);
+                setResult(resultType);
+            }
+
+            @Override
+            public void visitDup(String type) {
+                generator.dup();
+                setResult(type);
+            }
+
+            @Override
+            public void visitLetBe(String type) {
+                setResult(type);
             }
         }.returnFrom(expression);
     }

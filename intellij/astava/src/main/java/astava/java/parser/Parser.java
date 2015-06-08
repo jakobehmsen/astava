@@ -176,6 +176,32 @@ public class Parser {
             public void visitThis() {
                 setResult(Descriptor.get(self.getName()));
             }
+
+            @Override
+            public void visitTop(ExpressionDom expression, BiFunction<ExpressionDom, ExpressionDom, ExpressionDom> usage) {
+                String topResultType = expressionResultType(classInspector, self, expression);
+                ExpressionDom dup = v -> {
+                    // Some checks most be made here to ensure that the stack is maintained properly?
+                    v.visitDup(topResultType);
+                };
+                ExpressionDom last = v -> {
+                    // Some checks most be made here to ensure that the stack is maintained properly?
+                    v.visitLetBe(topResultType);
+                };
+                ExpressionDom usageExpression = usage.apply(dup, last);
+                String resultType = expressionResultType(classInspector, self, usageExpression);
+                setResult(resultType);
+            }
+
+            @Override
+            public void visitDup(String type) {
+                setResult(type);
+            }
+
+            @Override
+            public void visitLetBe(String type) {
+                setResult(type);
+            }
         }.returnFrom(expr);
     }
 
@@ -667,11 +693,12 @@ public class Parser {
                                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
                                 Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
-                                // How to avoid target being evaluated twice (other than having special assignFieldExpr)?
-                                return blockExpr(Arrays.asList(
-                                    assignField(target, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value), // "self" is passed as argument
-                                    fieldAccess(cr, cd, ci, locals, target, name)
-                                ));
+                                return top(target, (newTarget, newTargetLast) -> {
+                                    return blockExpr(Arrays.asList(
+                                        assignField(newTarget, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value),
+                                        fieldAccess(cr, cd, ci, locals, newTargetLast, name)
+                                    ));
+                                });
                             };
                         }
 
@@ -812,22 +839,10 @@ public class Parser {
     }
 
     private static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Set<String> locals, ExpressionDom target, String fieldName) {
-        /*return (cr, cd, ci, locals) -> {
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
-            String targetType = expressionResultType(ci, cd, target);
-            ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-
-            // Should investigate hierachy
-            Optional<FieldDeclaration> field = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
-
-            return accessField(target, fieldName, Descriptor.get(field.get().getTypeName()));
-        };*/
-
-        //ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
         String targetType = expressionResultType(ci, cd, target);
         ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
 
-        // Should investigate hierachy
+        // Should investigate hierarchy
         Optional<FieldDeclaration> field = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
 
         return accessField(target, fieldName, Descriptor.get(field.get().getTypeName()));
