@@ -24,6 +24,20 @@ public interface ClassDeclaration {
     String getSuperName();
     boolean isInterface();
 
+    default ClassDeclaration extend(ClassDeclaration extension) {
+        return new Mod(ClassDeclaration.this) {
+            @Override
+            protected List<FieldDeclaration> newFields() {
+                return extension.getFields();
+            }
+
+            @Override
+            protected List<MethodDeclaration> newMethods() {
+                return extension.getMethods();
+            }
+        };
+    };
+
     class Primitive implements ClassDeclaration {
         private String name;
 
@@ -71,7 +85,11 @@ public interface ClassDeclaration {
 
         @Override
         public List<FieldDeclaration> getFields() {
-            return source.getFields();
+            return Stream.concat(source.getFields().stream(), newFields().stream()).collect(Collectors.toList());
+        }
+
+        protected List<FieldDeclaration> newFields() {
+            return Collections.emptyList();
         }
 
         @Override

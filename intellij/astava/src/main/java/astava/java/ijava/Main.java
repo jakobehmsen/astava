@@ -149,7 +149,8 @@ public class Main {
                             script.forEach(x -> x.accept(new DomBuilderVisitor() {
                                 @Override
                                 public void visitClassBuilder(ClassDomBuilder classBuilder) {
-                                    ijavaClassLoader.putClassBuilder(classBuilder.getName(), new ClassDomBuilder() {
+                                    ijavaClassLoader.putClassBuilder(classBuilder.getName(), classBuilder);
+                                    /*ijavaClassLoader.putClassBuilder(classBuilder.getName(), new ClassDomBuilder() {
                                         @Override
                                         public ClassDeclaration build(ClassResolver classResolver) {
                                             return classBuilder.build(classResolver).withDefaultConstructor();
@@ -159,7 +160,7 @@ public class Main {
                                         public String getName() {
                                             return classBuilder.getName();
                                         }
-                                    });
+                                    });*/
 
                                     resetClassLoader(baseClassResolver, rootClassBuilder, executions);
                                 }
@@ -229,7 +230,7 @@ public class Main {
         ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
 
         classBuilders.entrySet().stream().forEach(x -> {
-            if(x.getKey().equals("Root")) {
+            /*if(x.getKey().equals("Root")) {
                 ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
                     @Override
                     public ClassDeclaration build(ClassResolver classResolver) {
@@ -242,7 +243,9 @@ public class Main {
                     }
                 });
             } else
-                ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());
+                ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());*/
+
+            ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());
         });
 
         try {

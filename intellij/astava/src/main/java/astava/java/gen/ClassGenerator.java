@@ -7,7 +7,6 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -48,26 +47,36 @@ public class ClassGenerator {
     }
 
     public void populateMethod(ClassNode classNode, MethodDom methodDom) {
-        int modifiers = methodDom.getModifiers();
-        String methodName = methodDom.getName();
-        List<ParameterInfo> parameters = methodDom.getParameterTypes();
-        String returnTypeName = methodDom.getReturnTypeName();
-        StatementDom body = methodDom.getBody();
+        MethodNode methodNode = new StatementDomVisitor.Return<MethodNode>() {
+            @Override
+            public void visitASM(MethodNode methodNode) {
+                setResult(methodNode);
+            }
+        }.returnFrom(methodDom.getBody());
 
-        Type[] parameterTypes = new Type[parameters.size()];
-        for(int i = 0; i < parameters.size(); i++)
-            parameterTypes[i] = Type.getType(parameters.get(i).descriptor);
+        if(methodNode == null) {
+            int modifiers = methodDom.getModifiers();
+            String methodName = methodDom.getName();
+            List<ParameterInfo> parameters = methodDom.getParameterTypes();
+            String returnTypeName = methodDom.getReturnTypeName();
+            StatementDom body = methodDom.getBody();
 
-        List<String> parameterTypeNames = parameters.stream().map(x -> x.descriptor).collect(Collectors.toList());
-        String methodDescriptor = Descriptor.getMethodDescriptor(parameterTypeNames, returnTypeName);
-        MethodNode methodNode = new MethodNode(Opcodes.ASM5, modifiers, methodName, methodDescriptor, null, null);
+            Type[] parameterTypes = new Type[parameters.size()];
+            for(int i = 0; i < parameters.size(); i++)
+                parameterTypes[i] = Type.getType(parameters.get(i).descriptor);
 
-        Method m = new Method(methodName, methodNode.desc);
-        GeneratorAdapter generator = new GeneratorAdapter(modifiers, m, methodNode);
+            List<String> parameterTypeNames = parameters.stream().map(x -> x.descriptor).collect(Collectors.toList());
+            String methodDescriptor = Descriptor.getMethodDescriptor(parameterTypeNames, returnTypeName);
+            methodNode = new MethodNode(Opcodes.ASM5, modifiers, methodName, methodDescriptor, null, null);
 
-        MethodGenerator methodGenerator = new MethodGenerator(this, parameters, body);
+            Method m = new Method(methodName, methodNode.desc);
+            //GeneratorAdapter generator = new GeneratorAdapter(modifiers, m, methodNode);
 
-        methodGenerator.generate(generator);
+            MethodGenerator methodGenerator = new MethodGenerator(this, parameters, body);
+
+            //methodGenerator.generate(generator);
+            methodGenerator.generate(methodNode);
+        }
 
         classNode.methods.add(methodNode);
     }
@@ -82,7 +91,19 @@ public class ClassGenerator {
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         classNode.accept(classWriter);
 
-        org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, new PrintWriter(Debug.getPrintStream(Debug.LEVEL_HIGH)));
+        boolean hasASMMethodNodes = classDom.getMethods().stream().map(x -> new StatementDomVisitor.Return<MethodNode>() {
+            @Override
+            public void visitASM(MethodNode methodNode) {
+                setResult(methodNode);
+            }
+        }.returnFrom(x.getBody())).anyMatch(x -> x != null);
+
+        try {
+            org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, new PrintWriter(Debug.getPrintStream(Debug.LEVEL_HIGH)));
+        } catch(Exception e) {
+            if(!hasASMMethodNodes)
+                throw e;
+        }
 
         return classWriter.toByteArray();
     }

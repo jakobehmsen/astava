@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -281,6 +282,11 @@ public class Parser {
 
             @Override
             public void visitSwitch(ExpressionDom expression, Map<Integer, StatementDom> cases, StatementDom defaultBody) {
+
+            }
+
+            @Override
+            public void visitASM(MethodNode methodNode) {
 
             }
         }.returnFrom(stmt);
@@ -858,7 +864,7 @@ public class Parser {
                     MethodDeclaration constructor = constructors.get(0);
 
                     return newInstanceExpr(
-                        targetClassDeclaration.getName(),
+                        Descriptor.get(targetClassDeclaration.getName()),
                         constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
                         arguments);
                 };
