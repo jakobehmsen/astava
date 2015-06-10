@@ -150,18 +150,6 @@ public class Main {
                                 @Override
                                 public void visitClassBuilder(ClassDomBuilder classBuilder) {
                                     ijavaClassLoader.putClassBuilder(classBuilder.getName(), classBuilder);
-                                    /*ijavaClassLoader.putClassBuilder(classBuilder.getName(), new ClassDomBuilder() {
-                                        @Override
-                                        public ClassDeclaration build(ClassResolver classResolver) {
-                                            return classBuilder.build(classResolver).withDefaultConstructor();
-                                        }
-
-                                        @Override
-                                        public String getName() {
-                                            return classBuilder.getName();
-                                        }
-                                    });*/
-
                                     resetClassLoader(baseClassResolver, rootClassBuilder, executions);
                                 }
 
@@ -230,21 +218,6 @@ public class Main {
         ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
 
         classBuilders.entrySet().stream().forEach(x -> {
-            /*if(x.getKey().equals("Root")) {
-                ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
-                    @Override
-                    public ClassDeclaration build(ClassResolver classResolver) {
-                        return rootClassBuilder.build(classResolver).withDefaultConstructor();
-                    }
-
-                    @Override
-                    public String getName() {
-                        return "Root";
-                    }
-                });
-            } else
-                ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());*/
-
             ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());
         });
 
@@ -277,10 +250,6 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        //ClassDeclaration rootClassDeclaration = rootClassBuilder.build(classResolver);
-
-        //rootClassDeclaration = rootClassDeclaration.withDefaultConstructor();
 
         // Add entry point method
 
@@ -328,45 +297,6 @@ public class Main {
 
         ClassDeclaration execClassDeclaration = exeClassBuilder.build(classResolver);
 
-
-
-
-        /*rootClassDeclaration = new ClassDeclaration.Mod(rootClassDeclaration) {
-            @Override
-            protected List<MethodDeclaration> newMethods() {
-                return Arrays.asList(new MethodDeclaration() {
-                    @Override
-                    public int getModifiers() {
-                        return Modifier.PUBLIC;
-                    }
-
-                    @Override
-                    public String getName() {
-                        return "exec";
-                    }
-
-                    @Override
-                    public List<ParameterInfo> getParameterTypes() {
-                        return Arrays.asList();
-                    }
-
-                    @Override
-                    public String getReturnTypeName() {
-                        return exprResultType;
-                    }
-
-                    @Override
-                    public MethodDom build(ClassDeclaration classDeclaration) {
-                        return methodDeclaration(Modifier.PUBLIC, "exec", Arrays.asList(), exprResultType, block(Arrays.asList(
-                            stmt
-                        )));
-                    }
-                });
-            }
-        };*/
-
-        //ClassDom classDom = rootClassDeclaration.build();
-
         ClassDom classDom = execClassDeclaration.build(ijavaClassLoader);
 
         ClassGenerator generator = new ClassGenerator(classDom);
@@ -376,19 +306,6 @@ public class Main {
         try {
             Class<?> execClass = classLoader.loadClass("Exec");
             Class<?> rootClass = classLoader.loadClass("Root");
-
-            /*Class<?> gc = generator.newClass();
-            Object oldRoot = currentRoot;
-            currentRoot = gc.newInstance();
-
-            if(oldRoot != null) {
-                for(Field f: oldRoot.getClass().getDeclaredFields()) {
-                    f.setAccessible(true);
-                    Field nf = gc.getDeclaredField(f.getName());
-                    nf.setAccessible(true);
-                    nf.set(currentRoot, f.get(oldRoot));
-                }
-            }*/
 
             Method execMethod = execClass.getMethod("exec", new Class<?>[]{rootClass});
             return execMethod.invoke(null, currentRoot);
