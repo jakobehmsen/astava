@@ -213,13 +213,7 @@ public class Main {
     }
 
     private static void resetClassLoader(ClassResolver baseClassResolver, final MutableClassDomBuilder rootClassBuilder, java.util.List<StatementDomBuilder> executions) {
-        Map<String, ClassDomBuilder> classBuilders = ijavaClassLoader.getClassBuilders();
-
-        ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
-
-        classBuilders.entrySet().stream().forEach(x -> {
-            ijavaClassLoader.putClassBuilder(x.getKey(), x.getValue());
-        });
+        ijavaClassLoader = ijavaClassLoader.reset();
 
         try {
             currentRoot = ijavaClassLoader.loadClass("Root").newInstance();

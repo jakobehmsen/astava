@@ -35,6 +35,14 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
         classCache = new Hashtable<>();
     }
 
+    public IJAVAClassLoader reset() {
+        IJAVAClassLoader resetLoader = new IJAVAClassLoader(this.classResolver);
+
+        resetLoader.classBuilders.putAll(this.classBuilders);
+
+        return resetLoader;
+    }
+
     public void putClassBuilder(String name, ClassDomBuilder builder) {
         builder = extendClass(name, builder);
 
@@ -256,9 +264,5 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
                 return c.isInterface();
             }
         };
-    }
-
-    public Map<String, ClassDomBuilder> getClassBuilders() {
-        return classBuilders;
     }
 }
