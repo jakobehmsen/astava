@@ -105,17 +105,7 @@ public class Main {
 
             ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
 
-            ijavaClassLoader.putClassBuilder("Root", new ClassDomBuilder() {
-                @Override
-                public String getName() {
-                    return "Root";
-                }
-
-                @Override
-                public ClassDeclaration build(ClassResolver classResolver) {
-                    return rootClassBuilder.build(classResolver).withDefaultConstructor();
-                }
-            });
+            ijavaClassLoader.putClassBuilder("Root", rootClassBuilder);
             try {
                 currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
             } catch (InstantiationException e) {
@@ -166,7 +156,12 @@ public class Main {
 
                                 @Override
                                 public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
+                                    //rootClassBuilder.addField(fieldBuilder);
+
+                                    MutableClassDomBuilder rootClassBuilder = new MutableClassDomBuilder();
+                                    rootClassBuilder.setName("Root");
                                     rootClassBuilder.addField(fieldBuilder);
+                                    ijavaClassLoader.putClassBuilder("Root", rootClassBuilder);
 
                                     resetClassLoader(baseClassResolver, rootClassBuilder, executions);
                                 }
@@ -256,6 +251,11 @@ public class Main {
         String exprResultType = Parser.statementReturnType(ijavaClassLoader, rootClassDeclaration, stmt, locals);
 
         exeClassBuilder.addMethod(new MethodDomBuilder() {
+            @Override
+            public String getName() {
+                return "exec";
+            }
+
             @Override
             public MethodDeclaration declare(ClassResolver classResolver) {
                 return new MethodDeclaration() {

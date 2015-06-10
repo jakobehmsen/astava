@@ -6,4 +6,6 @@ public interface MethodDomBuilder extends DomBuilder {
     }
 
     MethodDeclaration declare(ClassResolver classResolver);
+
+    String getName();
 }

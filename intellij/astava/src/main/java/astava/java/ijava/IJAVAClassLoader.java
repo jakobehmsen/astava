@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
@@ -22,7 +23,8 @@ import static astava.java.Factory.methodDeclaration;
 
 public class IJAVAClassLoader extends ClassLoader implements ClassResolver, ClassInspector {
     private ClassResolver classResolver;
-    private Map<String, ClassDomBuilder> classBuilders;
+    //private Map<String, ClassDomBuilder> classBuilders;
+    private Map<String, MutableClassDomBuilder> classBuilders;
     private Map<String, String> nameToSimpleNameMap;
     private Map<String, ClassDeclaration> classDeclarationCache;
     private Map<String, Class<?>> classCache;
@@ -44,15 +46,31 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
     }
 
     public void putClassBuilder(String name, ClassDomBuilder builder) {
-        builder = extendClass(name, builder);
+        //builder = extendClass(name, builder);
 
-        classBuilders.put(name, builder);
+        MutableClassDomBuilder classBuilder = classBuilders.get(name);
+
+        if(classBuilder == null) {
+            classBuilder = new MutableClassDomBuilder();
+            classBuilder.setName(name);
+            classBuilder.setModifiers(Modifier.PUBLIC);
+            classBuilder.setSuperName(builder.getSuperName());
+            classBuilders.put(name, classBuilder);
+        }
+
+        for (FieldDomBuilder f : builder.getFields())
+            classBuilder.addField(f);
+
+        for (MethodDomBuilder m : builder.getMethods())
+            classBuilder.addMethod(m);
+
+        //classBuilders.put(name, builder);
         classDeclarationCache.remove(name);
         String simpleName = getSimpleName(name);
         nameToSimpleNameMap.put(name, simpleName);
     }
 
-    private ClassDomBuilder extendClass(String name, ClassDomBuilder builder) {
+    /*private ClassDomBuilder extendClass(String name, ClassDomBuilder builder) {
         ClassDomBuilder currentBuilderTmp = classBuilders.get(name);
         if(currentBuilderTmp == null) {
             try {
@@ -87,7 +105,7 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
                 return name;
             }
         };
-    }
+    }*/
 
     private static String getSimpleName(String name) {
         int indexOfLastDot = name.lastIndexOf('.');

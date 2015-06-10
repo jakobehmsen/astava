@@ -6,4 +6,6 @@ public interface FieldDomBuilder extends DomBuilder {
     }
 
     FieldDeclaration declare(ClassResolver classResolver);
+
+    String getName();
 }

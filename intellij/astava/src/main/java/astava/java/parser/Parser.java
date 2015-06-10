@@ -420,7 +420,14 @@ public class Parser {
     }
 
     public FieldDomBuilder parseFieldBuilder(JavaParser.FieldDefinitionContext ctx, boolean atRoot) {
+        String name = ctx.name.getText();
+
         return new FieldDomBuilder() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
             @Override
             public FieldDeclaration declare(ClassResolver classResolver) {
                 String typeName = parseTypeQualifier(classResolver, ctx.type.getText());
@@ -431,8 +438,6 @@ public class Parser {
                     modifiers = modifiersTmp | Modifier.PUBLIC;
                 else
                     modifiers = modifiersTmp;
-
-                String name = ctx.name.getText();
 
                 return new FieldDeclaration() {
                     @Override
@@ -464,15 +469,20 @@ public class Parser {
     }
 
     public MethodDomBuilder parseMethodBuilder(JavaParser.MethodDefinitionContext ctx) {
+        boolean isConstructor = ctx.returnType == null;
+        String name = isConstructor ? "<init>" : ctx.name.getText();
+
         return new MethodDomBuilder() {
             @Override
-            public MethodDeclaration declare(ClassResolver classResolver) {
-                boolean isConstructor = ctx.returnType == null;
+            public String getName() {
+                return name;
+            }
 
+            @Override
+            public MethodDeclaration declare(ClassResolver classResolver) {
                 String returnType = isConstructor ? Descriptor.VOID : parseTypeQualifier(classResolver, ctx.returnType.getText());
                 int modifiers = parseModifiers(ctx.modifiers());
                 // Somehow, the name should checked as to the class name
-                String name = isConstructor ? "<init>" : ctx.name.getText();
                 List<ParameterInfo> parameters = ctx.parameters().parameter().stream()
                     .map(x -> new ParameterInfo(parseTypeQualifier(classResolver, x.type.getText()), x.name.getText()))
                     .collect(Collectors.toList());

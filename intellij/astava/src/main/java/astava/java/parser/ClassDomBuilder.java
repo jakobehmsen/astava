@@ -1,6 +1,6 @@
 package astava.java.parser;
 
-import astava.tree.ClassDom;
+import java.util.List;
 
 public interface ClassDomBuilder extends DomBuilder {
     default void accept(DomBuilderVisitor visitor) {
@@ -10,4 +10,10 @@ public interface ClassDomBuilder extends DomBuilder {
     ClassDeclaration build(ClassResolver classResolver);
 
     String getName();
+
+    List<FieldDomBuilder> getFields();
+
+    List<MethodDomBuilder> getMethods();
+
+    String getSuperName();
 }

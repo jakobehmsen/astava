@@ -10,8 +10,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static astava.java.Factory.*;
 import static astava.java.Factory.ret;
@@ -20,8 +22,10 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
     private int modifiers;
     private String name;
     private String superName;
-    private ArrayList<FieldDomBuilder> fieldBuilders = new ArrayList<>();
-    private ArrayList<MethodDomBuilder> methodBuilders = new ArrayList<>();
+    private Hashtable<String, FieldDomBuilder> fieldBuilders = new Hashtable<>();
+    private Hashtable<String, MethodDomBuilder> methodBuilders = new Hashtable<>();
+    //private ArrayList<FieldDomBuilder> fieldBuilders = new ArrayList<>();
+    //private ArrayList<MethodDomBuilder> methodBuilders = new ArrayList<>();
 
     public void setModifiers(int modifiers) {
         this.modifiers = modifiers;
@@ -32,6 +36,16 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
         return name;
     }
 
+    @Override
+    public List<FieldDomBuilder> getFields() {
+        return fieldBuilders.values().stream().collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MethodDomBuilder> getMethods() {
+        return methodBuilders.values().stream().collect(Collectors.toList());
+    }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -40,20 +54,25 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
         this.superName = superName;
     }
 
+    @Override
+    public String getSuperName() {
+        return superName;
+    }
+
     public void addField(FieldDomBuilder fieldBuilder) {
-        fieldBuilders.add(fieldBuilder);
+        fieldBuilders.put(fieldBuilder.getName(), fieldBuilder);
     }
 
     public void addMethod(MethodDomBuilder methodBuilder) {
-        methodBuilders.add(methodBuilder);
+        methodBuilders.put(methodBuilder.getName(), methodBuilder);
     }
 
 
 
     @Override
     public ClassDeclaration build(ClassResolver classResolver) {
-        List<FieldDeclaration> fieldDeclarations = fieldBuilders.stream().map(x -> x.declare(classResolver)).collect(Collectors.toList());
-        List<MethodDeclaration> methodDeclarations = methodBuilders.stream().map(x -> x.declare(classResolver)).collect(Collectors.toList());
+        List<FieldDeclaration> fieldDeclarations = getFields().stream().map(x -> x.declare(classResolver)).collect(Collectors.toList());
+        List<MethodDeclaration> methodDeclarations = getMethods().stream().map(x -> x.declare(classResolver)).collect(Collectors.toList());
 
         /*// Add default constructor if necessary
         boolean hasConstructors = methodDeclarations.stream().anyMatch(x -> x.getName().equals("<init>"));
