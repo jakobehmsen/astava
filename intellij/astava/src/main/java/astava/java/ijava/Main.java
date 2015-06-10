@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import static astava.java.Factory.*;
 
 public class Main {
-    private static MutableClassDomBuilder rootClassBuilder;
     private static IJAVAClassLoader ijavaClassLoader;
     private static Object currentRoot = null;
     private static int startIndex = 0;
@@ -97,15 +96,17 @@ public class Main {
 
             pendingScript.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
 
+            MutableClassDomBuilder initialRootClass = null;
+
             try {
-                rootClassBuilder = new Parser("public class Root { }").parseClass();
+                initialRootClass = new Parser("public class Root { }").parseClass();
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             ijavaClassLoader = new IJAVAClassLoader(baseClassResolver);
 
-            ijavaClassLoader.putClassBuilder("Root", rootClassBuilder);
+            ijavaClassLoader.putClassBuilder("Root", initialRootClass);
             try {
                 currentRoot = ijavaClassLoader.loadClass("Root").newInstance();
             } catch (InstantiationException e) {
@@ -140,7 +141,7 @@ public class Main {
                                 @Override
                                 public void visitClassBuilder(ClassDomBuilder classBuilder) {
                                     ijavaClassLoader.putClassBuilder(classBuilder.getName(), classBuilder);
-                                    resetClassLoader(baseClassResolver, rootClassBuilder, executions);
+                                    resetClassLoader(executions);
                                 }
 
                                 @Override
@@ -150,20 +151,18 @@ public class Main {
                                         public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                                             return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
                                         }
-                                    }, ijavaClassLoader, rootClassBuilder, executions);
+                                    }, ijavaClassLoader, executions);
                                     output.append("\n" + result);
                                 }
 
                                 @Override
                                 public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
-                                    //rootClassBuilder.addField(fieldBuilder);
+                                    MutableClassDomBuilder rootClassExtension = new MutableClassDomBuilder();
+                                    rootClassExtension.setName("Root");
+                                    rootClassExtension.addField(fieldBuilder);
+                                    ijavaClassLoader.putClassBuilder("Root", rootClassExtension);
 
-                                    MutableClassDomBuilder rootClassBuilder = new MutableClassDomBuilder();
-                                    rootClassBuilder.setName("Root");
-                                    rootClassBuilder.addField(fieldBuilder);
-                                    ijavaClassLoader.putClassBuilder("Root", rootClassBuilder);
-
-                                    resetClassLoader(baseClassResolver, rootClassBuilder, executions);
+                                    resetClassLoader(executions);
                                 }
 
                                 @Override
@@ -178,7 +177,7 @@ public class Main {
                                         public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                                             return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, classInspector, locals), ret()));
                                         }
-                                    }, ijavaClassLoader, rootClassBuilder, executions);
+                                    }, ijavaClassLoader, executions);
                                 }
                             }));
                         } catch (IOException e1) {
@@ -207,7 +206,7 @@ public class Main {
         frame.setVisible(true);
     }
 
-    private static void resetClassLoader(ClassResolver baseClassResolver, final MutableClassDomBuilder rootClassBuilder, java.util.List<StatementDomBuilder> executions) {
+    private static void resetClassLoader(List<StatementDomBuilder> executions) {
         ijavaClassLoader = ijavaClassLoader.reset();
 
         try {
@@ -221,17 +220,16 @@ public class Main {
         }
 
         // Replay all script
-        executions.forEach(x -> exec(x, ijavaClassLoader, rootClassBuilder));
+        executions.forEach(x -> exec(x, ijavaClassLoader));
     }
 
-    private static Map<String, ClassDomBuilder> classBuilders = new Hashtable<>();
-    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder, java.util.List<StatementDomBuilder> script) {
+    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, List<StatementDomBuilder> script) {
         script.add(statementDomBuilder);
 
-        return exec(statementDomBuilder, classResolver, rootClassBuilder);
+        return exec(statementDomBuilder, classResolver);
     }
 
-    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, MutableClassDomBuilder rootClassBuilder) {
+    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver) {
         MutableClassDomBuilder exeClassBuilder = null;
 
         try {
