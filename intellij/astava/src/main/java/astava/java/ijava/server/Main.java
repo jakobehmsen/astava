@@ -4,7 +4,6 @@ import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
 import astava.java.parser.*;
-import astava.samples.virela.parser.Statement;
 import astava.tree.*;
 
 import javax.swing.*;
@@ -33,7 +32,36 @@ public class Main {
         }
     }
 
+    private static JFrame frame;
+    private static JTextPane console;
+
+    /*public static void ensureFrameCreated() {
+        console = new JTextPane();
+        System.setOut(new PrintStream(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+
+            }
+        }));
+
+        frame = new JFrame();
+        frame.setSize(480, 800);
+        frame.getContentPane().setLayout(new BorderLayout());
+        frame.getContentPane().add(console, BorderLayout.CENTER);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }*/
+
     public static void main(String[] args) {
+        console = new JTextPane();
+
+        frame = new JFrame();
+        frame.setSize(480, 800);
+        frame.getContentPane().setLayout(new BorderLayout());
+        frame.getContentPane().add(console, BorderLayout.CENTER);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
         //Scanner inputScanner = new Scanner(System.in);
         //PrintStream output = System.out;
         DataInputStream input = new DataInputStream(System.in);
@@ -53,7 +81,14 @@ public class Main {
         }
         DataOutputStream output = new DataOutputStream(outputStream);
 
-        JTextPane console = new JTextPane();
+        System.setOut(new PrintStream(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+
+            }
+        }));
+
+        /*JTextPane console = new JTextPane();
         System.setOut(new PrintStream(new OutputStream() {
             @Override
             public void write(int b) throws IOException {
@@ -66,7 +101,7 @@ public class Main {
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(console, BorderLayout.CENTER);
         frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        frame.setVisible(true);*/
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
@@ -97,12 +132,12 @@ public class Main {
 
         boolean run = true;
         while(run) {
-            log(console, "Waiting...");
+            log("Waiting...");
             int operator = 0;
             try {
                 operator = input.readInt();
             } catch (IOException e) {
-                log(console, "Error: " + e.getMessage());
+                log("Error: " + e.getMessage());
             }
 
             switch (operator) {
@@ -112,31 +147,31 @@ public class Main {
                         String typeName = input.readUTF();
                         String descriptor = Descriptor.get(typeName);
 
-                        log(console, "Declare " + typeName + " " + name);
+                        log("Declare " + typeName + " " + name);
 
                         Object defaultValue = Descriptor.getDefaultValue(descriptor);
 
                         variables.put(name, new Variable(typeName, defaultValue));
                     } catch(Exception e) {
-                        log(console, "Error: " + e.getMessage());
+                        log("Error: " + e.getMessage());
                     }
 
                     break;
                 case RequestCode.EXEC:
-                    log(console, "Exec");
+                    log("Exec");
                     ObjectInputStream oiStream = null;
                     try {
                         oiStream = new ObjectInputStream(input);
                     } catch (IOException e) {
-                        log(console, "Error: " + e.getMessage());
+                        log("Error: " + e.getMessage());
                     }
                     StatementDomBuilder stmtBuilder = null;
                     try {
                         stmtBuilder = (StatementDomBuilder)oiStream.readObject();
                     } catch (ClassNotFoundException e) {
-                        log(console, "Error: " + e.getMessage());
+                        log("Error: " + e.getMessage());
                     } catch (IOException e) {
-                        log(console, "Error: " + e.getMessage());
+                        log("Error: " + e.getMessage());
                     }
 
                     MutableClassDomBuilder exeClassBuilder = null;
@@ -150,7 +185,7 @@ public class Main {
                                 public FieldDeclaration declare(ClassResolver classResolver) {
                                     return new FieldDeclaration() {
                                         @Override
-                                        public int getModifiers() {
+                                        public int getModifier() {
                                             return Modifier.PUBLIC;
                                         }
 
@@ -188,7 +223,7 @@ public class Main {
                             public MethodDeclaration declare(ClassResolver classResolver) {
                                 return new MethodDeclaration() {
                                     @Override
-                                    public int getModifiers() {
+                                    public int getModifier() {
                                         return Modifier.PUBLIC;
                                     }
 
@@ -220,7 +255,7 @@ public class Main {
                             }
                         });
                     } catch (IOException e) {
-                        log(console, "Error: " + e.getMessage());
+                        log("Error: " + e.getMessage());
                     }
                     ClassDeclaration execClassDeclaration = exeClassBuilder.build(classResolver).withDefaultConstructor();
 
@@ -235,7 +270,7 @@ public class Main {
 
                         Object exec = execClass.newInstance();
 
-                        log(console, "Here");
+                        log("Here");
 
                         for (Map.Entry<String, Variable> e : variables.entrySet()) {
                             Field f = execClass.getDeclaredField(e.getKey());
@@ -254,7 +289,7 @@ public class Main {
 
                         String resultToString = result != null ? result.toString() : "null";
 
-                        log(console, "result = " + resultToString);
+                        log("result = " + resultToString);
 
                         output.writeUTF(resultToString);
                         output.flush();
@@ -266,30 +301,30 @@ public class Main {
                         //System.out.println(resultToString);
                         //System.out.flush();
                     } catch (ClassNotFoundException e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     } catch (IllegalAccessException e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     } catch (NoSuchMethodException e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     } catch (InvocationTargetException e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     } catch (InstantiationException e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     } catch (NoSuchFieldException e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     } catch (Throwable e1) {
-                        log(console, "Error: " + e1.getMessage());
+                        log("Error: " + e1.getMessage());
                     }
 
                     break;
                 case RequestCode.END:
-                    log(console, "end");
+                    log("end");
                     run = false;
                     try {
                         output.writeInt(ResponseCode.FINISHED);
                         output.flush();
                     } catch (IOException e) {
-                        log(console, "Error: " + e.getMessage());
+                        log("Error: " + e.getMessage());
                     }
                     break;
             }
@@ -299,7 +334,7 @@ public class Main {
         frame.dispose();
     }
 
-    private static void log(JTextPane console, String message) {
+    public static void log(String message) {
         try {
             console.getDocument().insertString(console.getDocument().getLength(), message + "\n", null);
         } catch (BadLocationException e) {

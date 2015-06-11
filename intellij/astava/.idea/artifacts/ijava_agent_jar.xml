@@ -1,0 +1,17 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ijava_agent:jar">
+    <output-path>$PROJECT_DIR$/classes/artifacts/ijava_agent_jar</output-path>
+    <root id="archive" name="astava.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/src/main/java/astava/java/ijava/agent/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="astava" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/asm-5.0.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/asm-analysis-5.0.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/asm-commons-5.0.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/asm-tree-5.0.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/asm-util-5.0.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/antlr-4.5-rc-1-complete.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

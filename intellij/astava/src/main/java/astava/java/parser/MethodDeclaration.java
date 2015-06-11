@@ -6,7 +6,7 @@ import astava.tree.ParameterInfo;
 import java.util.List;
 
 public interface MethodDeclaration {
-    int getModifiers();
+    int getModifier();
     String getName();
     List<ParameterInfo> getParameterTypes();
     String getReturnTypeName();

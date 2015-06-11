@@ -375,7 +375,7 @@ public class Parser {
                 String name = ctx.name.getText();
                 String superName = Object.class.getName();
 
-                classBuilder.setModifiers(modifiers);
+                classBuilder.setModifier(modifiers);
                 classBuilder.setName(name);
                 classBuilder.setSuperName(superName);
 
@@ -432,7 +432,7 @@ public class Parser {
 
                 return new FieldDeclaration() {
                     @Override
-                    public int getModifiers() {
+                    public int getModifier() {
                         return modifiers;
                     }
 
@@ -480,7 +480,7 @@ public class Parser {
 
                 return new MethodDeclaration() {
                     @Override
-                    public int getModifiers() {
+                    public int getModifier() {
                         return modifiers;
                     }
 
@@ -618,7 +618,7 @@ public class Parser {
 
                 Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                 if (fieldDeclaration.isPresent()) {
-                    if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
+                    if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
                         return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
 
                     if(!atRoot)
@@ -785,7 +785,7 @@ public class Parser {
                         name -> {
                             Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                             if (fieldDeclaration.isPresent()) {
-                                if (Modifier.isStatic(fieldDeclaration.get().getModifiers()))
+                                if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
                                     return accessStaticField(cd.getName(), name, fieldDeclaration.get().getTypeName());
 
                                 if (!atRoot)

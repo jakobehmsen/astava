@@ -163,7 +163,7 @@ public interface ClassDeclaration {
                 protected List<MethodDeclaration> newMethods() {
                     return Arrays.asList(new MethodDeclaration() {
                         @Override
-                        public int getModifiers() {
+                        public int getModifier() {
                             return Modifier.PUBLIC;
                         }
 

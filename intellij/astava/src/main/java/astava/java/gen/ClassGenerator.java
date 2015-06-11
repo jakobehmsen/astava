@@ -55,7 +55,7 @@ public class ClassGenerator {
         }.returnFrom(methodDom.getBody());
 
         if(methodNode == null) {
-            int modifiers = methodDom.getModifiers();
+            int modifiers = methodDom.getModifier();
             String methodName = methodDom.getName();
             List<ParameterInfo> parameters = methodDom.getParameterTypes();
             String returnTypeName = methodDom.getReturnTypeName();

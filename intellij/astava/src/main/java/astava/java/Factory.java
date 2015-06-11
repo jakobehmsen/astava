@@ -60,7 +60,7 @@ public class Factory {
     public static MethodDom methodDeclaration(int modifiers, String name, List<ParameterInfo> parameters, String returnType, StatementDom body) {
         return new MethodDom() {
             @Override
-            public int getModifiers() {
+            public int getModifier() {
                 return modifiers;
             }
 

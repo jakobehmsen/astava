@@ -53,7 +53,7 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
         if(classBuilder == null) {
             classBuilder = new MutableClassDomBuilder();
             classBuilder.setName(name);
-            classBuilder.setModifiers(Modifier.PUBLIC);
+            classBuilder.setModifier(Modifier.PUBLIC);
             classBuilder.setSuperName(builder.getSuperName());
             classBuilders.put(name, classBuilder);
         }
@@ -206,7 +206,7 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
             public List<FieldDeclaration> getFields() {
                 return Arrays.asList(c.getDeclaredFields()).stream().map(x -> new FieldDeclaration() {
                     @Override
-                    public int getModifiers() {
+                    public int getModifier() {
                         return x.getModifiers();
                     }
 
@@ -222,7 +222,7 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
 
                     @Override
                     public FieldDom build(ClassDeclaration classDeclaration) {
-                        return fieldDeclaration(getModifiers(), getName(), getTypeName());
+                        return fieldDeclaration(getModifier(), getName(), getTypeName());
                     }
                 }).collect(Collectors.toList());
             }
@@ -231,7 +231,7 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
             public List<MethodDeclaration> getMethods() {
                 return Arrays.asList(c.getDeclaredMethods()).stream().map(x -> new MethodDeclaration() {
                     @Override
-                    public int getModifiers() {
+                    public int getModifier() {
                         return x.getModifiers();
                     }
 
@@ -257,7 +257,7 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
                         MethodNode asmMethod = (MethodNode)classNode.methods.stream().filter(x -> ((MethodNode)x).name.equals(getName())).findFirst().get();
                         StatementDom body = v ->
                             v.visitASM(asmMethod);
-                        return methodDeclaration(getModifiers(), getName(), getParameterTypes(), getReturnTypeName(), body);
+                        return methodDeclaration(getModifier(), getName(), getParameterTypes(), getReturnTypeName(), body);
                     }
                 }).collect(Collectors.toList());
             }
