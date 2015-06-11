@@ -3,6 +3,7 @@ package astava.java.ijava;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
+import astava.java.ijava.server.RequestCode;
 import astava.java.parser.*;
 import astava.tree.*;
 
@@ -13,9 +14,7 @@ import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -33,8 +32,39 @@ public class Main {
     private static int startIndex = 0;
 
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static Process serverProcess;
 
     public static void main(String[] args) throws IOException {
+        String serverFilePath = new java.io.File("classes/artifacts/ijava_server_jar/astava.jar").getAbsolutePath();
+        String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
+        serverProcess = new ProcessBuilder(
+            "java",
+            "-javaagent:" + javaAgentFilePath,
+            "-cp",
+            serverFilePath, "astava.java.ijava.server.Main"
+            ).start();
+
+        DataInputStream inputStream = new DataInputStream(serverProcess.getInputStream());
+        Scanner input = new Scanner(serverProcess.getInputStream());
+        DataOutputStream outputStream = new DataOutputStream(serverProcess.getOutputStream());
+
+        // Interact with agent premain
+        ObjectOutputStream agentObjectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
+        agentObjectOutputStream.writeObject(new Hashtable<String, ClassDomBuilder>());
+        outputStream.flush();
+
+        outputStream.writeInt(RequestCode.EXEC);
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
+        objectOutputStream.writeObject(astava.java.parser.Factory.ret(astava.java.parser.Factory.literal(5)));
+        outputStream.flush();
+        String resultString = inputStream.readUTF();
+
+        outputStream.writeInt(RequestCode.END);
+        outputStream.flush();
+        int responseCode = inputStream.read();
+
+
+
         ClassResolver baseClassResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
                 String.class,
@@ -230,6 +260,14 @@ public class Main {
     }
 
     private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver) {
+        try {
+            serverProcess.getOutputStream().write(RequestCode.EXEC);
+            ObjectOutputStream ooStream = new ObjectOutputStream(serverProcess.getOutputStream());
+            ooStream.writeObject(statementDomBuilder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         MutableClassDomBuilder exeClassBuilder = null;
 
         try {
@@ -258,7 +296,7 @@ public class Main {
             public MethodDeclaration declare(ClassResolver classResolver) {
                 return new MethodDeclaration() {
                     @Override
-                    public int getModifiers() {
+                    public int getModifier() {
                         return Modifier.PUBLIC | Modifier.STATIC;
                     }
 
@@ -279,7 +317,7 @@ public class Main {
 
                     @Override
                     public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
-                        return methodDeclaration(getModifiers(), getName(), getParameterTypes(), getReturnTypeName(), block(Arrays.asList(
+                        return methodDeclaration(getModifier(), getName(), getParameterTypes(), getReturnTypeName(), block(Arrays.asList(
                             stmt
                         )));
                     }
