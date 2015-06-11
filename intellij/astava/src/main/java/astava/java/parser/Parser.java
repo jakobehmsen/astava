@@ -156,17 +156,8 @@ public class Parser {
 
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-                // Only instance invocations
-                String targetResultType = expressionResultType(classInspector, self, target, locals);
-                ClassDeclaration targetClass = classInspector.getClassDeclaration(Descriptor.getName(targetResultType));
-                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
-                    String expressionResultType = expressionResultType(classInspector, self, x, locals);
-                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
-
-                    return classInspector.getClassDeclaration(expressionResultTypeName);
-                }).collect(Collectors.toList());
-                String resultTypeName = resolveMethod(classInspector, targetClass, name, argumentTypes, (c, m) -> m.getReturnTypeName());
-                setResult(Descriptor.get(resultTypeName));
+                String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
+                setResult(Descriptor.get(returnType));
             }
 
             @Override

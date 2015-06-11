@@ -1,5 +1,7 @@
 package astava.java.parser;
 
-public interface DomBuilder {
+import java.io.Serializable;
+
+public interface DomBuilder extends Serializable {
     void accept(DomBuilderVisitor visitor);
 }

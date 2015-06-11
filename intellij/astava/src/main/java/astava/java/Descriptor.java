@@ -119,4 +119,19 @@ public class Descriptor {
 
         return descriptor.replace('/', '.');
     }
+
+    public static Object getDefaultValue(String descriptor) {
+        switch(descriptor) {
+            case Descriptor.BOOLEAN: return false;
+            case Descriptor.CHAR: return '0';
+            case Descriptor.BYTE: return (byte)0;
+            case Descriptor.SHORT: return (short)0;
+            case Descriptor.INT: return 0;
+            case Descriptor.FLOAT: return 0.0f;
+            case Descriptor.LONG: return 0L;
+            case Descriptor.DOUBLE: return 0.0;
+        }
+
+        return null;
+    }
 }
