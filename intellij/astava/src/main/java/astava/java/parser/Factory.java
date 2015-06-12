@@ -16,6 +16,11 @@ public class Factory {
             public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                 return astava.java.Factory.ret(expression.build(classResolver, classDeclaration, classInspector, locals));
             }
+
+            @Override
+            public String toString() {
+                return "return " + expression + ";";
+            }
         };
     }
 
@@ -24,6 +29,25 @@ public class Factory {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                 return astava.java.Factory.literal(value);
+            }
+
+            @Override
+            public String toString() {
+                return "" + value;
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder literal(String value) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return astava.java.Factory.literal(value);
+            }
+
+            @Override
+            public String toString() {
+                return "\"" + value + "\"";
             }
         };
     }
@@ -58,6 +82,20 @@ public class Factory {
             @Override
             public String getName() {
                 return name;
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder nil() {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return astava.java.Factory.nil();
+            }
+
+            @Override
+            public String toString() {
+                return "null";
             }
         };
     }

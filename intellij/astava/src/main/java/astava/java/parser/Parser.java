@@ -810,7 +810,7 @@ public class Parser {
             public ExpressionDomBuilder visitIntLiteral(@NotNull JavaParser.IntLiteralContext ctx) {
                 int value = Integer.parseInt(ctx.getText());
 
-                return (cr, cd, ci, locals) -> literal(value);
+                return Factory.literal(value);
             }
 
             @Override
@@ -818,12 +818,13 @@ public class Parser {
                 String rawString = ctx.getText();
                 String value = rawString.substring(1, rawString.length() - 1)
                     .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
-                return (cr, cd, ci, locals) -> literal(value);
+
+                return Factory.literal(value);
             }
 
             @Override
             public ExpressionDomBuilder visitNullLiteral(@NotNull JavaParser.NullLiteralContext ctx) {
-                return (cr, cd, ci, locals) -> nil();
+                return Factory.nil();
             }
 
             @Override

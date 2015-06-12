@@ -14,6 +14,8 @@ import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,35 +36,43 @@ public class Main {
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
     private static Process serverProcess;
 
+    private static DataInputStream inputStream;
+    private static DataOutputStream outputStream;
+
     public static void main(String[] args) throws IOException {
         String serverFilePath = new java.io.File("classes/artifacts/ijava_server_jar/astava.jar").getAbsolutePath();
         String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
         serverProcess = new ProcessBuilder(
             "java",
+            //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
             "-javaagent:" + javaAgentFilePath,
+
             "-cp",
             serverFilePath, "astava.java.ijava.server.Main"
             ).start();
 
-        DataInputStream inputStream = new DataInputStream(serverProcess.getInputStream());
-        Scanner input = new Scanner(serverProcess.getInputStream());
-        DataOutputStream outputStream = new DataOutputStream(serverProcess.getOutputStream());
+        inputStream = new DataInputStream(serverProcess.getInputStream());
+        //Scanner input = new Scanner(serverProcess.getInputStream());
+        outputStream = new DataOutputStream(serverProcess.getOutputStream());
 
-        // Interact with agent premain
+        // Interact with agent premain; send map of class builder to be used for instrumentation
         ObjectOutputStream agentObjectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
         agentObjectOutputStream.writeObject(new Hashtable<String, ClassDomBuilder>());
         outputStream.flush();
 
+        /*
         outputStream.writeInt(RequestCode.EXEC);
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
         objectOutputStream.writeObject(astava.java.parser.Factory.ret(astava.java.parser.Factory.literal(5)));
         outputStream.flush();
         String resultString = inputStream.readUTF();
+        */
 
+        /*
         outputStream.writeInt(RequestCode.END);
         outputStream.flush();
         int responseCode = inputStream.read();
-
+        */
 
 
         ClassResolver baseClassResolver = new ClassResolver() {
@@ -88,6 +98,18 @@ public class Main {
 
         JFrame frame = new JFrame();
         frame.setTitle("IJAVA");
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    outputStream.writeInt(RequestCode.END);
+                    outputStream.flush();
+                    int responseCode = inputStream.read();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
 
         JTextPane pendingScript = new JTextPane();
 
@@ -176,12 +198,7 @@ public class Main {
 
                                 @Override
                                 public void visitExpressionBuilder(ExpressionDomBuilder expressionBuilder) {
-                                    Object result = exec(new StatementDomBuilder() {
-                                        @Override
-                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                                            return ret(expressionBuilder.build(classResolver, classDeclaration, classInspector, locals));
-                                        }
-                                    }, ijavaClassLoader, executions);
+                                    Object result = exec(astava.java.parser.Factory.ret(expressionBuilder), ijavaClassLoader, executions);
                                     output.append("\n" + result);
                                 }
 
@@ -260,6 +277,26 @@ public class Main {
     }
 
     private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver) {
+        try {
+            outputStream.writeInt(RequestCode.EXEC);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
+            objectOutputStream.writeObject(statementDomBuilder);
+            outputStream.flush();
+            String resultString = inputStream.readUTF();
+
+            if(1 != 2)
+                return resultString;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+
+
+
+
+
         try {
             serverProcess.getOutputStream().write(RequestCode.EXEC);
             ObjectOutputStream ooStream = new ObjectOutputStream(serverProcess.getOutputStream());
