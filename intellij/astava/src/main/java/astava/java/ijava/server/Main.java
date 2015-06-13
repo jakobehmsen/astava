@@ -1,13 +1,16 @@
 package astava.java.ijava.server;
 
+import astava.debug.Debug;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
 import astava.java.parser.*;
 import astava.tree.*;
+import javafx.stage.Screen;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Field;
@@ -35,31 +38,18 @@ public class Main {
     private static JFrame frame;
     private static JTextPane console;
 
-    /*public static void ensureFrameCreated() {
-        console = new JTextPane();
-        System.setOut(new PrintStream(new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-
-            }
-        }));
-
-        frame = new JFrame();
-        frame.setSize(480, 800);
-        frame.getContentPane().setLayout(new BorderLayout());
-        frame.getContentPane().add(console, BorderLayout.CENTER);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }*/
-
     public static void main(String[] args) {
         console = new JTextPane();
+        DefaultCaret caret = (DefaultCaret)console.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
 
         frame = new JFrame();
         frame.setSize(480, 800);
         frame.getContentPane().setLayout(new BorderLayout());
-        frame.getContentPane().add(console, BorderLayout.CENTER);
+        frame.getContentPane().add(new JScrollPane(console), BorderLayout.CENTER);
         frame.setLocationRelativeTo(null);
+        //frame.setLocation((int)Screen.getPrimary().getBounds().getWidth() - frame.getWidth(), frame.getY());
         frame.setVisible(true);
 
         //Scanner inputScanner = new Scanner(System.in);
@@ -191,6 +181,8 @@ public class Main {
                         log("Error: " + e.getMessage());
                     }
 
+                    log("stmt=" + stmtBuilder);
+
                     MutableClassDomBuilder exeClassBuilder = null;
 
                     try {
@@ -218,7 +210,8 @@ public class Main {
 
                                         @Override
                                         public FieldDom build(ClassDeclaration classDeclaration) {
-                                            return fieldDeclaration(Modifier.PUBLIC, getName(), e.getValue().typeName);
+                                            String descriptor = Descriptor.get(e.getValue().typeName);
+                                            return fieldDeclaration(Modifier.PUBLIC, getName(), descriptor);
                                         }
                                     };
                                 }
@@ -278,12 +271,23 @@ public class Main {
 
                     ClassDom classDom = execClassDeclaration.build(classInspector);
 
+                    ByteArrayOutputStream classGenerationOutputStream = new ByteArrayOutputStream();
+                    PrintStream classGenerationPrintStream = new PrintStream(classGenerationOutputStream);
+                    Debug.setPrintStream(classGenerationPrintStream);
+
                     ClassGenerator generator = new ClassGenerator(classDom);
 
                     ClassLoader exeClassLoader = new SingleClassLoader(classLoader, generator);
 
                     try {
                         Class<?> execClass = exeClassLoader.loadClass("Exec");
+
+                        String classGenerationOutput = new String(classGenerationOutputStream.toByteArray());
+
+                        if(classGenerationOutput.length() > 0) {
+                            log("Class generation:");
+                            log(classGenerationOutput);
+                        }
 
                         Object exec = execClass.newInstance();
 

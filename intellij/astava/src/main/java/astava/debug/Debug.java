@@ -16,9 +16,15 @@ public class Debug {
         public void write(int b) throws IOException { }
     });
 
+    public static PrintStream printStream = System.out;
+
+    public static void setPrintStream(PrintStream printStream) {
+        Debug.printStream = printStream;
+    }
+
     public static PrintStream getPrintStream(int level) {
         if(level <= LEVEL)
-            return System.out;
+            return printStream;
 
         return NULL_PRINT_STREAM;
     }

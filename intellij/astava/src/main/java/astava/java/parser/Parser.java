@@ -302,12 +302,14 @@ public class Parser {
 
                     ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, true);
 
-                    StatementDomBuilder fieldAssignBuilder = (cr, cd, ci, locals) -> {
+                    StatementDomBuilder fieldAssignBuilder = Factory.assignField(Factory.self(), name, valueBuilder);
+
+                    /*StatementDomBuilder fieldAssignBuilder = (cr, cd, ci, locals) -> {
                         ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
 
                         Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                         return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
-                    };
+                    };*/
 
                     return Arrays.asList(fieldBuilder, fieldAssignBuilder);
                 }

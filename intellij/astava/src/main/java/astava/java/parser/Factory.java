@@ -5,11 +5,40 @@ import astava.tree.*;
 
 import java.util.List;
 import java.util.Map;
-
-import static astava.java.Factory.fieldDeclaration;
-import static astava.java.Factory.methodDeclaration;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Factory {
+    public static StatementDomBuilder block(List<StatementDomBuilder> statementBuilders) {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                List<StatementDom> statements =
+                    statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals)).collect(Collectors.toList());
+                return astava.java.Factory.block(statements);
+            }
+
+            @Override
+            public String toString() {
+                return statementBuilders.stream().map(x -> x.toString()).collect(Collectors.joining("\n"));
+            }
+        };
+    }
+
+    public static StatementDomBuilder ret() {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return astava.java.Factory.ret();
+            }
+
+            @Override
+            public String toString() {
+                return "return;";
+            }
+        };
+    }
+
     public static StatementDomBuilder ret(ExpressionDomBuilder expression) {
         return new StatementDomBuilder() {
             @Override
@@ -74,7 +103,7 @@ public class Factory {
 
                     @Override
                     public FieldDom build(ClassDeclaration classDeclaration) {
-                        return fieldDeclaration(modifier, name, Descriptor.get(typeName));
+                        return astava.java.Factory.fieldDeclaration(modifier, name, Descriptor.get(typeName));
                     }
                 };
             }
@@ -96,6 +125,20 @@ public class Factory {
             @Override
             public String toString() {
                 return "null";
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder self() {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return astava.java.Factory.self();
+            }
+
+            @Override
+            public String toString() {
+                return "this";
             }
         };
     }
@@ -127,7 +170,7 @@ public class Factory {
 
                     @Override
                     public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
-                        return methodDeclaration(modifier, name, parameters, Descriptor.get(returnTypeName), body);
+                        return astava.java.Factory.methodDeclaration(modifier, name, parameters, Descriptor.get(returnTypeName), body);
                     }
                 };
             }
@@ -135,6 +178,25 @@ public class Factory {
             @Override
             public String getName() {
                 return name;
+            }
+        };
+    }
+
+    public static StatementDomBuilder assignField(ExpressionDomBuilder targetBuilder, String name, ExpressionDomBuilder valueBuilder) {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals);
+                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
+                return astava.java.Factory.assignField(target, fieldDeclaration.get().getName(), descriptor, value);
+            }
+
+            @Override
+            public String toString() {
+                return targetBuilder + "." + name + " = " + valueBuilder;
             }
         };
     }

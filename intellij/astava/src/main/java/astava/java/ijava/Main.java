@@ -221,12 +221,9 @@ public class Main {
 
                                 @Override
                                 public void visitStatementBuilder(StatementDomBuilder statementBuilder) {
-                                    exec(new StatementDomBuilder() {
-                                        @Override
-                                        public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                                            return block(Arrays.asList(statementBuilder.build(classResolver, classDeclaration, classInspector, locals), ret()));
-                                        }
-                                    }, ijavaClassLoader, executions);
+                                    exec(astava.java.parser.Factory.block(Arrays.asList(
+                                        statementBuilder, astava.java.parser.Factory.ret()
+                                    )), ijavaClassLoader, executions);
                                 }
                             }));
                         } catch (IOException e1) {
