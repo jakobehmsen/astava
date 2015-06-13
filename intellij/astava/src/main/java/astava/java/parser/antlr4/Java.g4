@@ -7,7 +7,7 @@ classDefinition: modifiers KW_CLASS name=typeQualifier OPEN_BRA classMember* CLO
 classMember: fieldDefinition | methodDefinition;
 fieldDefinition: modifiers type=typeQualifier name=ID (OP_ASSIGN value=expression)? SEMI_COLON;
 methodDefinition: 
-    modifiers returnType=typeQualifier? name=ID parameters 
+    modifiers returnType=typeQualifier name=ID parameters 
     (SEMI_COLON | OPEN_BRA statement* CLOSE_BRA);
 parameters: OPEN_PAR (parameter (COMMA parameter)*)? CLOSE_PAR;
 parameter: type=typeQualifier name=ID;

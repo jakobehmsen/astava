@@ -691,6 +691,12 @@ public class Parser {
             public StatementDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
                 return buildAssignment(ctx.name.getText(), ctx.value, atRoot);
             }
+
+            @Override
+            public StatementDomBuilder visitInvocation(@NotNull JavaParser.InvocationContext ctx) {
+                ExpressionDomBuilder target = Factory.self();
+                return invocationStatement(ctx, atRoot, target);
+            }
         });
     }
 
