@@ -1,6 +1,8 @@
 package astava.java.parser;
 
+import astava.debug.Debug;
 import astava.java.Descriptor;
+import astava.java.Invocation;
 import astava.tree.*;
 
 import java.lang.reflect.Modifier;
@@ -346,6 +348,46 @@ public class Factory {
             @Override
             public String toString() {
                 return "new " + name + "(" + argumentBuilders.stream().map(x -> x.toString()).collect(Collectors.joining(", ")) + ")";
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder invocationExpr(ExpressionDomBuilder targetBuilder, String methodName, List<ExpressionDomBuilder> argumentBuilders) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals) {
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
+                List<ExpressionDom> arguments = argumentBuilders.stream()
+                    .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
+
+                String targetType = Parser.expressionResultType(ci, cd, target, locals);
+                ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+
+                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
+                    String expressionResultType = Parser.expressionResultType(ci, cd, x, locals);
+                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
+
+                    return ci.getClassDeclaration(expressionResultTypeName);
+                }).collect(Collectors.toList());
+
+                return Parser.resolveMethod(ci, targetClassDeclaration, methodName, argumentTypes, (c, m) -> {
+                    int invocation = c.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
+
+                    String methodDescriptor =
+                        Descriptor.getMethodDescriptor(m.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                            Descriptor.get(m.getReturnTypeName())
+                        );
+
+                    Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
+
+                    String declaringClassDescriptor = Descriptor.get(c.getName());
+                    return astava.java.Factory.invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
+                });
+            }
+
+            @Override
+            public String toString() {
+                return targetBuilder + "." + methodName + "(" + argumentBuilders.stream().map(x -> x.toString()).collect(Collectors.joining(", ")) + ")";
             }
         };
     }

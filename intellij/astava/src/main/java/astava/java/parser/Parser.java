@@ -1,5 +1,6 @@
 package astava.java.parser;
 
+import astava.debug.Debug;
 import astava.java.Descriptor;
 import astava.java.Invocation;
 import astava.java.parser.antlr4.JavaBaseVisitor;
@@ -156,8 +157,10 @@ public class Parser {
 
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-                String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
-                setResult(Descriptor.get(returnType));
+                //String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
+                String returnType = Descriptor.getReturnType(descriptor);
+                Debug.getPrintStream(Debug.LEVEL_HIGH).println("@visitInvocation returnType=" + returnType);
+                setResult(returnType);
             }
 
             @Override
@@ -774,38 +777,6 @@ public class Parser {
                     .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
                 return Factory.newInstanceExpr(name, argumentBuilders);
-
-                /*return (cr, cd, ci, locals) -> {
-                    List<ExpressionDom> arguments = argumentBuilders.stream()
-                        .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
-
-                    ClassDeclaration targetClassDeclaration = parseAmbiguousNameFromTerminalNodes(ctx.name.ID(), cr, cd,
-                        name -> ci.getClassDeclaration(name), (x, fieldChain) -> x);
-
-                    List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
-                        String expressionResultType = expressionResultType(ci, cd, x, locals);
-                        String expressionResultTypeName = Descriptor.getName(expressionResultType);
-
-                        return ci.getClassDeclaration(expressionResultTypeName);
-                    }).collect(Collectors.toList());
-
-                    // Find best matching constructor
-                    List<MethodDeclaration> constructors = targetClassDeclaration.getMethods().stream()
-                        .filter(x -> x.getName().equals("<init>"))
-                        .filter(x -> x.getParameterTypes().size() == arguments.size())
-                        .filter(x -> IntStream.range(0, arguments.size()).allMatch(i ->
-                            // Compare full inheritance
-                            Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
-                        .collect(Collectors.toList());
-
-                    // For now, just pick the first
-                    MethodDeclaration constructor = constructors.get(0);
-
-                    return newInstanceExpr(
-                        Descriptor.get(targetClassDeclaration.getName()),
-                        constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                        arguments);
-                };*/
             }
         });
     }
@@ -883,7 +854,10 @@ public class Parser {
         List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
             .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
-        return (cr, cd, ci, locals) -> {
+        String methodName = ctx.ID().getText();
+        return Factory.invocationExpr(targetBuilder, methodName, argumentBuilders);
+
+        /*return (cr, cd, ci, locals) -> {
             String methodName = ctx.ID().getText();
             ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
             List<ExpressionDom> arguments = argumentBuilders.stream()
@@ -910,7 +884,7 @@ public class Parser {
                 String declaringClassDescriptor = Descriptor.get(c.getName());
                 return invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
             });
-        };
+        };*/
     }
 
     public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals) {
@@ -941,7 +915,7 @@ public class Parser {
         return null;
     }
 
-    private static <T> T resolveMethod(ClassInspector classInspector, ClassDeclaration targetClass, String methodName, List<ClassDeclaration> argumentTypes, BiFunction<ClassDeclaration, MethodDeclaration, T> reducer) {
+    public static <T> T resolveMethod(ClassInspector classInspector, ClassDeclaration targetClass, String methodName, List<ClassDeclaration> argumentTypes, BiFunction<ClassDeclaration, MethodDeclaration, T> reducer) {
         List<MethodDeclaration> methods = targetClass.getMethods().stream()
             .filter(x -> x.getName().equals(methodName))
             .filter(x -> x.getParameterTypes().size() == argumentTypes.size())

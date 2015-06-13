@@ -6,8 +6,6 @@ import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
 import astava.java.parser.*;
 import astava.tree.*;
-import com.sun.xml.internal.ws.util.StreamUtils;
-import javafx.stage.Screen;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -15,14 +13,12 @@ import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static astava.java.Factory.fieldDeclaration;
 import static astava.java.Factory.methodDeclaration;
@@ -81,20 +77,164 @@ public class Main {
             }
         }));
 
-        /*JTextPane console = new JTextPane();
-        System.setOut(new PrintStream(new OutputStream() {
+        Debug.setPrintStream(new PrintStream(new OutputStream() {
             @Override
             public void write(int b) throws IOException {
 
             }
-        }));
+        }) {
+            @Override
+            public void println() {
+                logln("");
+            }
 
-        JFrame frame = new JFrame();
-        frame.setSize(480, 800);
-        frame.getContentPane().setLayout(new BorderLayout());
-        frame.getContentPane().add(console, BorderLayout.CENTER);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);*/
+            @Override
+            public void println(boolean x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(char x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(int x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(long x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(float x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(double x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(char[] x) {
+                logln(new String(x));
+            }
+
+            @Override
+            public void println(String x) {
+                logln(x);
+            }
+
+            @Override
+            public void println(Object x) {
+                logln(x);
+            }
+
+            @Override
+            public void print(boolean b) {
+                log(b);
+            }
+
+            @Override
+            public void print(char c) {
+                log(c);
+            }
+
+            @Override
+            public void print(double d) {
+                log(d);
+            }
+
+            @Override
+            public void print(float f) {
+                log(f);
+            }
+
+            @Override
+            public void print(int i) {
+                log(i);
+            }
+
+            @Override
+            public void print(long l) {
+                log(l);
+            }
+
+            @Override
+            public void print(Object obj) {
+                log(obj);
+            }
+
+            @Override
+            public void print(char[] s) {
+                log(new String(s));
+            }
+
+            @Override
+            public void print(String s) {
+                log(s);
+            }
+
+            @Override
+            public PrintStream printf(String format, Object... args) {
+                log(String.format(format, args));
+                return this;
+            }
+
+            @Override
+            public PrintStream printf(Locale l, String format, Object... args) {
+                log(String.format(l, format, args));
+                return this;
+            }
+
+            @Override
+            public PrintStream append(char c) {
+                log(c);
+                return this;
+            }
+
+            @Override
+            public PrintStream append(CharSequence csq) {
+                log(csq);
+                return this;
+            }
+
+            @Override
+            public PrintStream append(CharSequence csq, int start, int end) {
+                log(csq.subSequence(start, end));
+                return this;
+            }
+
+            @Override
+            public PrintStream format(String format, Object... args) {
+                log(String.format(format, args));
+                return this;
+            }
+
+            @Override
+            public PrintStream format(Locale l, String format, Object... args) {
+                log(String.format(l, format, args));
+                return this;
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException {
+                log(new String(b));
+            }
+
+            @Override
+            public void write(int b) {
+                log((char)b);
+            }
+
+            @Override
+            public void write(byte[] buf, int off, int len) {
+                log(new String(buf, off, len));
+            }
+        });
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
@@ -123,12 +263,12 @@ public class Main {
 
         boolean run = true;
         while(run) {
-            log("Waiting...");
+            logln("Waiting...");
             int operator = 0;
             try {
                 operator = input.readInt();
             } catch (IOException e) {
-                log("Error: " + e.getMessage());
+                logln("Error: " + e.getMessage());
             }
 
             switch (operator) {
@@ -138,15 +278,15 @@ public class Main {
                         try {
                             oiStream = new ObjectInputStream(input);
                         } catch (IOException e) {
-                            log("Error: " + e.getMessage());
+                            logln("Error: " + e.getMessage());
                         }
                         FieldDomBuilder fieldDomBuilder = null;
                         try {
                             fieldDomBuilder = (FieldDomBuilder)oiStream.readObject();
                         } catch (ClassNotFoundException e) {
-                            log("Error: " + e.getMessage());
+                            logln("Error: " + e.getMessage());
                         } catch (IOException e) {
-                            log("Error: " + e.getMessage());
+                            logln("Error: " + e.getMessage());
                         }
 
                         FieldDeclaration field = fieldDomBuilder.declare(classResolver);
@@ -155,103 +295,18 @@ public class Main {
                         String typeName = field.getTypeName();
                         String descriptor = Descriptor.get(typeName);
 
-                        log("Declare " + typeName + " " + name);
+                        logln("Declare " + typeName + " " + name);
 
                         Object defaultValue = Descriptor.getDefaultValue(descriptor);
 
                         variables.put(name, new Variable(typeName, defaultValue));
                     } catch(Exception e) {
-                        log("Error: " + e.getMessage());
+                        logln("Error: " + e.getMessage());
                     }
 
                     break;
                 case RequestCode.EXEC:
-                    log("Exec");
-
-                    /*MutableClassDomBuilder exeClassBuilder = null;
-
-                    try {
-                        exeClassBuilder = new Parser("public class Exec { }").parseClass();
-
-                        for (Map.Entry<String, Variable> e : variables.entrySet()) {
-                            exeClassBuilder.addField(new FieldDomBuilder() {
-                                @Override
-                                public FieldDeclaration declare(ClassResolver classResolver) {
-                                    return new FieldDeclaration() {
-                                        @Override
-                                        public int getModifier() {
-                                            return Modifier.PUBLIC;
-                                        }
-
-                                        @Override
-                                        public String getTypeName() {
-                                            return e.getValue().typeName;
-                                        }
-
-                                        @Override
-                                        public String getName() {
-                                            return e.getKey();
-                                        }
-
-                                        @Override
-                                        public FieldDom build(ClassDeclaration classDeclaration) {
-                                            String descriptor = Descriptor.get(e.getValue().typeName);
-                                            return fieldDeclaration(Modifier.PUBLIC, getName(), descriptor);
-                                        }
-                                    };
-                                }
-
-                                @Override
-                                public String getName() {
-                                    return e.getKey();
-                                }
-                            });
-                        }
-
-                        ClassDeclaration exeClassBuilderDeclaration = exeClassBuilder.build(classResolver);
-                        Hashtable<String, String> locals = new Hashtable<>();
-                        StatementDom stmt = stmtBuilder.build(classResolver, exeClassBuilderDeclaration, classInspector, new Hashtable<>());
-                        String exprResultType = Parser.statementReturnType(null, null, stmt, locals);
-
-                        exeClassBuilder.addMethod(new MethodDomBuilder() {
-                            @Override
-                            public MethodDeclaration declare(ClassResolver classResolver) {
-                                return new MethodDeclaration() {
-                                    @Override
-                                    public int getModifier() {
-                                        return Modifier.PUBLIC;
-                                    }
-
-                                    @Override
-                                    public String getName() {
-                                        return "exec";
-                                    }
-
-                                    @Override
-                                    public List<ParameterInfo> getParameterTypes() {
-                                        return Collections.emptyList();
-                                    }
-
-                                    @Override
-                                    public String getReturnTypeName() {
-                                        return Descriptor.getName(exprResultType);
-                                    }
-
-                                    @Override
-                                    public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
-                                        return methodDeclaration(Modifier.PUBLIC, getName(), getParameterTypes(), exprResultType, stmt);
-                                    }
-                                };
-                            }
-
-                            @Override
-                            public String getName() {
-                                return "exec";
-                            }
-                        });
-                    } catch (IOException e) {
-                        log("Error: " + e.getMessage());
-                    }*/
+                    logln("Exec");
 
                     String resultToString;
 
@@ -259,7 +314,7 @@ public class Main {
                         ObjectInputStream oiStream = new ObjectInputStream(input);
                         StatementDomBuilder stmtBuilder = (StatementDomBuilder)oiStream.readObject();
 
-                        log("stmt=" + stmtBuilder);
+                        logln("stmt=" + stmtBuilder);
 
                         MutableClassDomBuilder exeClassBuilder = new Parser("public class Exec { }").parseClass();
 
@@ -310,7 +365,7 @@ public class Main {
                                 try {
                                     Class<?> physicalClass = classLoader.loadClass(name);
 
-                                    log("Loaded physical class " + name);
+                                    logln("Loaded physical class " + name);
 
                                     return new ClassDeclaration() {
                                         @Override
@@ -431,6 +486,7 @@ public class Main {
                         Hashtable<String, String> locals = new Hashtable<>();
                         StatementDom stmt = stmtBuilder.build(classResolver, exeClassBuilderDeclaration, classInspector, new Hashtable<>());
                         String exprResultType = Parser.statementReturnType(null, exeClassBuilderDeclaration, stmt, locals);
+                        log("exprResultType=" + exprResultType);
 
                         exeClassBuilder.addMethod(new MethodDomBuilder() {
                             @Override
@@ -475,9 +531,11 @@ public class Main {
 
                         ClassDom classDom = execClassDeclaration.build(classInspector);
 
+                        /*
                         ByteArrayOutputStream classGenerationOutputStream = new ByteArrayOutputStream();
                         PrintStream classGenerationPrintStream = new PrintStream(classGenerationOutputStream);
                         Debug.setPrintStream(classGenerationPrintStream);
+                        */
 
                         ClassGenerator generator = new ClassGenerator(classDom);
 
@@ -485,12 +543,12 @@ public class Main {
 
                         Class<?> execClass = exeClassLoader.loadClass("Exec");
 
-                        String classGenerationOutput = new String(classGenerationOutputStream.toByteArray());
+                        /*String classGenerationOutput = new String(classGenerationOutputStream.toByteArray());
 
                         if(classGenerationOutput.length() > 0) {
-                            log("Class generation:");
-                            log(classGenerationOutput);
-                        }
+                            logln("Class generation:");
+                            logln(classGenerationOutput);
+                        }*/
 
                         Object exec = execClass.newInstance();
 
@@ -511,7 +569,7 @@ public class Main {
 
                         resultToString = result != null ? result.toString() : "null";
 
-                        log("result = " + resultToString);
+                        logln("result = " + resultToString);
                         //outputStream.flush();
 
                         //output.write(ResponseCode.FINISHED);
@@ -520,12 +578,14 @@ public class Main {
                         //System.out.println(resultToString);
                         //System.out.flush();
                     } catch (Exception e1) {
-                        log("Error: " + e1.getMessage());
+                        logln("Error: " + e1.getMessage());
 
+                        /*
                         ByteArrayOutputStream stackTraceOutputStream = new ByteArrayOutputStream();
                         PrintStream stackTracePrintStream = new PrintStream(stackTraceOutputStream);
                         e1.printStackTrace(stackTracePrintStream);
-                        log("Stack trace: " + new String(stackTraceOutputStream.toByteArray()));
+                        logln("Stack trace: " + new String(stackTraceOutputStream.toByteArray()));
+                        */
 
                         resultToString = "Error: " + e1.getMessage();
                     }
@@ -534,18 +594,18 @@ public class Main {
                         output.writeUTF(resultToString);
                         output.flush();
                     } catch (IOException e) {
-                        log("Error when sending response: " + e.getMessage());
+                        logln("Error when sending response: " + e.getMessage());
                     }
 
                     break;
                 case RequestCode.END:
-                    log("end");
+                    logln("end");
                     run = false;
                     try {
                         output.writeInt(ResponseCode.FINISHED);
                         output.flush();
                     } catch (IOException e) {
-                        log("Error: " + e.getMessage());
+                        logln("Error: " + e.getMessage());
                     }
                     break;
             }
@@ -555,9 +615,21 @@ public class Main {
         frame.dispose();
     }
 
+    public static void logln(Object message) {
+        logln(message.toString());
+    }
+
+    public static void log(Object message) {
+        log(message.toString());
+    }
+
+    public static void logln(String message) {
+        log(message + "\n");
+    }
+
     public static void log(String message) {
         try {
-            console.getDocument().insertString(console.getDocument().getLength(), message + "\n", null);
+            console.getDocument().insertString(console.getDocument().getLength(), message, null);
         } catch (BadLocationException e) {
             e.printStackTrace();
         }

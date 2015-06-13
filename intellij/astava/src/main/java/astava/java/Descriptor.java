@@ -1,5 +1,8 @@
 package astava.java;
 
+import astava.debug.Debug;
+import jdk.internal.org.objectweb.asm.Type;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -133,5 +136,10 @@ public class Descriptor {
         }
 
         return null;
+    }
+
+    public static String getReturnType(String methodDescriptor) {
+        String typeName = Type.getReturnType(methodDescriptor).getClassName();
+        return get(typeName);
     }
 }
