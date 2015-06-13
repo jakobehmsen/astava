@@ -204,12 +204,14 @@ public class Main {
 
                                 @Override
                                 public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
-                                    MutableClassDomBuilder rootClassExtension = new MutableClassDomBuilder();
-                                    rootClassExtension.setName("Root");
-                                    rootClassExtension.addField(fieldBuilder);
-                                    ijavaClassLoader.putClassBuilder("Root", rootClassExtension);
-
-                                    resetClassLoader(executions);
+                                    try {
+                                        outputStream.writeInt(RequestCode.DECLARE);
+                                        ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
+                                        objectOutputStream.writeObject(fieldBuilder);
+                                        outputStream.flush();
+                                    } catch (IOException e1) {
+                                        e1.printStackTrace();
+                                    }
                                 }
 
                                 @Override

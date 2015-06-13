@@ -143,8 +143,25 @@ public class Main {
             switch (operator) {
                 case RequestCode.DECLARE:
                     try {
-                        String name = input.readUTF();
-                        String typeName = input.readUTF();
+                        ObjectInputStream oiStream = null;
+                        try {
+                            oiStream = new ObjectInputStream(input);
+                        } catch (IOException e) {
+                            log("Error: " + e.getMessage());
+                        }
+                        FieldDomBuilder fieldDomBuilder = null;
+                        try {
+                            fieldDomBuilder = (FieldDomBuilder)oiStream.readObject();
+                        } catch (ClassNotFoundException e) {
+                            log("Error: " + e.getMessage());
+                        } catch (IOException e) {
+                            log("Error: " + e.getMessage());
+                        }
+
+                        FieldDeclaration field = fieldDomBuilder.declare(classResolver);
+
+                        String name = field.getName();
+                        String typeName = field.getTypeName();
                         String descriptor = Descriptor.get(typeName);
 
                         log("Declare " + typeName + " " + name);

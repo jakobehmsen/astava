@@ -412,8 +412,18 @@ public class Parser {
 
     public FieldDomBuilder parseFieldBuilder(JavaParser.FieldDefinitionContext ctx, boolean atRoot) {
         String name = ctx.name.getText();
+        String rawTypeName = ctx.type.getText();
+        int modifiersTmp = parseModifiers(ctx.modifiers());
 
-        return new FieldDomBuilder() {
+        int modifiers;
+        if(atRoot)
+            modifiers = modifiersTmp | Modifier.PUBLIC;
+        else
+            modifiers = modifiersTmp;
+
+        return Factory.field(modifiers, name, rawTypeName);
+
+        /*return new FieldDomBuilder() {
             @Override
             public String getName() {
                 return name;
@@ -421,14 +431,7 @@ public class Parser {
 
             @Override
             public FieldDeclaration declare(ClassResolver classResolver) {
-                String typeName = parseTypeQualifier(classResolver, ctx.type.getText());
-                int modifiersTmp = parseModifiers(ctx.modifiers());
-
-                int modifiers;
-                if(atRoot)
-                    modifiers = modifiersTmp | Modifier.PUBLIC;
-                else
-                    modifiers = modifiersTmp;
+                String typeName = parseTypeQualifier(classResolver, rawTypeName);
 
                 return new FieldDeclaration() {
                     @Override
@@ -452,7 +455,7 @@ public class Parser {
                     }
                 };
             }
-        };
+        };*/
     }
 
     public MethodDomBuilder parseMethodBuilder() {
