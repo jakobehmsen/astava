@@ -6,6 +6,7 @@ import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
 import astava.java.parser.*;
 import astava.tree.*;
+import com.sun.xml.internal.ws.util.StreamUtils;
 import javafx.stage.Screen;
 
 import javax.swing.*;
@@ -20,6 +21,8 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static astava.java.Factory.fieldDeclaration;
 import static astava.java.Factory.methodDeclaration;
@@ -304,7 +307,124 @@ public class Main {
                                     return exeClassBuilderDeclaration;
 
                                 // Inspect virtual classes in class builders and physical classes in class loader
-                                return null;
+                                try {
+                                    Class<?> physicalClass = classLoader.loadClass(name);
+
+                                    log("Loaded physical class " + name);
+
+                                    return new ClassDeclaration() {
+                                        @Override
+                                        public List<FieldDeclaration> getFields() {
+                                            return Arrays.asList(physicalClass.getDeclaredFields()).stream().map(x -> new FieldDeclaration() {
+                                                @Override
+                                                public int getModifier() {
+                                                    return x.getModifiers();
+                                                }
+
+                                                @Override
+                                                public String getTypeName() {
+                                                    return x.getType().getName();
+                                                }
+
+                                                @Override
+                                                public String getName() {
+                                                    return x.getName();
+                                                }
+
+                                                @Override
+                                                public FieldDom build(ClassDeclaration classDeclaration) {
+                                                    return fieldDeclaration(getModifier(), getName(), getTypeName());
+                                                }
+                                            }).collect(Collectors.toList());
+                                        }
+
+                                        @Override
+                                        public List<MethodDeclaration> getMethods() {
+                                            List<MethodDeclaration> methods = Arrays.asList(physicalClass.getDeclaredMethods()).stream().map(x -> new MethodDeclaration() {
+                                                @Override
+                                                public int getModifier() {
+                                                    return x.getModifiers();
+                                                }
+
+                                                @Override
+                                                public String getName() {
+                                                    return x.getName();
+                                                }
+
+                                                @Override
+                                                public List<ParameterInfo> getParameterTypes() {
+                                                    return Arrays.asList(x.getParameterTypes()).stream()
+                                                        .map(x -> new ParameterInfo(Descriptor.get(x), "<NA>"))
+                                                        .collect(Collectors.toList());
+                                                }
+
+                                                @Override
+                                                public String getReturnTypeName() {
+                                                    return x.getReturnType().getName();
+                                                }
+
+                                                @Override
+                                                public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
+                                                    return null;
+                                                }
+                                            }).collect(Collectors.toList());
+
+                                            List<MethodDeclaration> constructors = Arrays.asList(physicalClass.getConstructors()).stream().map(x -> new MethodDeclaration() {
+                                                @Override
+                                                public int getModifier() {
+                                                    return x.getModifiers();
+                                                }
+
+                                                @Override
+                                                public String getName() {
+                                                    return "<init>";
+                                                }
+
+                                                @Override
+                                                public List<ParameterInfo> getParameterTypes() {
+                                                    return Arrays.asList(x.getParameterTypes()).stream()
+                                                        .map(x -> new ParameterInfo(Descriptor.get(x), "<NA>"))
+                                                        .collect(Collectors.toList());
+                                                }
+
+                                                @Override
+                                                public String getReturnTypeName() {
+                                                    return "void";
+                                                }
+
+                                                @Override
+                                                public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
+                                                    return null;
+                                                }
+                                            }).collect(Collectors.toList());
+
+                                            return Stream.concat(methods.stream(), constructors.stream()).collect(Collectors.toList());
+                                        }
+
+                                        @Override
+                                        public int getModifiers() {
+                                            return physicalClass.getModifiers();
+                                        }
+
+                                        @Override
+                                        public String getName() {
+                                            return physicalClass.getName();
+                                        }
+
+                                        @Override
+                                        public String getSuperName() {
+                                            return physicalClass.getSuperclass().getName();
+                                        }
+
+                                        @Override
+                                        public boolean isInterface() {
+                                            return physicalClass.isInterface();
+                                        }
+                                    };
+                                } catch (ClassNotFoundException e) {
+                                    e.printStackTrace();
+                                    return null;
+                                }
                             }
                         };
 

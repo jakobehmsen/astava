@@ -44,7 +44,7 @@ public class Main {
         String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
         serverProcess = new ProcessBuilder(
             "java",
-            //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
+            //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
             "-javaagent:" + javaAgentFilePath,
 
             "-cp",

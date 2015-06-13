@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Factory {
     public static StatementDomBuilder block(List<StatementDomBuilder> statementBuilders) {
@@ -304,6 +305,47 @@ public class Factory {
             @Override
             public String toString() {
                 return name + " = " + valueBuilder;
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder newInstanceExpr(String name, List<ExpressionDomBuilder> argumentBuilders) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals) {
+                List<ExpressionDom> arguments = argumentBuilders.stream()
+                    .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
+
+                ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(name);
+
+                List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
+                    String expressionResultType = Parser.expressionResultType(ci, cd, x, locals);
+                    String expressionResultTypeName = Descriptor.getName(expressionResultType);
+
+                    return ci.getClassDeclaration(expressionResultTypeName);
+                }).collect(Collectors.toList());
+
+                // Find best matching constructor
+                List<MethodDeclaration> constructors = targetClassDeclaration.getMethods().stream()
+                    .filter(x -> x.getName().equals("<init>"))
+                    .filter(x -> x.getParameterTypes().size() == arguments.size())
+                    .filter(x -> IntStream.range(0, arguments.size()).allMatch(i ->
+                        // Compare full inheritance
+                        Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
+                    .collect(Collectors.toList());
+
+                // For now, just pick the first
+                MethodDeclaration constructor = constructors.get(0);
+
+                return astava.java.Factory.newInstanceExpr(
+                    Descriptor.get(targetClassDeclaration.getName()),
+                    constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
+                    arguments);
+            }
+
+            @Override
+            public String toString() {
+                return "new " + name + "(" + argumentBuilders.stream().map(x -> x.toString()).collect(Collectors.joining(", ")) + ")";
             }
         };
     }

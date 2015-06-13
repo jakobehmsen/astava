@@ -769,10 +769,13 @@ public class Parser {
 
             @Override
             public ExpressionDomBuilder visitNewInstance(@NotNull JavaParser.NewInstanceContext ctx) {
+                String name = ctx.name.getText();
                 List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
                     .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
-                return (cr, cd, ci, locals) -> {
+                return Factory.newInstanceExpr(name, argumentBuilders);
+
+                /*return (cr, cd, ci, locals) -> {
                     List<ExpressionDom> arguments = argumentBuilders.stream()
                         .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
 
@@ -802,7 +805,7 @@ public class Parser {
                         Descriptor.get(targetClassDeclaration.getName()),
                         constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
                         arguments);
-                };
+                };*/
             }
         });
     }
