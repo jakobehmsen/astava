@@ -304,13 +304,6 @@ public class Parser {
 
                     StatementDomBuilder fieldAssignBuilder = Factory.assignField(Factory.self(), name, valueBuilder);
 
-                    /*StatementDomBuilder fieldAssignBuilder = (cr, cd, ci, locals) -> {
-                        ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
-
-                        Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
-                        return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
-                    };*/
-
                     return Arrays.asList(fieldBuilder, fieldAssignBuilder);
                 }
                 return Arrays.asList(fieldBuilder);
@@ -424,40 +417,6 @@ public class Parser {
             modifiers = modifiersTmp;
 
         return Factory.field(modifiers, name, rawTypeName);
-
-        /*return new FieldDomBuilder() {
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            @Override
-            public FieldDeclaration declare(ClassResolver classResolver) {
-                String typeName = parseTypeQualifier(classResolver, rawTypeName);
-
-                return new FieldDeclaration() {
-                    @Override
-                    public int getModifier() {
-                        return modifiers;
-                    }
-
-                    @Override
-                    public String getTypeName() {
-                        return typeName;
-                    }
-
-                    @Override
-                    public String getName() {
-                        return name;
-                    }
-
-                    @Override
-                    public FieldDom build(ClassDeclaration classDeclaration) {
-                        return fieldDeclaration(modifiers, name, typeName);
-                    }
-                };
-            }
-        };*/
     }
 
     public MethodDomBuilder parseMethodBuilder() {
@@ -478,7 +437,7 @@ public class Parser {
             public MethodDeclaration declare(ClassResolver classResolver) {
                 String returnType = isConstructor ? Descriptor.VOID : parseTypeQualifier(classResolver, ctx.returnType.getText());
                 int modifiers = parseModifiers(ctx.modifiers());
-                // Somehow, the name should checked as to the class name
+                // Somehow, the name should be checked as to the class name
                 List<ParameterInfo> parameters = ctx.parameters().parameter().stream()
                     .map(x -> new ParameterInfo(parseTypeQualifier(classResolver, x.type.getText()), x.name.getText()))
                     .collect(Collectors.toList());
@@ -645,7 +604,12 @@ public class Parser {
     private static final int NAME_PARAMETER = 1;
     private static final int NAME_FIELD = 2;
 
-    private <T> T parseAmbiguousName(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
+    private static <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
+        return parseAmbiguousName(ids.stream().map(x -> x.getText()).collect(Collectors.toList()), cr, cd, nameHandler, fieldChainHandler);
+    }
+
+    //private <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
+    public static <T> T parseAmbiguousName(List<String> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
         // Find longest getName that can be resolved
         String name = "";
 
@@ -653,13 +617,13 @@ public class Parser {
             int i = ids.size();
 
             for (; i > 1; i--) {
-                name = ids.subList(0, i).stream().map(x -> x.getText()).collect(Collectors.joining("."));
+                name = ids.subList(0, i).stream().collect(Collectors.joining("."));
                 if (cr.canResolveAmbiguous(name))
                     break;
             }
 
             if (i == 1) {
-                name = ids.get(0).getText();
+                name = ids.get(0);
 
                 // Try match with field first
                 String fieldName = name;
@@ -679,14 +643,14 @@ public class Parser {
 
             if (i < ids.size()) {
                 // The rest should be considered field access
-                fieldAccessChain = ids.subList(i, ids.size()).stream().map(x -> x.getText()).collect(Collectors.toList());
+                fieldAccessChain = ids.subList(i, ids.size()).stream().collect(Collectors.toList());
             } else
                 fieldAccessChain = Arrays.asList();
 
             T handledName = nameHandler.apply(name);
             return fieldChainHandler.apply(handledName, fieldAccessChain);
         } else
-            name = ids.get(0).getText();
+            name = ids.get(0);
 
         return nameHandler.apply(name);
     }
@@ -785,30 +749,9 @@ public class Parser {
 
             @Override
             public ExpressionDomBuilder visitAmbigousName(@NotNull JavaParser.AmbigousNameContext ctx) {
-                return (cr, cd, ci, locals) -> {
-                    return parseAmbiguousName(ctx.ID(), cr, cd,
-                        name -> {
-                            Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
-                            if (fieldDeclaration.isPresent()) {
-                                if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
-                                    return accessStaticField(cd.getName(), name, fieldDeclaration.get().getTypeName());
+                List<String> nameParts = ctx.ID().stream().map(x -> x.getText()).collect(Collectors.toList());
 
-                                if (!atRoot)
-                                    return accessField(self(), name, fieldDeclaration.get().getTypeName());
-                                else
-                                    return accessField(accessVar("self"), name, fieldDeclaration.get().getTypeName());
-                            }
-
-                            return accessVar(name);
-                        },
-                        (target, fieldChainAccess) -> {
-                            for(String fieldName: fieldChainAccess)
-                                target = fieldAccess(cr, cd, ci, target, fieldName, locals);
-
-                            return target;
-                        }
-                    );
-                };
+                return Factory.ambiguousName(nameParts);
             }
 
             @Override
@@ -848,7 +791,7 @@ public class Parser {
                     List<ExpressionDom> arguments = argumentBuilders.stream()
                         .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
 
-                    ClassDeclaration targetClassDeclaration = parseAmbiguousName(ctx.name.ID(), cr, cd,
+                    ClassDeclaration targetClassDeclaration = parseAmbiguousNameFromTerminalNodes(ctx.name.ID(), cr, cd,
                         name -> ci.getClassDeclaration(name), (x, fieldChain) -> x);
 
                     List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
@@ -982,7 +925,7 @@ public class Parser {
         };
     }
 
-    private static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals) {
+    public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals) {
         String targetType = expressionResultType(ci, cd, target, locals);
         ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
 

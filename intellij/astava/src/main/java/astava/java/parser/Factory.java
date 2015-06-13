@@ -3,6 +3,7 @@ package astava.java.parser;
 import astava.java.Descriptor;
 import astava.tree.*;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -197,6 +198,41 @@ public class Factory {
             @Override
             public String toString() {
                 return targetBuilder + "." + name + " = " + valueBuilder;
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder ambiguousName(List<String> nameParts) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals) {
+                return Parser.parseAmbiguousName(nameParts, cr, cd,
+                    name -> {
+                        Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+
+                        if (fieldDeclaration.isPresent()) {
+                            String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
+
+                            if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
+                                return astava.java.Factory.accessStaticField(cd.getName(), name, descriptor);
+
+                            return astava.java.Factory.accessField(astava.java.Factory.self(), name, descriptor);
+                        }
+
+                        return astava.java.Factory.accessVar(name);
+                    },
+                    (target, fieldChainAccess) -> {
+                        for (String fieldName : fieldChainAccess)
+                            target = Parser.fieldAccess(cr, cd, ci, target, fieldName, locals);
+
+                        return target;
+                    }
+                );
+            }
+
+            @Override
+            public String toString() {
+                return nameParts.stream().collect(Collectors.joining("."));
             }
         };
     }
