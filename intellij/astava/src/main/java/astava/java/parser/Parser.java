@@ -157,7 +157,6 @@ public class Parser {
 
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-                //String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
                 String returnType = Descriptor.getReturnType(descriptor);
                 Debug.getPrintStream(Debug.LEVEL_HIGH).println("@visitInvocation returnType=" + returnType);
                 setResult(returnType);
@@ -765,8 +764,7 @@ public class Parser {
 
             @Override
             public ExpressionDomBuilder visitInvocation(@NotNull JavaParser.InvocationContext ctx) {
-                ExpressionDomBuilder target = (cr, cd, ci, locals) ->
-                    !atRoot ? self() : accessVar("self");
+                ExpressionDomBuilder target = Factory.self();
                 return invocationExpression(ctx, atRoot, target);
             }
 
