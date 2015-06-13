@@ -118,8 +118,6 @@ public class Main {
             }
         };
 
-        ClassInspector classInspector = null;
-
         boolean run = true;
         while(run) {
             log("Waiting...");
@@ -166,24 +164,8 @@ public class Main {
                     break;
                 case RequestCode.EXEC:
                     log("Exec");
-                    ObjectInputStream oiStream = null;
-                    try {
-                        oiStream = new ObjectInputStream(input);
-                    } catch (IOException e) {
-                        log("Error: " + e.getMessage());
-                    }
-                    StatementDomBuilder stmtBuilder = null;
-                    try {
-                        stmtBuilder = (StatementDomBuilder)oiStream.readObject();
-                    } catch (ClassNotFoundException e) {
-                        log("Error: " + e.getMessage());
-                    } catch (IOException e) {
-                        log("Error: " + e.getMessage());
-                    }
 
-                    log("stmt=" + stmtBuilder);
-
-                    MutableClassDomBuilder exeClassBuilder = null;
+                    /*MutableClassDomBuilder exeClassBuilder = null;
 
                     try {
                         exeClassBuilder = new Parser("public class Exec { }").parseClass();
@@ -266,22 +248,121 @@ public class Main {
                         });
                     } catch (IOException e) {
                         log("Error: " + e.getMessage());
-                    }
-                    ClassDeclaration execClassDeclaration = exeClassBuilder.build(classResolver).withDefaultConstructor();
-
-                    ClassDom classDom = execClassDeclaration.build(classInspector);
-
-                    ByteArrayOutputStream classGenerationOutputStream = new ByteArrayOutputStream();
-                    PrintStream classGenerationPrintStream = new PrintStream(classGenerationOutputStream);
-                    Debug.setPrintStream(classGenerationPrintStream);
-
-                    ClassGenerator generator = new ClassGenerator(classDom);
-
-                    ClassLoader exeClassLoader = new SingleClassLoader(classLoader, generator);
+                    }*/
 
                     String resultToString;
 
                     try {
+                        ObjectInputStream oiStream = new ObjectInputStream(input);
+                        StatementDomBuilder stmtBuilder = (StatementDomBuilder)oiStream.readObject();
+
+                        log("stmt=" + stmtBuilder);
+
+                        MutableClassDomBuilder exeClassBuilder = new Parser("public class Exec { }").parseClass();
+
+                        for (Map.Entry<String, Variable> e : variables.entrySet()) {
+                            exeClassBuilder.addField(new FieldDomBuilder() {
+                                @Override
+                                public FieldDeclaration declare(ClassResolver classResolver) {
+                                    return new FieldDeclaration() {
+                                        @Override
+                                        public int getModifier() {
+                                            return Modifier.PUBLIC;
+                                        }
+
+                                        @Override
+                                        public String getTypeName() {
+                                            return e.getValue().typeName;
+                                        }
+
+                                        @Override
+                                        public String getName() {
+                                            return e.getKey();
+                                        }
+
+                                        @Override
+                                        public FieldDom build(ClassDeclaration classDeclaration) {
+                                            String descriptor = Descriptor.get(e.getValue().typeName);
+                                            return fieldDeclaration(Modifier.PUBLIC, getName(), descriptor);
+                                        }
+                                    };
+                                }
+
+                                @Override
+                                public String getName() {
+                                    return e.getKey();
+                                }
+                            });
+                        }
+
+                        ClassDeclaration exeClassBuilderDeclaration = exeClassBuilder.build(classResolver);
+
+                        ClassInspector classInspector = new ClassInspector() {
+                            @Override
+                            public ClassDeclaration getClassDeclaration(String name) {
+                                if(name.equals(exeClassBuilder.getName()))
+                                    return exeClassBuilderDeclaration;
+
+                                // Inspect virtual classes in class builders and physical classes in class loader
+                                return null;
+                            }
+                        };
+
+                        Hashtable<String, String> locals = new Hashtable<>();
+                        StatementDom stmt = stmtBuilder.build(classResolver, exeClassBuilderDeclaration, classInspector, new Hashtable<>());
+                        String exprResultType = Parser.statementReturnType(null, exeClassBuilderDeclaration, stmt, locals);
+
+                        exeClassBuilder.addMethod(new MethodDomBuilder() {
+                            @Override
+                            public MethodDeclaration declare(ClassResolver classResolver) {
+                                return new MethodDeclaration() {
+                                    @Override
+                                    public int getModifier() {
+                                        return Modifier.PUBLIC;
+                                    }
+
+                                    @Override
+                                    public String getName() {
+                                        return "exec";
+                                    }
+
+                                    @Override
+                                    public List<ParameterInfo> getParameterTypes() {
+                                        return Collections.emptyList();
+                                    }
+
+                                    @Override
+                                    public String getReturnTypeName() {
+                                        return Descriptor.getName(exprResultType);
+                                    }
+
+                                    @Override
+                                    public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
+                                        return methodDeclaration(Modifier.PUBLIC, getName(), getParameterTypes(), exprResultType, stmt);
+                                    }
+                                };
+                            }
+
+                            @Override
+                            public String getName() {
+                                return "exec";
+                            }
+                        });
+
+
+
+                        ClassDeclaration execClassDeclaration = exeClassBuilder.build(classResolver).withDefaultConstructor();
+
+                        ClassDom classDom = execClassDeclaration.build(classInspector);
+
+                        ByteArrayOutputStream classGenerationOutputStream = new ByteArrayOutputStream();
+                        PrintStream classGenerationPrintStream = new PrintStream(classGenerationOutputStream);
+                        Debug.setPrintStream(classGenerationPrintStream);
+
+                        ClassGenerator generator = new ClassGenerator(classDom);
+
+                        ClassLoader exeClassLoader = new SingleClassLoader(classLoader, generator);
+
                         Class<?> execClass = exeClassLoader.loadClass("Exec");
 
                         String classGenerationOutput = new String(classGenerationOutputStream.toByteArray());
@@ -292,8 +373,6 @@ public class Main {
                         }
 
                         Object exec = execClass.newInstance();
-
-                        log("Here");
 
                         for (Map.Entry<String, Variable> e : variables.entrySet()) {
                             Field f = execClass.getDeclaredField(e.getKey());
@@ -320,26 +399,14 @@ public class Main {
 
                         //System.out.println(resultToString);
                         //System.out.flush();
-                    } catch (ClassNotFoundException e1) {
+                    } catch (Exception e1) {
                         log("Error: " + e1.getMessage());
-                        resultToString = "Error: " + e1.getMessage();
-                    } catch (IllegalAccessException e1) {
-                        log("Error: " + e1.getMessage());
-                        resultToString = "Error: " + e1.getMessage();
-                    } catch (NoSuchMethodException e1) {
-                        log("Error: " + e1.getMessage());
-                        resultToString = "Error: " + e1.getMessage();
-                    } catch (InvocationTargetException e1) {
-                        log("Error: " + e1.getMessage());
-                        resultToString = "Error: " + e1.getMessage();
-                    } catch (InstantiationException e1) {
-                        log("Error: " + e1.getMessage());
-                        resultToString = "Error: " + e1.getMessage();
-                    } catch (NoSuchFieldException e1) {
-                        log("Error: " + e1.getMessage());
-                        resultToString = "Error: " + e1.getMessage();
-                    } catch (Throwable e1) {
-                        log("Error: " + e1.getMessage());
+
+                        ByteArrayOutputStream stackTraceOutputStream = new ByteArrayOutputStream();
+                        PrintStream stackTracePrintStream = new PrintStream(stackTraceOutputStream);
+                        e1.printStackTrace(stackTracePrintStream);
+                        log("Stack trace: " + new String(stackTraceOutputStream.toByteArray()));
+
                         resultToString = "Error: " + e1.getMessage();
                     }
 
@@ -347,7 +414,7 @@ public class Main {
                         output.writeUTF(resultToString);
                         output.flush();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        log("Error when sending response: " + e.getMessage());
                     }
 
                     break;

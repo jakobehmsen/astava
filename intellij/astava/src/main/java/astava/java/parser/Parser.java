@@ -571,31 +571,6 @@ public class Parser {
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(valueCtx, atRoot);
 
         return Factory.assign(name, valueBuilder);
-
-        /*return new StatementDomBuilder() {
-            @Override
-            public void appendLocals(Map<String, String> locals) {
-
-            }
-
-            @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
-
-                Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
-                if (fieldDeclaration.isPresent()) {
-                    if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
-                        return assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
-
-                    if(!atRoot)
-                        return assignField(self(), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
-                    else
-                        return assignField(accessVar("self"), fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value); // "self" is passed as argument
-                }
-
-                return assignVar(name, value);
-            }
-        };*/
     }
 
     public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {
@@ -747,6 +722,14 @@ public class Parser {
                 }
 
                 return expressionBuilder;
+            }
+
+            @Override
+            public ExpressionDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
+                String name = ctx.ID().getText();
+                ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, false);
+
+                return Factory.assignExpr(name, valueBuilder);
             }
 
             @Override

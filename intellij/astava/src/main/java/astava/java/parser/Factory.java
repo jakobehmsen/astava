@@ -4,6 +4,7 @@ import astava.java.Descriptor;
 import astava.tree.*;
 
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -259,6 +260,50 @@ public class Factory {
                 }
 
                 return astava.java.Factory.assignVar(name, value);
+            }
+
+            @Override
+            public String toString() {
+                return name + " = " + valueBuilder + ";";
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder assignExpr(String name, ExpressionDomBuilder valueBuilder) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals) {
+                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
+
+                Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                if (fieldDeclaration.isPresent()) {
+                    String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
+
+                    /*
+                    if (Modifier.isStatic(fieldDeclaration.get().getModifier())) {
+                        return astava.java.Factory.assignStaticField(cd.getName(), fieldDeclaration.get().getName(), descriptor, value);
+                    }
+
+                    return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, value);
+                    */
+
+                    return astava.java.Factory.top(astava.java.Factory.self(), (newTarget, newTargetLast) -> {
+                        return astava.java.Factory.blockExpr(Arrays.asList(
+                            astava.java.Factory.assignField(newTarget, fieldDeclaration.get().getName(), descriptor, value),
+                            Parser.fieldAccess(cr, cd, ci, newTargetLast, name, locals)
+                        ));
+                    });
+                }
+
+                return astava.java.Factory.blockExpr(Arrays.asList(
+                    astava.java.Factory.assignVar(name, value),
+                    astava.java.Factory.accessVar(name)
+                ));
+            }
+
+            @Override
+            public String toString() {
+                return name + " = " + valueBuilder;
             }
         };
     }
