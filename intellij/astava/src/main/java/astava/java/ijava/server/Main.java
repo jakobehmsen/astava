@@ -279,6 +279,8 @@ public class Main {
 
                     ClassLoader exeClassLoader = new SingleClassLoader(classLoader, generator);
 
+                    String resultToString;
+
                     try {
                         Class<?> execClass = exeClassLoader.loadClass("Exec");
 
@@ -308,12 +310,9 @@ public class Main {
                             e.getValue().value = f.get(exec);
                         }
 
-                        String resultToString = result != null ? result.toString() : "null";
+                        resultToString = result != null ? result.toString() : "null";
 
                         log("result = " + resultToString);
-
-                        output.writeUTF(resultToString);
-                        output.flush();
                         //outputStream.flush();
 
                         //output.write(ResponseCode.FINISHED);
@@ -323,18 +322,32 @@ public class Main {
                         //System.out.flush();
                     } catch (ClassNotFoundException e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
                     } catch (IllegalAccessException e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
                     } catch (NoSuchMethodException e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
                     } catch (InvocationTargetException e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
                     } catch (InstantiationException e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
                     } catch (NoSuchFieldException e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
                     } catch (Throwable e1) {
                         log("Error: " + e1.getMessage());
+                        resultToString = "Error: " + e1.getMessage();
+                    }
+
+                    try {
+                        output.writeUTF(resultToString);
+                        output.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
 
                     break;
