@@ -814,7 +814,7 @@ public class Parser {
         };
     }
 
-    private StatementDomBuilder invocationStatement(@NotNull JavaParser.InvocationContext ctx, boolean atRoot, ExpressionDomBuilder targetBuilder) {
+    /*private StatementDomBuilder invocationStatement(@NotNull JavaParser.InvocationContext ctx, boolean atRoot, ExpressionDomBuilder targetBuilder) {
         List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
             .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
@@ -846,7 +846,7 @@ public class Parser {
                 return invoke(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
             });
         };
-    }
+    }*/
 
     private ExpressionDomBuilder invocationExpression(@NotNull JavaParser.InvocationContext ctx, boolean atRoot, ExpressionDomBuilder targetBuilder) {
         List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
@@ -854,35 +854,14 @@ public class Parser {
 
         String methodName = ctx.ID().getText();
         return Factory.invocationExpr(targetBuilder, methodName, argumentBuilders);
+    }
 
-        /*return (cr, cd, ci, locals) -> {
-            String methodName = ctx.ID().getText();
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
-            List<ExpressionDom> arguments = argumentBuilders.stream()
-                .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
+    private StatementDomBuilder invocationStatement(@NotNull JavaParser.InvocationContext ctx, boolean atRoot, ExpressionDomBuilder targetBuilder) {
+        List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
+            .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
-            String targetType = expressionResultType(ci, cd, target, locals);
-            ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-
-            List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
-                String expressionResultType = expressionResultType(ci, cd, x, locals);
-                String expressionResultTypeName = Descriptor.getName(expressionResultType);
-
-                return ci.getClassDeclaration(expressionResultTypeName);
-            }).collect(Collectors.toList());
-
-            return resolveMethod(ci, targetClassDeclaration, methodName, argumentTypes, (c, m) -> {
-                int invocation = c.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
-
-                String methodDescriptor =
-                    Descriptor.getMethodDescriptor(m.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                        Descriptor.get(m.getReturnTypeName())
-                    );
-
-                String declaringClassDescriptor = Descriptor.get(c.getName());
-                return invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
-            });
-        };*/
+        String methodName = ctx.ID().getText();
+        return Factory.invocation(targetBuilder, methodName, argumentBuilders);
     }
 
     public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals) {
