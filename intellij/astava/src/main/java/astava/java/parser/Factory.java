@@ -236,4 +236,30 @@ public class Factory {
             }
         };
     }
+
+    public static StatementDomBuilder assign(String name, ExpressionDomBuilder valueBuilder) {
+        return new StatementDomBuilder() {
+            @Override
+            public void appendLocals(Map<String, String> locals) {
+
+            }
+
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                if (fieldDeclaration.isPresent()) {
+                    String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
+
+                    if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
+                        return astava.java.Factory.assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), descriptor, value);
+
+                    return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, value);
+                }
+
+                return astava.java.Factory.assignVar(name, value);
+            }
+        };
+    }
 }

@@ -570,7 +570,9 @@ public class Parser {
     private StatementDomBuilder buildAssignment(String name, JavaParser.ExpressionContext valueCtx, boolean atRoot) {
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(valueCtx, atRoot);
 
-        return new StatementDomBuilder() {
+        return Factory.assign(name, valueBuilder);
+
+        /*return new StatementDomBuilder() {
             @Override
             public void appendLocals(Map<String, String> locals) {
 
@@ -593,7 +595,7 @@ public class Parser {
 
                 return assignVar(name, value);
             }
-        };
+        };*/
     }
 
     public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {
