@@ -39,7 +39,18 @@ public class Main {
     private static DataInputStream inputStream;
     private static DataOutputStream outputStream;
 
-    public static void main(String[] args) throws IOException {
+    private static void resetServer() throws IOException {
+        stopServer();
+        startServer();
+    }
+
+    private static void stopServer() throws IOException {
+        outputStream.writeInt(RequestCode.END);
+        outputStream.flush();
+        int responseCode = inputStream.read();
+    }
+
+    private static void startServer() throws IOException {
         String serverFilePath = new java.io.File("classes/artifacts/ijava_server_jar/astava.jar").getAbsolutePath();
         String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
         serverProcess = new ProcessBuilder(
@@ -49,7 +60,7 @@ public class Main {
 
             "-cp",
             serverFilePath, "astava.java.ijava.server.Main"
-            ).start();
+        ).start();
 
         inputStream = new DataInputStream(serverProcess.getInputStream());
         //Scanner input = new Scanner(serverProcess.getInputStream());
@@ -59,21 +70,10 @@ public class Main {
         ObjectOutputStream agentObjectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
         agentObjectOutputStream.writeObject(new Hashtable<String, ClassDomBuilder>());
         outputStream.flush();
+    }
 
-        /*
-        outputStream.writeInt(RequestCode.EXEC);
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
-        objectOutputStream.writeObject(astava.java.parser.Factory.ret(astava.java.parser.Factory.literal(5)));
-        outputStream.flush();
-        String resultString = inputStream.readUTF();
-        */
-
-        /*
-        outputStream.writeInt(RequestCode.END);
-        outputStream.flush();
-        int responseCode = inputStream.read();
-        */
-
+    public static void main(String[] args) throws IOException {
+        startServer();
 
         ClassResolver baseClassResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
@@ -102,9 +102,7 @@ public class Main {
             @Override
             public void windowClosing(WindowEvent e) {
                 try {
-                    outputStream.writeInt(RequestCode.END);
-                    outputStream.flush();
-                    int responseCode = inputStream.read();
+                    stopServer();
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
