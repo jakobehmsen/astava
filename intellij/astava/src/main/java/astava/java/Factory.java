@@ -9,7 +9,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class Factory {
-    public static ClassDom classDeclaration(int modifiers, String name, String superName, List<FieldDom> fields, List<MethodDom> methods) {
+    public static ClassDom classDeclaration(int modifiers, String name, String superName, List<String> interfaces, List<FieldDom> fields, List<MethodDom> methods) {
         return new ClassDom() {
             @Override
             public int getModifiers() {
@@ -24,6 +24,11 @@ public class Factory {
             @Override
             public String getSuperName() {
                 return superName;
+            }
+
+            @Override
+            public List<String> getInterfaces() {
+                return interfaces;
             }
 
             @Override

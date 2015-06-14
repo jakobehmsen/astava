@@ -49,6 +49,12 @@ public class Descriptor {
             case "void": return Descriptor.VOID;
         }
 
+        if(typeName.endsWith("[]"))
+            return "[L" + typeName.substring(0, typeName.length() - 2).replace(".", "/") + ";";
+
+        /*if(typeName.startsWith("[L"))
+            return typeName;*/
+
         return typeName.replace(".", "/");
     }
 
@@ -99,6 +105,9 @@ public class Descriptor {
             case "D":
                 return typeName;
         }
+
+        if(typeName.startsWith("[L"))
+            return typeName;
 
         return "L" + typeName + ";";
     }

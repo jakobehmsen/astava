@@ -6,10 +6,7 @@ import astava.java.Invocation;
 import astava.tree.*;
 
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -148,10 +145,23 @@ public class Factory {
         };
     }
 
-    public static MethodDomBuilder method(int modifier, String name, List<ParameterInfo> parameters, String returnTypeName, StatementDom body) {
+    public static MethodDomBuilder method(int modifier, String name, List<ParameterInfo> tmpParameters, String returnTypeName, StatementDom body) {
+        return method(modifier, name, tmpParameters, returnTypeName, Arrays.asList(new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return body;
+            }
+        }));
+    }
+
+    public static MethodDomBuilder method(int modifier, String name, List<ParameterInfo> tmpParameters, String returnTypeName, List<StatementDomBuilder> statementBuilders) {
         return new MethodDomBuilder() {
             @Override
             public MethodDeclaration declare(ClassResolver classResolver) {
+                List<ParameterInfo> parameters = tmpParameters.stream()
+                    .map(x -> new ParameterInfo(Parser.parseTypeQualifier(classResolver, x.descriptor), x.name))
+                    .collect(Collectors.toList());
+
                 return new MethodDeclaration() {
                     @Override
                     public int getModifier() {
@@ -175,7 +185,35 @@ public class Factory {
 
                     @Override
                     public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
-                        return astava.java.Factory.methodDeclaration(modifier, name, parameters, Descriptor.get(returnTypeName), body);
+                        //return astava.java.Factory.methodDeclaration(modifier, name, parameters, Descriptor.get(returnTypeName), body.build(classResolver, classDeclaration, classInspector, new HashSet<>()));
+
+                        boolean isConstructor = name.equals("<init>");
+
+                        Hashtable<String, String> locals = new Hashtable<>();
+                        locals.putAll(parameters.stream().collect(Collectors.toMap(x -> x.name, x -> x.descriptor)));
+                        //locals.addAll(parameters.stream().map(x -> x.name).collect(Collectors.toList()));
+                        //List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
+                        statementBuilders.forEach(x -> x.appendLocals(locals));
+                        List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals)).collect(Collectors.toList());
+                        StatementDom body = astava.java.Factory.block(statements);
+
+                        String returnType = Descriptor.get(returnTypeName);
+
+                        // Ugly hack
+                        // Instead: every leaf statement should either be a ret statement or one is injected
+                        // This logic probably shouldn't be located here?
+                        if(returnType.equals(Descriptor.VOID)) {
+                            statements.add(astava.java.Factory.ret());
+                        }
+
+                        if(isConstructor) {
+                            // Call super constructor
+                            statements.add(0,
+                                astava.java.Factory.invokeSpecial(Descriptor.get(classDeclaration.getSuperName()), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), astava.java.Factory.self(), Arrays.asList())
+                            );
+                        }
+
+                        return astava.java.Factory.methodDeclaration(modifier, name, parameters, returnType, body);
                     }
                 };
             }

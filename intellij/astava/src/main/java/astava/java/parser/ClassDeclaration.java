@@ -71,6 +71,11 @@ public interface ClassDeclaration {
         }
 
         @Override
+        public List<String> getInterfaces() {
+            return Collections.emptyList();
+        }
+
+        @Override
         public boolean isInterface() {
             return false;
         }
@@ -117,6 +122,11 @@ public interface ClassDeclaration {
         }
 
         @Override
+        public List<String> getInterfaces() {
+            return source.getInterfaces();
+        }
+
+        @Override
         public boolean isInterface() {
             return source.isInterface();
         }
@@ -143,6 +153,11 @@ public interface ClassDeclaration {
             }
 
             @Override
+            public List<String> getInterfaces() {
+                return ClassDeclaration.this.getInterfaces().stream().map(x -> Descriptor.get(x)).collect(Collectors.toList());
+            }
+
+            @Override
             public List<FieldDom> getFields() {
                 return fields;
             }
@@ -153,6 +168,8 @@ public interface ClassDeclaration {
             }
         };
     }
+
+    List<String> getInterfaces();
 
     default ClassDeclaration withDefaultConstructor() {
         // Add default constructor if necessary

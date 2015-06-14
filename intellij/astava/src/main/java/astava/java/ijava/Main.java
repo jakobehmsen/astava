@@ -39,7 +39,7 @@ public class Main {
     private static DataInputStream inputStream;
     private static DataOutputStream outputStream;
 
-    private static void resetServer() throws IOException {
+    private static void resetServer(JFrame frame) throws IOException {
         stopServer();
         startServer();
     }
@@ -50,31 +50,36 @@ public class Main {
         int responseCode = inputStream.read();
     }
 
+    private static Hashtable<String, ClassDomBuilder> classBuilders = new Hashtable<>();
+
     private static void startServer() throws IOException {
         String serverFilePath = new java.io.File("classes/artifacts/ijava_server_jar/astava.jar").getAbsolutePath();
         String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
         serverProcess = new ProcessBuilder(
             "java",
-            //"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
-            "-javaagent:" + javaAgentFilePath,
-
+            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
             "-cp",
-            serverFilePath, "astava.java.ijava.server.Main"
+            serverFilePath,
+            "-javaagent:" + javaAgentFilePath,
+            "astava.java.ijava.server.Main"
         ).start();
 
         inputStream = new DataInputStream(serverProcess.getInputStream());
-        //Scanner input = new Scanner(serverProcess.getInputStream());
         outputStream = new DataOutputStream(serverProcess.getOutputStream());
 
-        // Interact with agent premain; send map of class builder to be used for instrumentation
+        // Interact with agent premain; send map of class builder to be used for instrumentation of physical classes
         ObjectOutputStream agentObjectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
-        agentObjectOutputStream.writeObject(new Hashtable<String, ClassDomBuilder>());
+        agentObjectOutputStream.writeObject(classBuilders);
+        outputStream.flush();
+
+        // Interact with Server main; send map of class builder to be used for virtual class loading
+        // and bounds of frame
+        ObjectOutputStream serverObjectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
+        serverObjectOutputStream.writeObject(classBuilders);
         outputStream.flush();
     }
 
     public static void main(String[] args) throws IOException {
-        startServer();
-
         ClassResolver baseClassResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
                 String.class,
@@ -95,6 +100,24 @@ public class Main {
                 return simpleNameToNameMap.get(className);
             }
         };
+
+        //classBuilders.put("java.util.ArrayList", new Parser("public class java.util.ArrayList { public java.lang.String myField; }").parseClass());
+        classBuilders.put("java.util.ArrayList", new Parser("public class java.util.ArrayList { public int myMethod() { return 77; } }").parseClass());
+
+        startServer();
+
+        outputStream.writeInt(RequestCode.DECLARE);
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
+        objectOutputStream.writeObject(Factory.field(Modifier.PUBLIC, "al", "java.util.ArrayList"));
+        outputStream.flush();
+
+        //exec(new Parser("al = new java.util.ArrayList();").parseStatementBuilder(), null);
+
+        exec(astava.java.parser.Factory.block(Arrays.asList(
+            new Parser("al = new java.util.ArrayList();").parseStatementBuilder(), astava.java.parser.Factory.ret()
+        )), null, false);
+
+        exec(astava.java.parser.Factory.ret(new Parser("al.size()").parseExpressionBuilder()), null, false);
 
         JFrame frame = new JFrame();
         frame.setTitle("IJAVA");
@@ -139,6 +162,12 @@ public class Main {
         pendingScript.setCaretPosition(startIndex);
 
         executor.execute(() -> {
+            /*try {
+                startServer();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }*/
+
             pendingScript.setBackground(bgColor);
             pendingScript.setForeground(fgColor);
             pendingScript.setCaretColor(fgColor);
@@ -189,8 +218,26 @@ public class Main {
 
                             script.forEach(x -> x.accept(new DomBuilderVisitor() {
                                 @Override
-                                public void visitClassBuilder(ClassDomBuilder classBuilder) {
-                                    ijavaClassLoader.putClassBuilder(classBuilder.getName(), classBuilder);
+                                public void visitClassBuilder(ClassDomBuilder classBuilderExtentions) {
+                                    //ijavaClassLoader.putClassBuilder(classBuilder.getName(), classBuilder);
+
+                                    String name = classBuilderExtentions.getName();
+                                    MutableClassDomBuilder classBuilder = (MutableClassDomBuilder) classBuilders.get(name);
+
+                                    if (classBuilder == null) {
+                                        classBuilder = new MutableClassDomBuilder();
+                                        classBuilder.setName(name);
+                                        classBuilder.setModifier(Modifier.PUBLIC);
+                                        classBuilder.setSuperName(classBuilderExtentions.getSuperName());
+                                        classBuilders.put(name, classBuilder);
+                                    }
+
+                                    for (FieldDomBuilder f : classBuilderExtentions.getFields())
+                                        classBuilder.addField(f);
+
+                                    for (MethodDomBuilder m : classBuilderExtentions.getMethods())
+                                        classBuilder.addMethod(m);
+
                                     resetClassLoader(executions);
                                 }
 
@@ -251,6 +298,14 @@ public class Main {
     }
 
     private static void resetClassLoader(List<StatementDomBuilder> executions) {
+        try {
+            stopServer();
+            startServer();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        /*
         ijavaClassLoader = ijavaClassLoader.reset();
 
         try {
@@ -262,6 +317,7 @@ public class Main {
         } catch (IllegalAccessException e1) {
             e1.printStackTrace();
         }
+        */
 
         // Replay all script
         executions.forEach(x -> exec(x, ijavaClassLoader));
@@ -274,12 +330,16 @@ public class Main {
     }
 
     private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver) {
+        return exec(statementDomBuilder, classResolver, true);
+    }
+
+    private static Object exec(StatementDomBuilder statementDomBuilder, ClassResolver classResolver, boolean waitForResponse) {
         try {
             outputStream.writeInt(RequestCode.EXEC);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
             objectOutputStream.writeObject(statementDomBuilder);
             outputStream.flush();
-            String resultString = inputStream.readUTF();
+            String resultString = waitForResponse ? inputStream.readUTF() : "null";
 
             if(1 != 2)
                 return resultString;

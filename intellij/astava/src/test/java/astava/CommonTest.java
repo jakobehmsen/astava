@@ -21,7 +21,7 @@ public class CommonTest {
     public static <T> void testMethodBody(StatementDom methodBody, String returnType, Consumer<T> assertion)
         throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         String methodName = "myMethod";
-        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(), Arrays.asList(
+        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, "MyClass", "java/lang/Object", Arrays.asList(), Arrays.asList(), Arrays.asList(
             methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, methodName, Collections.emptyList(), returnType, methodBody)
         ));
         ClassGenerator generator = new ClassGenerator(classDeclaration);

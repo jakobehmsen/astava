@@ -35,6 +35,8 @@ public class ClassGenerator {
         classNode.signature = "L" + className + ";";
         classNode.superName = superName;
 
+        classDom.getInterfaces().forEach(x -> classNode.interfaces.add(x));
+
         classDom.getFields().forEach(f -> populateField(classNode, f));
         classDom.getMethods().forEach(m -> populateMethod(classNode, m));
     }

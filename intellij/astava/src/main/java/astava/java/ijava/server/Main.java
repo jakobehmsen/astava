@@ -4,6 +4,7 @@ import astava.debug.Debug;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.gen.SingleClassLoader;
+import astava.java.ijava.DebugClassLoader;
 import astava.java.parser.*;
 import astava.tree.*;
 
@@ -11,6 +12,7 @@ import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -47,9 +49,6 @@ public class Main {
         frame.setSize(480, 800);
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(new JScrollPane(console), BorderLayout.CENTER);
-        frame.setLocationRelativeTo(null);
-        //frame.setLocation((int)Screen.getPrimary().getBounds().getWidth() - frame.getWidth(), frame.getY());
-        frame.setVisible(true);
 
         //Scanner inputScanner = new Scanner(System.in);
         //PrintStream output = System.out;
@@ -240,6 +239,31 @@ public class Main {
 
         Hashtable<String, Variable> variables = new Hashtable<>();
 
+        ObjectInputStream objectInputStream = null;
+        try {
+            objectInputStream = new ObjectInputStream(input);
+        } catch (IOException e) {
+            e.printStackTrace(Debug.getPrintStream(Debug.LEVEL_HIGH));
+        }
+        Map<String, ClassDomBuilder> classBuildersTmp = null;
+        //Rectangle2D mainFrameBounds = null;
+        try {
+            classBuildersTmp = (Map<String, ClassDomBuilder>)objectInputStream.readObject();
+            //mainFrameBounds = (Rectangle2D)objectInputStream.readObject();
+            logln("Received class builders: " + classBuildersTmp);
+        } catch (IOException e) {
+            e.printStackTrace(Debug.getPrintStream(Debug.LEVEL_HIGH));
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace(Debug.getPrintStream(Debug.LEVEL_HIGH));
+        }
+        Map<String, ClassDomBuilder> classBuilders = classBuildersTmp;
+
+
+        //frame.setLocation((int)(mainFrameBounds.getX() + mainFrameBounds.getWidth()), 0);
+        frame.setLocationRelativeTo(null);
+        //frame.setLocation((int)Screen.getPrimary().getBounds().getWidth() - frame.getWidth(), frame.getY());
+        frame.setVisible(true);
+
         ClassResolver classResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
                 String.class,
@@ -361,6 +385,10 @@ public class Main {
                                 if(name.equals(exeClassBuilder.getName()))
                                     return exeClassBuilderDeclaration;
 
+                                boolean isVirtualExtension = classBuilders.containsKey(name);
+                                if(isVirtualExtension)
+                                    logln("Class " + name + " is virtual extension.");
+
                                 // Inspect virtual classes in class builders and physical classes in class loader
                                 try {
                                     Class<?> physicalClass = classLoader.loadClass(name);
@@ -472,6 +500,11 @@ public class Main {
                                         }
 
                                         @Override
+                                        public List<String> getInterfaces() {
+                                            return Arrays.asList(physicalClass.getInterfaces()).stream().map(x -> x.getName()).collect(Collectors.toList());
+                                        }
+
+                                        @Override
                                         public boolean isInterface() {
                                             return physicalClass.isInterface();
                                         }
@@ -540,6 +573,7 @@ public class Main {
                         ClassGenerator generator = new ClassGenerator(classDom);
 
                         ClassLoader exeClassLoader = new SingleClassLoader(classLoader, generator);
+                        exeClassLoader = new DebugClassLoader(exeClassLoader);
 
                         Class<?> execClass = exeClassLoader.loadClass("Exec");
 
@@ -587,6 +621,8 @@ public class Main {
                         logln("Stack trace: " + new String(stackTraceOutputStream.toByteArray()));
                         */
 
+                        e1.printStackTrace(Debug.getPrintStream(Debug.LEVEL_HIGH));
+
                         resultToString = "Error: " + e1.getMessage();
                     }
 
@@ -628,6 +664,9 @@ public class Main {
     }
 
     public static void log(String message) {
+        if(console == null)
+            return;
+
         try {
             console.getDocument().insertString(console.getDocument().getLength(), message, null);
         } catch (BadLocationException e) {

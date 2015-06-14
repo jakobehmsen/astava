@@ -54,7 +54,7 @@ public class ArgumentTest {
         String returnTypeDescriptor = arguments.get(argumentToTest).getDescriptor();
         String paramName = parameters.get(argumentToTest).name;
 
-        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, className, "java/lang/Object", Arrays.asList(), Arrays.asList(
+        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, className, "java/lang/Object", Arrays.asList(), Arrays.asList(), Arrays.asList(
             methodDeclaration(Modifier.PUBLIC | Modifier.STATIC, methodName, parameters, returnTypeDescriptor, ret(accessVar(paramName)))
         ));
 

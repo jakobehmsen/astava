@@ -78,7 +78,7 @@ public class FieldTest {
             );
         }
 
-        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, className, "java/lang/Object",
+        ClassDom classDeclaration = classDeclaration(Modifier.PUBLIC, className, "java/lang/Object", Arrays.asList(),
             Arrays.asList(fieldDeclaration(modifiers, name, descriptor)),
             methods
         );

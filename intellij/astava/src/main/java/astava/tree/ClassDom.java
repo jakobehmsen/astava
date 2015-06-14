@@ -8,4 +8,5 @@ public interface ClassDom {
     String getSuperName();
     List<FieldDom> getFields();
     List<MethodDom> getMethods();
+    List<String> getInterfaces();
 }

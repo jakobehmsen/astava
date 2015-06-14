@@ -1,5 +1,6 @@
 package astava.java.parser;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,6 +13,7 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
     private String superName;
     private Hashtable<String, FieldDomBuilder> fieldBuilders = new Hashtable<>();
     private Hashtable<String, MethodDomBuilder> methodBuilders = new Hashtable<>();
+    private ArrayList<String> interfaces = new ArrayList<>();
     //private ArrayList<FieldDomBuilder> fieldBuilders = new ArrayList<>();
     //private ArrayList<MethodDomBuilder> methodBuilders = new ArrayList<>();
 
@@ -84,7 +86,7 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
                 @Override
                 public String getReturnTypeName() {
                     return Descriptor.VOID;
-                }
+                }ghm
 
                 @Override
                 public MethodDom build(ClassDeclaration classDeclaration) {
@@ -123,6 +125,11 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
             }
 
             @Override
+            public List<String> getInterfaces() {
+                return interfaces;
+            }
+
+            @Override
             public boolean isInterface() {
                 return false;
             }
@@ -157,5 +164,14 @@ public class MutableClassDomBuilder implements ClassDomBuilder {
                 return methods;
             }
         };*/
+    }
+
+    @Override
+    public String toString() {
+        return "fields=" + getFields().stream().map(x -> x.getName()).collect(Collectors.toList());
+    }
+
+    public void addInterface(String typeName) {
+        interfaces.add(typeName);
     }
 }

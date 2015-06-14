@@ -328,10 +328,14 @@ public class Parser {
         })).flatMap(x -> x.stream()).collect(Collectors.toList());
     }
 
-    private String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {
+    public static String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {
         if(!Descriptor.isPrimitiveName(typeQualifier)) {
-            if (!classResolver.canResolveAmbiguous(typeQualifier))
+            if (!classResolver.canResolveAmbiguous(typeQualifier)) {
+                if(classResolver.resolveSimpleName(typeQualifier) == null)
+                    new String();
+
                 typeQualifier = classResolver.resolveSimpleName(typeQualifier);
+            }
         }
 
         return Descriptor.get(typeQualifier);
@@ -428,8 +432,17 @@ public class Parser {
     public MethodDomBuilder parseMethodBuilder(JavaParser.MethodDefinitionContext ctx) {
         boolean isConstructor = ctx.returnType == null;
         String name = isConstructor ? "<init>" : ctx.name.getText();
+        int modifiers = parseModifiers(ctx.modifiers());
+        List<ParameterInfo> tmpParameters = ctx.parameters().parameter().stream()
+            .map(x -> new ParameterInfo(x.type.getText(), x.name.getText()))
+            .collect(Collectors.toList());
+        String returnType = isConstructor ? "void" : ctx.returnType.getText();
+        List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
+        //statementBuilders.forEach(x -> x.appendLocals(locals));
 
-        return new MethodDomBuilder() {
+        return Factory.method(modifiers, name, tmpParameters, returnType, statementBuilders);
+
+        /*return new MethodDomBuilder() {
             @Override
             public String getName() {
                 return name;
@@ -493,7 +506,11 @@ public class Parser {
                     }
                 };
             }
-        };
+        };*/
+    }
+
+    public StatementDomBuilder parseStatementBuilder() {
+        return parseStatementBuilder(parser.statement(), true);
     }
 
     public StatementDomBuilder parseStatementBuilder(JavaParser.StatementContext ctx, boolean atRoot) {
@@ -519,7 +536,8 @@ public class Parser {
             @Override
             public StatementDomBuilder visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
                 ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
-                return new StatementDomBuilder() {
+                return Factory.ret(expression);
+                /*return new StatementDomBuilder() {
                     @Override
                     public void appendLocals(Map<String, String> locals) {
 
@@ -529,7 +547,7 @@ public class Parser {
                     public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                         return ret(expression.build(classResolver, classDeclaration, classInspector, locals));
                     }
-                };
+                };*/
             }
 
             @Override
@@ -573,6 +591,10 @@ public class Parser {
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(valueCtx, atRoot);
 
         return Factory.assign(name, valueBuilder);
+    }
+
+    public ExpressionDomBuilder parseExpressionBuilder() {
+        return parseExpressionBuilder(parser.expression(), true);
     }
 
     public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {

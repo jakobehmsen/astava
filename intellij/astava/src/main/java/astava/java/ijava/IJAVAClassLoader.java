@@ -278,6 +278,11 @@ public class IJAVAClassLoader extends ClassLoader implements ClassResolver, Clas
             }
 
             @Override
+            public List<String> getInterfaces() {
+                return Arrays.asList(c.getInterfaces()).stream().map(x -> x.getName()).collect(Collectors.toList());
+            }
+
+            @Override
             public boolean isInterface() {
                 return c.isInterface();
             }
