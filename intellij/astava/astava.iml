@@ -24,5 +24,6 @@
     </orderEntry>
     <orderEntry type="library" name="asm-5.0.3" level="project" />
     <orderEntry type="library" name="antlr-4.5-rc-1-complete" level="project" />
+    <orderEntry type="library" name="tools" level="project" />
   </component>
 </module>

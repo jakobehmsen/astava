@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: astava.java.ijava.server.Main
+Can-Redefine-Classes: true
 

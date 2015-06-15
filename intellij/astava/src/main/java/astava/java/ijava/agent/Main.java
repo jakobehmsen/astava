@@ -5,11 +5,9 @@ import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.ijava.DebugClassLoader;
 import astava.java.parser.*;
-import astava.tree.ClassDom;
-import astava.tree.FieldDom;
-import astava.tree.MethodDom;
-import astava.tree.ParameterInfo;
+import astava.tree.*;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -18,10 +16,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.ParameterNode;
 
 import java.io.*;
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
-import java.lang.instrument.Instrumentation;
-import java.lang.instrument.UnmodifiableClassException;
+import java.lang.instrument.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.security.ProtectionDomain;
@@ -33,7 +28,13 @@ import java.util.stream.Stream;
 import static astava.java.Factory.fieldDeclaration;
 
 public class Main {
+    private static  ClassResolver classResolver;
+    private static ClassInspector classInspector;
+    private static Map<String, ClassDomBuilder> classBuilders;
+
     public static void premain(String agentArgument, Instrumentation instrumentation) {
+        //com.sun.jdi.VirtualMachine vm =
+        //    com.sun.jdi.Bootstrap.virtualMachineManager().createVirtualMachine(com.sun.jdi.Bootstrap.virtualMachineManager().defaultConnector());
 
         DataInputStream input = new DataInputStream(System.in);
         Field outField = null;
@@ -54,7 +55,7 @@ public class Main {
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
-        ClassResolver classResolver = new ClassResolver() {
+        classResolver = new ClassResolver() {
             private Map<String, String> simpleNameToNameMap = Arrays.asList(
                 String.class,
                 Modifier.class,
@@ -92,7 +93,7 @@ public class Main {
             }
         };
 
-        ClassInspector classInspector = new ClassInspector() {
+        classInspector = new ClassInspector() {
             @Override
             public ClassDeclaration getClassDeclaration(String name) {
                 // Inspect virtual classes in class builders and physical classes in class loader
@@ -233,87 +234,12 @@ public class Main {
             //log("Initializing agent...");
 
             ObjectInputStream objectInputStream = new ObjectInputStream(input);
-            Map<String, ClassDomBuilder> classBuilders = (Map<String, ClassDomBuilder>)objectInputStream.readObject();
+            classBuilders = (Map<String, ClassDomBuilder>)objectInputStream.readObject();
 
             instrumentation.addTransformer(new ClassFileTransformer() {
                 @Override
                 public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-                    if (className != null && className.contains("ArrayList"))
-                        new String();
-
-                    String classNameName = Descriptor.getName(className);
-                    ClassDomBuilder classBuilder = classBuilders.get(classNameName);
-
-                    if (loader instanceof DebugClassLoader) {
-                        ((DebugClassLoader) loader).println("***DEBUG***");
-                    }
-
-                    //Debug.getPrintStream(Debug.LEVEL_HIGH).println("sgfs");
-
-                    if (classBuilder != null) {
-                        ClassReader cr = new ClassReader(classfileBuffer);
-                        ClassNode classNode = new ClassNode(Opcodes.ASM5);
-                        cr.accept(classNode, ClassReader.EXPAND_FRAMES);
-
-                        MutableClassDomBuilder combinedBuilder = new MutableClassDomBuilder();
-
-                        // Populate from class node
-                        combinedBuilder.setName(className);
-                        combinedBuilder.setSuperName(classNode.superName);
-                        combinedBuilder.setModifier(classNode.access);
-                        classNode.interfaces.forEach(x -> combinedBuilder.addInterface(Descriptor.getName((String) x)));
-
-                        for (Object field : classNode.fields) {
-                            FieldDomBuilder fieldBuilder = Factory.field(
-                                ((FieldNode) field).access,
-                                ((FieldNode) field).name,
-                                Descriptor.getName(((FieldNode) field).desc)
-                            );
-                            combinedBuilder.addField(fieldBuilder);
-                        }
-
-                        for (Object method : classNode.methods) {
-                            MethodNode methodNode = (MethodNode) method;
-                            String returnTypeName = Type.getReturnType(methodNode.desc).getClassName();
-                            Type[] parameterTypes = Type.getArgumentTypes(methodNode.desc);
-                            List<ParameterInfo> parameters = IntStream.range(0, parameterTypes.length).mapToObj(i -> {
-                                String name;
-                                if(methodNode.parameters != null) {
-                                    ParameterNode pm = (ParameterNode) methodNode.parameters.get(i);
-                                    name = pm.name;
-                                } else name = "p" + i;
-
-                                //String descriptor = Descriptor.get(parameterTypes[i].getClassName());
-                                //String typeName = Descriptor.getName(descriptor);
-                                String typeName = parameterTypes[i].getClassName();
-
-                                return new ParameterInfo(typeName, name);
-                            }).collect(Collectors.toList());
-                            MethodDomBuilder methodBuilder = Factory.method(
-                                ((MethodNode) method).access,
-                                ((MethodNode) method).name,
-                                parameters,
-                                returnTypeName,
-                                v -> v.visitASM(methodNode));
-                            combinedBuilder.addMethod(methodBuilder);
-                        }
-
-                        // Populate from class builder
-                        classBuilder.getFields().forEach(x -> combinedBuilder.addField(x));
-                        classBuilder.getMethods().forEach(x -> combinedBuilder.addMethod(x));
-
-                        try {
-                            ClassDeclaration classDeclaration = combinedBuilder.build(classResolver);
-                            ClassDom classDom = classDeclaration.build(classInspector);
-                            ClassGenerator classGenerator = new ClassGenerator(classDom);
-
-                            return classGenerator.toBytes();
-                        } catch(Exception e) {
-                            e.toString();
-                        }
-                    }
-
-                    return classfileBuffer;
+                    return Main.transform(loader, className, classBeingRedefined, protectionDomain, classfileBuffer);
                 }
             }, true);
 
@@ -326,6 +252,23 @@ public class Main {
                         return null;
                     }
                 }).toArray(s -> new Class<?>[s]);
+            /*instrumentation.redefineClasses(Arrays.asList(classesToReTransform).stream().map(c -> {
+                InputStream classInputStream = c.getResourceAsStream(c.getSimpleName() + ".class");
+
+                ClassReader cr = null;
+                try {
+                    cr = new ClassReader(classInputStream);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                ClassNode classNode = new ClassNode(Opcodes.ASM5);
+                //ClassNode is a ClassVisitor
+                cr.accept(classNode, ClassReader.EXPAND_FRAMES);
+                ClassDomBuilder classBuilder = classBuilders.get(c.getName());
+                byte[] byteCode = transform(classNode, classBuilder);
+
+                return new ClassDefinition(c, byteCode);
+            }).toArray(s -> new ClassDefinition[s]));*/
             instrumentation.retransformClasses(classesToReTransform);
 
             //log("Initialized agent.");
@@ -348,6 +291,179 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }*/
+    }
+
+    private static byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+        if (className != null && className.contains("ArrayList"))
+            new String();
+
+        String classNameName = Descriptor.getName(className);
+        ClassDomBuilder classBuilder = classBuilders.get(classNameName);
+
+        if (loader instanceof DebugClassLoader) {
+            ((DebugClassLoader) loader).println("***DEBUG***");
+        }
+
+        //Debug.getPrintStream(Debug.LEVEL_HIGH).println("sgfs");
+
+        if (classBuilder != null) {
+            ClassReader cr = new ClassReader(classfileBuffer);
+            ClassNode classNode = new ClassNode(Opcodes.ASM5);
+            cr.accept(classNode, ClassReader.EXPAND_FRAMES);
+
+            return transform(classNode, classBuilder);
+
+            /*MutableClassDomBuilder combinedBuilder = new MutableClassDomBuilder();
+
+            // Populate from class node
+            combinedBuilder.setName(className);
+            combinedBuilder.setSuperName(classNode.superName);
+            combinedBuilder.setModifier(classNode.access);
+            classNode.interfaces.forEach(x -> combinedBuilder.addInterface(Descriptor.getName((String) x)));
+
+            for (Object field : classNode.fields) {
+                // Just forward the fields each as is somehow
+                FieldDomBuilder fieldBuilder = new FieldDomBuilder() {
+                    @Override
+                    public FieldDeclaration declare(ClassResolver classResolver) {
+                        return new FieldDeclaration() {
+                            @Override
+                            public int getModifier() {
+                                return ((FieldNode) field).access;
+                            }
+
+                            @Override
+                            public String getTypeName() {
+                                return Descriptor.getName(((FieldNode) field).desc);
+                            }
+
+                            @Override
+                            public String getName() {
+                                return ((FieldNode) field).name;
+                            }
+
+                            @Override
+                            public FieldDom build(ClassDeclaration classDeclaration) {
+                                return new ASMFieldDom((FieldNode)field);
+                            }
+                        };
+                    }
+
+                    @Override
+                    public String getName() {
+                        return ((FieldNode) field).name;
+                    }
+                };
+                combinedBuilder.addField(fieldBuilder);
+            }
+
+            for (Object method : classNode.methods) {
+                MethodNode methodNode = (MethodNode) method;
+                String returnTypeName = Type.getReturnType(methodNode.desc).getClassName();
+                Type[] parameterTypes = Type.getArgumentTypes(methodNode.desc);
+                List<ParameterInfo> parameters = IntStream.range(0, parameterTypes.length).mapToObj(i -> {
+                    String name;
+                    if(methodNode.parameters != null) {
+                        ParameterNode pm = (ParameterNode) methodNode.parameters.get(i);
+                        name = pm.name;
+                    } else name = "p" + i;
+
+                    //String descriptor = Descriptor.get(parameterTypes[i].getClassName());
+                    //String typeName = Descriptor.getName(descriptor);
+                    String typeName = parameterTypes[i].getClassName();
+
+                    return new ParameterInfo(typeName, name);
+                }).collect(Collectors.toList());
+                MethodDomBuilder methodBuilder = Factory.method(
+                    ((MethodNode) method).access,
+                    ((MethodNode) method).name,
+                    parameters,
+                    returnTypeName,
+                    v -> v.visitASM(methodNode));
+                combinedBuilder.addMethod(methodBuilder);
+            }
+
+            // Populate from class builder
+            classBuilder.getFields().forEach(x -> combinedBuilder.addField(x));
+            classBuilder.getMethods().forEach(x -> combinedBuilder.addMethod(x));
+
+            try {
+                ClassDeclaration classDeclaration = classBuilder.build(classResolver); //combinedBuilder.build(classResolver);
+                ClassDom classDom = classDeclaration.build(classInspector);
+                ClassGenerator classGenerator = new ClassGenerator(classDom);
+
+                classGenerator.populate2(classNode);
+
+                ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                classNode.accept(classWriter);
+
+                boolean hasASMMethodNodes = classDom.getMethods().stream().map(x -> new StatementDomVisitor.Return<MethodNode>() {
+                    @Override
+                    public void visitASM(MethodNode methodNode) {
+                        setResult(methodNode);
+                    }
+                }.returnFrom(x.getBody())).anyMatch(x -> x != null);
+
+                try {
+                    ByteArrayOutputStream os = new ByteArrayOutputStream();
+                    PrintWriter ps = new PrintWriter(os);
+                    org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, ps);
+                    String str = new String(os.toString());
+                    str.toString();
+                } catch(Exception e) {
+                    if(!hasASMMethodNodes)
+                        throw e;
+                }
+
+                return classWriter.toByteArray();
+
+                //return classGenerator.toBytes();
+            } catch(Exception e) {
+                e.toString();
+            }*/
+        }
+
+        return classfileBuffer;
+    }
+
+    private static byte[] transform(ClassNode classNode, ClassDomBuilder classBuilder) {
+
+        try {
+            ClassDeclaration classDeclaration = classBuilder.build(classResolver); //combinedBuilder.build(classResolver);
+            ClassDom classDom = classDeclaration.build(classInspector);
+            ClassGenerator classGenerator = new ClassGenerator(classDom);
+
+            classGenerator.populate2(classNode);
+
+            ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            classNode.accept(classWriter);
+
+            boolean hasASMMethodNodes = classDom.getMethods().stream().map(x -> new StatementDomVisitor.Return<MethodNode>() {
+                @Override
+                public void visitASM(MethodNode methodNode) {
+                    setResult(methodNode);
+                }
+            }.returnFrom(x.getBody())).anyMatch(x -> x != null);
+
+            try {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                PrintWriter ps = new PrintWriter(os);
+                org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, ps);
+                String str = new String(os.toString());
+                str.toString();
+            } catch(Exception e) {
+                if(!hasASMMethodNodes)
+                    throw e;
+            }
+
+            return classWriter.toByteArray();
+
+            //return classGenerator.toBytes();
+        } catch(Exception e) {
+            e.toString();
+
+            return null;
+        }
     }
 
     public static void log(String message) {

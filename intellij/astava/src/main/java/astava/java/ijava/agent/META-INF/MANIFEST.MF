@@ -1,4 +1,5 @@
 Manifest-Version: 1.0
 Premain-Class: astava.java.ijava.agent.Main
+Can-Redefine-Classes: true;
 Can-Retransform-Classes: true
 

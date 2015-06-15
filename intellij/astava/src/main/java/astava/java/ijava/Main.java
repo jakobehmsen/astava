@@ -53,6 +53,11 @@ public class Main {
     private static Hashtable<String, ClassDomBuilder> classBuilders = new Hashtable<>();
 
     private static void startServer() throws IOException {
+        /*
+        Generate new core JDK jar file based on class builders and supply to process
+        Can this file somehow be memory-mapped?
+        */
+
         String serverFilePath = new java.io.File("classes/artifacts/ijava_server_jar/astava.jar").getAbsolutePath();
         String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
         serverProcess = new ProcessBuilder(
@@ -102,22 +107,22 @@ public class Main {
         };
 
         //classBuilders.put("java.util.ArrayList", new Parser("public class java.util.ArrayList { public java.lang.String myField; }").parseClass());
-        classBuilders.put("java.util.ArrayList", new Parser("public class java.util.ArrayList { public int myMethod() { return 77; } }").parseClass());
+        classBuilders.put("java.lang.String", new Parser("public class java.lang.String { public java.lang.String toLowerCase() { return \"Stuff\"; } }").parseClass());
 
         startServer();
 
         outputStream.writeInt(RequestCode.DECLARE);
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
-        objectOutputStream.writeObject(Factory.field(Modifier.PUBLIC, "al", "java.util.ArrayList"));
+        objectOutputStream.writeObject(Factory.field(Modifier.PUBLIC, "al", "java.lang.String"));
         outputStream.flush();
 
         //exec(new Parser("al = new java.util.ArrayList();").parseStatementBuilder(), null);
 
         exec(astava.java.parser.Factory.block(Arrays.asList(
-            new Parser("al = new java.util.ArrayList();").parseStatementBuilder(), astava.java.parser.Factory.ret()
+            new Parser("al = \"Hi\";").parseStatementBuilder(), astava.java.parser.Factory.ret()
         )), null, false);
 
-        exec(astava.java.parser.Factory.ret(new Parser("al.size()").parseExpressionBuilder()), null, false);
+        exec(astava.java.parser.Factory.ret(new Parser("al.toLowerCase()").parseExpressionBuilder()), null, false);
 
         JFrame frame = new JFrame();
         frame.setTitle("IJAVA");

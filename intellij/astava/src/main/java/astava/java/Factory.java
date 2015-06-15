@@ -44,7 +44,7 @@ public class Factory {
     }
 
     public static FieldDom fieldDeclaration(int modifiers, String name, String typeName) {
-        return new FieldDom() {
+        return new CustomFieldDom() {
             @Override
             public int getModifiers() {
                 return modifiers;

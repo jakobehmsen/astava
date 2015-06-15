@@ -1,9 +1,6 @@
 package astava.tree;
 
 public interface FieldDom {
-    int getModifiers();
-
     String getName();
-
-    String getTypeName();
+    <T> T accept(FieldDomVisitor<T> visitor);
 }
