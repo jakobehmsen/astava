@@ -249,6 +249,8 @@ public class Main {
         //Rectangle2D mainFrameBounds = null;
         try {
             classBuildersTmp = (Map<String, ClassDomBuilder>)objectInputStream.readObject();
+            //output.writeInt(1);
+            //output.flush();
             //mainFrameBounds = (Rectangle2D)objectInputStream.readObject();
             logln("Received class builders: " + classBuildersTmp);
         } catch (IOException e) {

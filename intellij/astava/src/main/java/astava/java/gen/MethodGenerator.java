@@ -17,13 +17,17 @@ import java.util.stream.IntStream;
 import static astava.java.Factory.*;
 
 public class MethodGenerator {
-    private ClassGenerator classGenerator;
+    private String thisClassName;
     private StatementDom body;
     private GenerateScope methodScope;
     private List<ParameterInfo> parameters;
 
     public MethodGenerator(ClassGenerator classGenerator, List<ParameterInfo> parameters, StatementDom body) {
-        this.classGenerator = classGenerator;
+        this(classGenerator.getClassName(), parameters, body);
+    }
+
+    public MethodGenerator(String thisClassName, List<ParameterInfo> parameters, StatementDom body) {
+        this.thisClassName = thisClassName;
         this.parameters = parameters;
         this.body = body;
         this.methodScope = new GenerateScope();
@@ -509,7 +513,7 @@ public class MethodGenerator {
             @Override
             public void visitThis() {
                 generator.loadThis();
-                setResult(Descriptor.get(classGenerator.getClassName()));
+                setResult(Descriptor.get(thisClassName));
             }
 
             @Override

@@ -62,7 +62,7 @@ public class Main {
         String javaAgentFilePath = new java.io.File("classes/artifacts/ijava_agent_jar/astava.jar").getAbsolutePath();
         serverProcess = new ProcessBuilder(
             "java",
-            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5025",
             "-cp",
             serverFilePath,
             "-javaagent:" + javaAgentFilePath,
@@ -82,6 +82,9 @@ public class Main {
         ObjectOutputStream serverObjectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
         serverObjectOutputStream.writeObject(classBuilders);
         outputStream.flush();
+
+        //int i = inputStream.readInt();
+        //new String();
     }
 
     public static void main(String[] args) throws IOException {
@@ -107,22 +110,22 @@ public class Main {
         };
 
         //classBuilders.put("java.util.ArrayList", new Parser("public class java.util.ArrayList { public java.lang.String myField; }").parseClass());
-        classBuilders.put("java.lang.String", new Parser("public class java.lang.String { public java.lang.String toLowerCase() { return \"Stuff\"; } }").parseClass());
+        //classBuilders.put("java.lang.String", new Parser("public class java.lang.String { public java.lang.String toLowerCase() { return \"Stuff\"; } }").parseClass());
 
         startServer();
 
-        outputStream.writeInt(RequestCode.DECLARE);
+        /*outputStream.writeInt(RequestCode.DECLARE);
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverProcess.getOutputStream());
         objectOutputStream.writeObject(Factory.field(Modifier.PUBLIC, "al", "java.lang.String"));
-        outputStream.flush();
+        outputStream.flush();*/
 
         //exec(new Parser("al = new java.util.ArrayList();").parseStatementBuilder(), null);
 
-        exec(astava.java.parser.Factory.block(Arrays.asList(
+        /*exec(astava.java.parser.Factory.block(Arrays.asList(
             new Parser("al = \"Hi\";").parseStatementBuilder(), astava.java.parser.Factory.ret()
-        )), null, false);
+        )), null, false);*/
 
-        exec(astava.java.parser.Factory.ret(new Parser("al.toLowerCase()").parseExpressionBuilder()), null, false);
+        //exec(astava.java.parser.Factory.ret(new Parser("al.toLowerCase()").parseExpressionBuilder()), null, false);
 
         JFrame frame = new JFrame();
         frame.setTitle("IJAVA");
