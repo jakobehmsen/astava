@@ -10,7 +10,7 @@ import org.junit.runners.Parameterized;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)

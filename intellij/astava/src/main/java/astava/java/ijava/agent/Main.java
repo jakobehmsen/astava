@@ -1,6 +1,5 @@
 package astava.java.ijava.agent;
 
-import astava.debug.Debug;
 import astava.java.Descriptor;
 import astava.java.gen.ClassGenerator;
 import astava.java.ijava.DebugClassLoader;
@@ -9,11 +8,8 @@ import astava.tree.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.ParameterNode;
 
 import java.io.*;
 import java.lang.instrument.*;
@@ -22,10 +18,9 @@ import java.lang.reflect.Modifier;
 import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static astava.java.Factory.fieldDeclaration;
+import static astava.java.DomFactory.fieldDeclaration;
 
 public class Main {
     private static  ClassResolver classResolver;

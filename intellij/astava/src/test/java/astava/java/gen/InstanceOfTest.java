@@ -7,8 +7,8 @@ import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 
-import static astava.java.Factory.instanceOf;
-import static astava.java.Factory.literal;
+import static astava.java.DomFactory.instanceOf;
+import static astava.java.DomFactory.literal;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

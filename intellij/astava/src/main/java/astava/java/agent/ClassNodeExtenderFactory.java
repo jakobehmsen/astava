@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ClassNodeExtenderFactory {
     public static ClassNodeExtender setSuperName(String superName) {
@@ -70,6 +71,17 @@ public class ClassNodeExtenderFactory {
                 //methodGenerator.generate(generator);
                 methodGenerator.generate(methodNode);
             }
+
+            //System.out.println(classNode.name);
+            IntStream.range(0, classNode.methods.size()).filter(i -> methodDom.getName().equals(((MethodNode) classNode.methods.get(i)).name)).findAny().ifPresent(i ->
+                classNode.methods.remove(i)
+            );
+            /*classNode.methods.stream()
+                .filter(x ->
+                    methodDom.getName().equals(((MethodNode) x).name))
+                .forEach(x ->
+                    classNode.methods.remove(x));*/
+            //System.out.println(classNode.name);
 
             classNode.methods.add(methodNode);
         };

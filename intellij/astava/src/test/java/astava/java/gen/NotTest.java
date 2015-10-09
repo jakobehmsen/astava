@@ -9,8 +9,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static astava.java.Factory.literal;
-import static astava.java.Factory.not;
+import static astava.java.DomFactory.literal;
+import static astava.java.DomFactory.not;
 import static astava.CommonTest.testExpression;
 import static org.junit.Assert.assertEquals;
 

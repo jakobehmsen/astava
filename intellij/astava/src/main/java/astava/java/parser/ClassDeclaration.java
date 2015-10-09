@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static astava.java.Factory.*;
-import static astava.java.Factory.ret;
+import static astava.java.DomFactory.*;
+import static astava.java.DomFactory.ret;
 
 public interface ClassDeclaration {
     List<FieldDeclaration> getFields();

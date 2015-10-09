@@ -5,7 +5,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static astava.java.Factory.ret;
+import static astava.java.DomFactory.ret;
 
 public class MutableClassDomBuilder implements ClassDomBuilder {
     private int modifier;

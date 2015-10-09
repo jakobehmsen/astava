@@ -1,6 +1,6 @@
 package astava;
 
-import astava.java.Factory;
+import astava.java.DomFactory;
 import astava.java.gen.ClassGenerator;
 import astava.tree.*;
 
@@ -10,12 +10,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
 
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 
 public class CommonTest {
     public static <T> void testExpression(ExpressionDom expression, String returnType, Consumer<T> assertion)
         throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        testMethodBody(Factory.ret(expression), returnType, assertion);
+        testMethodBody(DomFactory.ret(expression), returnType, assertion);
     }
 
     public static <T> void testMethodBody(StatementDom methodBody, String returnType, Consumer<T> assertion)

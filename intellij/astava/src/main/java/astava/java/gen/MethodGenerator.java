@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 
 public class MethodGenerator {
     private String thisClassName;

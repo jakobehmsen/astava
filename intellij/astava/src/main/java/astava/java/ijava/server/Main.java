@@ -12,7 +12,6 @@ import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -22,8 +21,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static astava.java.Factory.fieldDeclaration;
-import static astava.java.Factory.methodDeclaration;
+import static astava.java.DomFactory.fieldDeclaration;
+import static astava.java.DomFactory.methodDeclaration;
 
 public class Main {
     private static class Variable {

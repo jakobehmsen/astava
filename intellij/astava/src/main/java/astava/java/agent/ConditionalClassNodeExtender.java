@@ -1,7 +1,9 @@
 package astava.java.agent;
 
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.function.Predicate;
 

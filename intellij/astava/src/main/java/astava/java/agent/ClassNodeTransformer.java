@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
@@ -11,10 +12,10 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 
-public class ClassTransformer implements ClassFileTransformer {
+public class ClassNodeTransformer implements ClassFileTransformer {
     private ClassNodeExtender extender;
 
-    public ClassTransformer(ClassNodeExtender extender) {
+    public ClassNodeTransformer(ClassNodeExtender extender) {
         this.extender = extender;
     }
 
@@ -24,6 +25,8 @@ public class ClassTransformer implements ClassFileTransformer {
         ClassNode classNode = new ClassNode(Opcodes.ASM5);
         cr.accept(classNode, ClassReader.EXPAND_FRAMES);
 
+        System.out.println(classNode.name);
+
         extender.transform(classNode);
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -32,6 +35,7 @@ public class ClassTransformer implements ClassFileTransformer {
 
         PrintWriter ps = new PrintWriter(os);
         org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, ps);
+        //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
 
         return classWriter.toByteArray();
     }

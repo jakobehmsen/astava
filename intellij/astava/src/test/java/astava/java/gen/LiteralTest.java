@@ -11,11 +11,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 
 @RunWith(Parameterized.class)
 public class LiteralTest {

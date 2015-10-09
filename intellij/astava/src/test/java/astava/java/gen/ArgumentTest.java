@@ -1,6 +1,5 @@
 package astava.java.gen;
 
-import astava.java.Descriptor;
 import astava.tree.ClassDom;
 import astava.tree.ParameterInfo;
 import org.junit.Test;
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

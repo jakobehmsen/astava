@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static astava.java.Factory.fieldDeclaration;
-import static astava.java.Factory.methodDeclaration;
+import static astava.java.DomFactory.fieldDeclaration;
+import static astava.java.DomFactory.methodDeclaration;
 
 public class IJAVAClassLoader extends ClassLoader implements ClassResolver, ClassInspector {
     private ClassResolver classResolver;

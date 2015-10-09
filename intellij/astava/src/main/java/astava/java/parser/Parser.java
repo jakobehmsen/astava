@@ -2,7 +2,6 @@ package astava.java.parser;
 
 import astava.debug.Debug;
 import astava.java.Descriptor;
-import astava.java.Invocation;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
@@ -25,7 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 
 public class Parser {
     private JavaParser parser;

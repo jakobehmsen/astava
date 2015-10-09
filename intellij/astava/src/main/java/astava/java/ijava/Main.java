@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static astava.java.Factory.*;
+import static astava.java.DomFactory.*;
 
 public class Main {
     private static IJAVAClassLoader ijavaClassLoader;

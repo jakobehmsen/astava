@@ -2,6 +2,7 @@ package astava.java.parser;
 
 import astava.debug.Debug;
 import astava.java.Descriptor;
+import astava.java.DomFactory;
 import astava.java.Invocation;
 import astava.tree.*;
 
@@ -17,7 +18,7 @@ public class Factory {
             public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                 List<StatementDom> statements =
                     statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals)).collect(Collectors.toList());
-                return astava.java.Factory.block(statements);
+                return DomFactory.block(statements);
             }
 
             @Override
@@ -31,7 +32,7 @@ public class Factory {
         return new StatementDomBuilder() {
             @Override
             public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                return astava.java.Factory.ret();
+                return DomFactory.ret();
             }
 
             @Override
@@ -45,7 +46,7 @@ public class Factory {
         return new StatementDomBuilder() {
             @Override
             public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                return astava.java.Factory.ret(expression.build(classResolver, classDeclaration, classInspector, locals));
+                return DomFactory.ret(expression.build(classResolver, classDeclaration, classInspector, locals));
             }
 
             @Override
@@ -59,7 +60,7 @@ public class Factory {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                return astava.java.Factory.literal(value);
+                return DomFactory.literal(value);
             }
 
             @Override
@@ -73,7 +74,7 @@ public class Factory {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                return astava.java.Factory.literal(value);
+                return DomFactory.literal(value);
             }
 
             @Override
@@ -105,7 +106,7 @@ public class Factory {
 
                     @Override
                     public FieldDom build(ClassDeclaration classDeclaration) {
-                        return astava.java.Factory.fieldDeclaration(modifier, name, Descriptor.get(typeName));
+                        return DomFactory.fieldDeclaration(modifier, name, Descriptor.get(typeName));
                     }
                 };
             }
@@ -121,7 +122,7 @@ public class Factory {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                return astava.java.Factory.nil();
+                return DomFactory.nil();
             }
 
             @Override
@@ -135,7 +136,7 @@ public class Factory {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                return astava.java.Factory.self();
+                return DomFactory.self();
             }
 
             @Override
@@ -195,7 +196,7 @@ public class Factory {
                         //List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
                         statementBuilders.forEach(x -> x.appendLocals(locals));
                         List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals)).collect(Collectors.toList());
-                        StatementDom body = astava.java.Factory.block(statements);
+                        StatementDom body = DomFactory.block(statements);
 
                         String returnType = Descriptor.get(returnTypeName);
 
@@ -203,17 +204,17 @@ public class Factory {
                         // Instead: every leaf statement should either be a ret statement or one is injected
                         // This logic probably shouldn't be located here?
                         if(returnType.equals(Descriptor.VOID)) {
-                            statements.add(astava.java.Factory.ret());
+                            statements.add(DomFactory.ret());
                         }
 
                         if(isConstructor) {
                             // Call super constructor
                             statements.add(0,
-                                astava.java.Factory.invokeSpecial(Descriptor.get(classDeclaration.getSuperName()), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), astava.java.Factory.self(), Arrays.asList())
+                                DomFactory.invokeSpecial(Descriptor.get(classDeclaration.getSuperName()), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), DomFactory.self(), Arrays.asList())
                             );
                         }
 
-                        return astava.java.Factory.methodDeclaration(modifier, name, parameters, returnType, body);
+                        return DomFactory.methodDeclaration(modifier, name, parameters, returnType, body);
                     }
                 };
             }
@@ -234,7 +235,7 @@ public class Factory {
 
                 Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                 String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
-                return astava.java.Factory.assignField(target, fieldDeclaration.get().getName(), descriptor, value);
+                return DomFactory.assignField(target, fieldDeclaration.get().getName(), descriptor, value);
             }
 
             @Override
@@ -256,12 +257,12 @@ public class Factory {
                             String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
 
                             if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
-                                return astava.java.Factory.accessStaticField(cd.getName(), name, descriptor);
+                                return DomFactory.accessStaticField(cd.getName(), name, descriptor);
 
-                            return astava.java.Factory.accessField(astava.java.Factory.self(), name, descriptor);
+                            return DomFactory.accessField(DomFactory.self(), name, descriptor);
                         }
 
-                        return astava.java.Factory.accessVar(name);
+                        return DomFactory.accessVar(name);
                     },
                     (target, fieldChainAccess) -> {
                         for (String fieldName : fieldChainAccess)
@@ -295,12 +296,12 @@ public class Factory {
                     String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
 
                     if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
-                        return astava.java.Factory.assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), descriptor, value);
+                        return DomFactory.assignStaticField(classDeclaration.getName(), fieldDeclaration.get().getName(), descriptor, value);
 
-                    return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, value);
+                    return DomFactory.assignField(DomFactory.self(), fieldDeclaration.get().getName(), descriptor, value);
                 }
 
-                return astava.java.Factory.assignVar(name, value);
+                return DomFactory.assignVar(name, value);
             }
 
             @Override
@@ -328,17 +329,17 @@ public class Factory {
                     return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, value);
                     */
 
-                    return astava.java.Factory.top(astava.java.Factory.self(), (newTarget, newTargetLast) -> {
-                        return astava.java.Factory.blockExpr(Arrays.asList(
-                            astava.java.Factory.assignField(newTarget, fieldDeclaration.get().getName(), descriptor, value),
+                    return DomFactory.top(DomFactory.self(), (newTarget, newTargetLast) -> {
+                        return DomFactory.blockExpr(Arrays.asList(
+                            DomFactory.assignField(newTarget, fieldDeclaration.get().getName(), descriptor, value),
                             Parser.fieldAccess(cr, cd, ci, newTargetLast, name, locals)
                         ));
                     });
                 }
 
-                return astava.java.Factory.blockExpr(Arrays.asList(
-                    astava.java.Factory.assignVar(name, value),
-                    astava.java.Factory.accessVar(name)
+                return DomFactory.blockExpr(Arrays.asList(
+                    DomFactory.assignVar(name, value),
+                    DomFactory.accessVar(name)
                 ));
             }
 
@@ -377,7 +378,7 @@ public class Factory {
                 // For now, just pick the first
                 MethodDeclaration constructor = constructors.get(0);
 
-                return astava.java.Factory.newInstanceExpr(
+                return DomFactory.newInstanceExpr(
                     Descriptor.get(targetClassDeclaration.getName()),
                     constructor.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
                     arguments);
@@ -419,7 +420,7 @@ public class Factory {
                     Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
 
                     String declaringClassDescriptor = Descriptor.get(c.getName());
-                    return astava.java.Factory.invoke(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
+                    return DomFactory.invoke(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
                 });
             }
 
@@ -459,7 +460,7 @@ public class Factory {
                     Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
 
                     String declaringClassDescriptor = Descriptor.get(c.getName());
-                    return astava.java.Factory.invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
+                    return DomFactory.invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
                 });
             }
 
