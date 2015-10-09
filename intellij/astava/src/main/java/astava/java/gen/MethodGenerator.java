@@ -11,7 +11,9 @@ import org.objectweb.asm.commons.TableSwitchGenerator;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import static astava.java.DomFactory.*;
@@ -35,7 +37,7 @@ public class MethodGenerator {
 
     //public void generate(GeneratorAdapter generator) {
     public void generate(MethodNode methodNode) {
-        LabelScope labelScope = new LabelScope();
+        /*LabelScope labelScope = new LabelScope();
         methodNode.visitCode();
 
         Method m = new Method(methodNode.name, methodNode.desc);
@@ -49,6 +51,35 @@ public class MethodGenerator {
 
         methodNode.visitEnd();
         methodNode.visitMaxs(0, 0);
+        labelScope.verify();*/
+
+        generate(methodNode, (mn, generator) -> {
+            populateMethodBody(methodNode, generator);
+        });
+    }
+
+    public static void generate(MethodNode methodNode, BiConsumer<MethodNode, GeneratorAdapter> bodyGenerator) {
+        //LabelScope labelScope = new LabelScope();
+        methodNode.visitCode();
+
+        Method m = new Method(methodNode.name, methodNode.desc);
+        GeneratorAdapter generator;
+        try {
+            generator = new GeneratorAdapter(methodNode.access, m, methodNode);
+        } catch(Exception e) {
+            generator = null;
+        }
+
+        bodyGenerator.accept(methodNode, generator);
+
+        methodNode.visitEnd();
+        methodNode.visitMaxs(0, 0);
+        //labelScope.verify();
+    }
+
+    public void populateMethodBody(MethodNode methodNode, GeneratorAdapter generator) {
+        LabelScope labelScope = new LabelScope();
+        populateMethodStatement(methodNode, generator, body, null, labelScope);
         labelScope.verify();
     }
 

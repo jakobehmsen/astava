@@ -1,10 +1,7 @@
 package astava.java.agent.sample.agent;
 
 import astava.java.DomFactory;
-import astava.java.agent.ClassNodeExtenderFactory;
-import astava.java.agent.ClassNodeTransformer;
-import astava.java.agent.ConditionalClassNodeExtender;
-import astava.java.agent.SequenceClassNodeExtender;
+import astava.java.agent.*;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Modifier;
@@ -21,6 +18,9 @@ public class Main {
         myFieldExtender.extend(ClassNodeExtenderFactory.addMethod(DomFactory.methodDeclaration(Modifier.PUBLIC, "toString", Arrays.asList(), "java/lang/String", DomFactory.ret(
             DomFactory.accessField(DomFactory.self(), "myField", "java/lang/String")
         ))));
+        myFieldExtender.extend(MethodNodeExtenderFactory.sequence(MethodNodeExtenderFactory.addBefore(
+            DomFactory.assignField(DomFactory.self(), "myField", "java/lang/String", DomFactory.literal("Hello"))
+        )).when((c, m) -> m.name.equals("<init>")));
 
         ConditionalClassNodeExtender extender = new ConditionalClassNodeExtender();
 

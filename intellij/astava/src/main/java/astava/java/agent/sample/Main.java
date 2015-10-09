@@ -5,7 +5,7 @@ package astava.java.agent.sample;
  */
 public class Main {
     public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        MyClass mc = new MyClass();
+        MyClass mc = new MyClass("Ignored");
         //Object mc = Class.forName("astava.java.agent.sample.MyClass").newInstance();
         mc.toString();
     }
