@@ -38,6 +38,8 @@ public interface StatementDomVisitor {
 
     void visitASM(MethodNode methodNode);
 
+    void visitMethodBody();
+
     class Default implements StatementDomVisitor {
         @Override
         public void visitVariableDeclaration(String type, String name) {
@@ -116,6 +118,11 @@ public interface StatementDomVisitor {
 
         @Override
         public void visitASM(MethodNode methodNode) {
+
+        }
+
+        @Override
+        public void visitMethodBody() {
 
         }
     }

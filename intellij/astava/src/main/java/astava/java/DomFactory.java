@@ -361,6 +361,10 @@ public class DomFactory {
         return new AbstractMap.SimpleImmutableEntry<Integer, StatementDom>(key, body);
     }
 
+    public static StatementDom methodBody() {
+        return v -> v.visitMethodBody();
+    }
+
     public static String arithmeticResultType(String lhsType, String rhsType) {
         switch(lhsType) {
             case Descriptor.BYTE:

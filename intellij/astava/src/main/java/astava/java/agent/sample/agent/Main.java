@@ -12,19 +12,20 @@ import java.util.Arrays;
  */
 public class Main {
     public static void premain(String agentArgument, Instrumentation instrumentation) {
-        SequenceClassNodeExtender myFieldExtender = new SequenceClassNodeExtender();
+        SequenceClassNodeExtender myClassNodeExtender = new SequenceClassNodeExtender();
 
-        myFieldExtender.extend(ClassNodeExtenderFactory.addField(DomFactory.fieldDeclaration(Modifier.PUBLIC, "myField", "java/lang/String")));
-        myFieldExtender.extend(ClassNodeExtenderFactory.addMethod(DomFactory.methodDeclaration(Modifier.PUBLIC, "toString", Arrays.asList(), "java/lang/String", DomFactory.ret(
+        myClassNodeExtender.extend(ClassNodeExtenderFactory.addField(DomFactory.fieldDeclaration(Modifier.PUBLIC, "myField", "java/lang/String")));
+        myClassNodeExtender.extend(ClassNodeExtenderFactory.addMethod(DomFactory.methodDeclaration(Modifier.PUBLIC, "toString", Arrays.asList(), "java/lang/String", DomFactory.ret(
             DomFactory.accessField(DomFactory.self(), "myField", "java/lang/String")
         ))));
-        myFieldExtender.extend(MethodNodeExtenderFactory.sequence(MethodNodeExtenderFactory.addBefore(
-            DomFactory.assignField(DomFactory.self(), "myField", "java/lang/String", DomFactory.literal("Hello"))
-        )).when((c, m) -> m.name.equals("<init>")));
+        myClassNodeExtender.extend(MethodNodeExtenderFactory.setBody(DomFactory.block(Arrays.asList(
+            DomFactory.assignField(DomFactory.self(), "myField", "java/lang/String", DomFactory.literal("Hello")),
+            DomFactory.methodBody()
+        ))).when((c, m) -> m.name.equals("<init>")));
 
         ConditionalClassNodeExtender extender = new ConditionalClassNodeExtender();
 
-        extender.extend(x -> x.name.equals("astava/java/agent/sample/MyClass"), myFieldExtender);
+        extender.extend(x -> x.name.equals("astava/java/agent/sample/MyClass"), myClassNodeExtender);
 
         instrumentation.addTransformer(new ClassNodeTransformer(extender));
     }
