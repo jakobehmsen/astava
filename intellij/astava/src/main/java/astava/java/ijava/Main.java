@@ -278,6 +278,11 @@ public class Main {
                                         statementBuilder, astava.java.parser.Factory.ret()
                                     )), ijavaClassLoader, executions);
                                 }
+
+                                @Override
+                                public void visitInitializer(StatementDomBuilder statement) {
+
+                                }
                             }));
                         } catch (IOException e1) {
                             e1.printStackTrace();

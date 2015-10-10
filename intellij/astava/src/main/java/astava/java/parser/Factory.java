@@ -470,4 +470,13 @@ public class Factory {
             }
         };
     }
+
+    public static DomBuilder initializer(StatementDomBuilder statement) {
+        return new DomBuilder() {
+            @Override
+            public void accept(DomBuilderVisitor visitor) {
+                visitor.visitInitializer(statement);
+            }
+        };
+    }
 }

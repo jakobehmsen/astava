@@ -305,7 +305,7 @@ public class Parser {
 
                     StatementDomBuilder fieldAssignBuilder = Factory.assignField(Factory.self(), name, valueBuilder);
 
-                    return Arrays.asList(fieldBuilder, fieldAssignBuilder);
+                    return Arrays.asList(fieldBuilder, Factory.initializer(fieldAssignBuilder));
                 }
                 return Arrays.asList(fieldBuilder);
             }
@@ -388,6 +388,11 @@ public class Parser {
                             FieldDomBuilder field = parseFieldBuilder(ctx, false);
                             classBuilder.addField(field);
 
+                            if(ctx.value != null) {
+                                StatementDomBuilder fieldInitializer = parseFieldInitializer(ctx, false);
+                                // How to handle initializers in class definitions?
+                            }
+
                             return null;
                         }
 
@@ -421,7 +426,19 @@ public class Parser {
         else
             modifiers = modifiersTmp;
 
+        ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value, atRoot) : null;
+
         return Factory.field(modifiers, name, rawTypeName);
+    }
+
+    public StatementDomBuilder parseFieldInitializerBuilder() {
+        return parseFieldInitializer(parser.fieldDefinition(), true);
+    }
+
+    public StatementDomBuilder parseFieldInitializer(JavaParser.FieldDefinitionContext ctx, boolean atRoot) {
+        String name = ctx.name.getText();
+        ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot);
+        return Factory.assignField(Factory.self(), name, valueBuilder);
     }
 
     public MethodDomBuilder parseMethodBuilder() {
