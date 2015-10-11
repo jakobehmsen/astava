@@ -4,7 +4,6 @@ import astava.java.DomFactory;
 import astava.java.agent.ClassNodeExtender;
 import astava.java.agent.ClassNodeExtenderFactory;
 import astava.java.agent.MethodNodeExtenderFactory;
-import astava.java.agent.SequenceClassNodeExtender;
 import astava.java.parser.*;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
@@ -13,7 +12,6 @@ import org.objectweb.asm.tree.ClassNode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Hashtable;
 
 public class ClassNodeExtenderParser implements ClassNodeExtender {
@@ -73,6 +71,9 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
         }));
 
         ClassDeclaration thisClass = thisBuilder.build(classResolver);
+
+        // The class inspector should probably be decorated such that when the name of thisClass is
+        // requested, then thisClass is returned
 
         builders.stream().map(d -> {
             return new DomBuilderVisitor.Return<ClassNodeExtender>() {
