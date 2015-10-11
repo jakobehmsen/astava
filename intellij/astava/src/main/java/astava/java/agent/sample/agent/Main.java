@@ -26,10 +26,6 @@ public class Main {
         myClassNodeExtenderParser.extend("public int myField3 = 8;");
         myClassNodeExtenderParser.extend("public java.lang.String toString() {return myField;}");
 
-        ConditionalClassNodeExtender extender = new ConditionalClassNodeExtender();
-
-        extender.extend(x -> x.name.equals("astava/java/agent/sample/MyClass"), myClassNodeExtenderParser);
-
-        instrumentation.addTransformer(new ClassNodeTransformer(extender));
+        instrumentation.addTransformer(new ClassNodeTransformer(myClassNodeExtenderParser.when(x -> x.name.equals("astava/java/agent/sample/MyClass"))));
     }
 }
