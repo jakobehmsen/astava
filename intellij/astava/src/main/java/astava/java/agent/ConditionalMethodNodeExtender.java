@@ -16,8 +16,14 @@ public class ConditionalMethodNodeExtender implements ClassNodeExtender {
 
     @Override
     public void transform(ClassNode classNode) {
-        classNode.methods.stream()
-            .filter(x -> condition.test(classNode, (MethodNode)x))
-            .forEach(x -> extender.transform(classNode, (MethodNode)x));
+        for (Object x: classNode.methods) {
+            if(condition.test(classNode, (MethodNode)x))
+                extender.transform(classNode, (MethodNode)x);
+        }
+        /*classNode.methods.stream()
+            .filter(x ->
+                condition.test(classNode, (MethodNode)x))
+            .forEach(x ->
+                extender.transform(classNode, (MethodNode)x));*/
     }
 }

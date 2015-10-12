@@ -27,7 +27,12 @@ public class ClassNodeTransformer implements ClassFileTransformer {
 
         System.out.println(classNode.name);
 
-        extender.transform(classNode);
+        try {
+            extender.transform(classNode);
+        } catch(Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
 
         ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         classNode.accept(classWriter);

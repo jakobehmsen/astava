@@ -38,6 +38,10 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
     public void transform(ClassNode classNode) {
         MutableClassDomBuilder thisBuilder = new MutableClassDomBuilder();
 
+        thisBuilder.setName(classNode.name);
+        thisBuilder.setSuperName(classNode.superName);
+        // Include all fields and methods (members in general) of classNode
+
         builders.stream().forEach(d -> d.accept(new DomBuilderVisitor() {
             @Override
             public void visitClassBuilder(ClassDomBuilder classBuilder) {
@@ -71,6 +75,15 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
         }));
 
         ClassDeclaration thisClass = thisBuilder.build(classResolver);
+
+        ClassInspector classInspector = new ClassInspector() {
+            @Override
+            public ClassDeclaration getClassDeclaration(String name) {
+                if(name.replace('.', '/').equals(thisClass.getName()))
+                    return thisClass;
+                return ClassNodeExtenderParser.this.classInspector.getClassDeclaration(name);
+            }
+        };
 
         // The class inspector should probably be decorated such that when the name of thisClass is
         // requested, then thisClass is returned
@@ -106,10 +119,11 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
 
                 @Override
                 public void visitInitializer(StatementDomBuilder statement) {
-                    setResult(MethodNodeExtenderFactory.setBody(DomFactory.block(Arrays.asList(
+                    //setResult(MethodNodeExtenderFactory.setBody(DomFactory.block(Arrays.asList(
+                    setResult(MethodNodeExtenderFactory.append(DomFactory.block(Arrays.asList(
                         // How to add initialization after method body? Method body seems to return
-                        statement.build(classResolver, thisClass, classInspector, new Hashtable<>()),
-                        DomFactory.methodBody()
+                        statement.build(classResolver, thisClass, classInspector, new Hashtable<>())/*,
+                        DomFactory.methodBody()*/
                     ))).when((c, m) -> m.name.equals("<init>")));
                 }
             }.visit(d);
