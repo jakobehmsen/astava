@@ -2,7 +2,7 @@ grammar Java;
 
 classFile: classDefinition;
 script: element*;
-element: classDefinition | fieldDefinition | methodDefinition | statement | expression;
+element: classDefinition | fieldDefinition | methodDefinition | statement | expression | annotation;
 classDefinition: modifiers KW_CLASS name=typeQualifier OPEN_BRA classMember* CLOSE_BRA;
 classMember: fieldDefinition | methodDefinition;
 fieldDefinition: modifiers type=typeQualifier name=ID (OP_ASSIGN value=expression)? SEMI_COLON;
@@ -34,7 +34,9 @@ stringLiteral: STRING;
 nullLiteral: KW_NULL;
 newInstance: KW_NEW name=typeQualifier arguments;
 arguments: OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
+annotation: AT typeQualifier;
 
+AT: '@';
 OP_ASSIGN: '=';
 SEMI_COLON: ';';
 DOT: '.';

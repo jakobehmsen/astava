@@ -23,11 +23,13 @@ public class Main {
         ClassNodeExtenderParser myClassNodeExtenderParser = new ClassNodeExtenderParser(classResolver, classInspector);
 
         //myClassNodeExtenderParser.extend("public java.lang.String myField = \"Hello1\";");
+        myClassNodeExtenderParser.extend("@astava.java.agent.sample.MyAnnotation");
         myClassNodeExtenderParser.extend("public java.lang.String myField = myMethod();");
         myClassNodeExtenderParser.extend("public java.lang.String myMethod() {return \"Hello there!!!\";}");
         myClassNodeExtenderParser.extend("public int myField3 = 8;");
         myClassNodeExtenderParser.extend("public java.lang.String toString() {return myField;}");
 
+        // Support parsed filters
         instrumentation.addTransformer(new ClassNodeTransformer(myClassNodeExtenderParser.when(x -> x.name.equals("astava/java/agent/sample/MyClass"))));
     }
 }

@@ -479,4 +479,13 @@ public class Factory {
             }
         };
     }
+
+    public static DomBuilder annotation(String typeName) {
+        return new DomBuilder() {
+            @Override
+            public void accept(DomBuilderVisitor visitor) {
+                visitor.visitAnnotation(typeName);
+            }
+        };
+    }
 }

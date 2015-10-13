@@ -324,7 +324,16 @@ public class Parser {
             public List<DomBuilder> visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
                 return Arrays.asList(parseExpressionBuilder(ctx, true));
             }
+
+            @Override
+            public List<DomBuilder> visitAnnotation(JavaParser.AnnotationContext ctx) {
+                return Arrays.asList(parseAnnotationBuilder(ctx));
+            }
         })).flatMap(x -> x.stream()).collect(Collectors.toList());
+    }
+
+    private DomBuilder parseAnnotationBuilder(JavaParser.AnnotationContext ctx) {
+        return Factory.annotation(ctx.typeQualifier().getText());
     }
 
     public static String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {

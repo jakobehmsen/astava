@@ -1,5 +1,6 @@
 package astava.java.agent.Parser;
 
+import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.agent.ClassNodeExtender;
 import astava.java.agent.ClassNodeExtenderFactory;
@@ -7,6 +8,7 @@ import astava.java.agent.MethodNodeExtenderFactory;
 import astava.java.parser.*;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
@@ -72,6 +74,11 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
             public void visitInitializer(StatementDomBuilder statement) {
 
             }
+
+            @Override
+            public void visitAnnotation(String typeName) {
+
+            }
         }));
 
         ClassDeclaration thisClass = thisBuilder.build(classResolver);
@@ -125,6 +132,12 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
                         statement.build(classResolver, thisClass, classInspector, new Hashtable<>())/*,
                         DomFactory.methodBody()*/
                     ))).when((c, m) -> m.name.equals("<init>")));
+                }
+
+                @Override
+                public void visitAnnotation(String typeName) {
+                    String desc = Descriptor.get(typeName);
+                    classNode.visibleAnnotations.add(new AnnotationNode(desc));
                 }
             }.visit(d);
         }).forEach(x -> x.transform(classNode));

@@ -7,6 +7,7 @@ public interface DomBuilderVisitor {
     void visitMethodBuilder(MethodDomBuilder methodBuilder);
     void visitStatementBuilder(StatementDomBuilder statementBuilder);
     void visitInitializer(StatementDomBuilder statement);
+    void visitAnnotation(String typeName);
 
     abstract class Return<T> implements DomBuilderVisitor {
         private T result;

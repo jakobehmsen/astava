@@ -283,6 +283,11 @@ public class Main {
                                 public void visitInitializer(StatementDomBuilder statement) {
 
                                 }
+
+                                @Override
+                                public void visitAnnotation(String typeName) {
+
+                                }
                             }));
                         } catch (IOException e1) {
                             e1.printStackTrace();
