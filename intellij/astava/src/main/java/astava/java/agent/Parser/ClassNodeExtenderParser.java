@@ -136,8 +136,7 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
 
                 @Override
                 public void visitAnnotation(String typeName) {
-                    String desc = Descriptor.get(typeName);
-                    classNode.visibleAnnotations.add(new AnnotationNode(desc));
+                    setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName)));
                 }
             }.visit(d);
         }).forEach(x -> x.transform(classNode));

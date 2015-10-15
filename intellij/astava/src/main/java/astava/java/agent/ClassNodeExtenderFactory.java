@@ -6,6 +6,7 @@ import astava.tree.*;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -17,6 +18,16 @@ public class ClassNodeExtenderFactory {
     public static ClassNodeExtender setSuperName(String superName) {
         return classNode -> {
             classNode.superName = superName;
+        };
+    }
+
+    public static ClassNodeExtender addAnnotation(String typeName) {
+        return classNode -> {
+            String desc = Descriptor.getTypeDescriptor(typeName);
+            //new Annotation();
+            //classNode.visibleTypeAnnotations.add(new AnnotationNode(desc));
+            //classNode.visibleAnnotations.add(new AnnotationNode(desc));
+            classNode.visitAnnotation(desc, true);
         };
     }
 
