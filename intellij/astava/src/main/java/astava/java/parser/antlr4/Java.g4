@@ -40,7 +40,12 @@ annotation: AT typeQualifier
     CLOSE_PAR)?;
 annotationArgument: name=ID OP_ASSIGN value=expression;
 
-classPredicate: accessModifier KW_CLASS name=typeQualifier;
+classPredicate:
+    accessModifier? KW_CLASS name=typeQualifier?
+    (KW_EXTENDS superClassName=typeQualifier)?
+    (KW_IMPLEMENTS classPredicateInterface (COMMA classPredicateInterface)*)?;
+classPredicateInterface:
+    typeQualifier;
 
 AT: '@';
 OP_ASSIGN: '=';
@@ -60,6 +65,8 @@ KW_ABSTRACT: 'abstract';
 KW_STATIC: 'static';
 KW_CLASS: 'class';
 KW_NULL: 'null';
+KW_EXTENDS: 'extends';
+KW_IMPLEMENTS: 'implements';
 fragment DIGIT: [0-9];
 fragment LETTER: [A-Z]|[a-z];
 ID: (LETTER | '_') (LETTER | '_' | DIGIT)*;

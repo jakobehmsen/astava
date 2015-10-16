@@ -397,6 +397,9 @@ public class Parser {
     }
 
     private int parseAccessModifier(JavaParser.AccessModifierContext ctx) {
+        if(ctx == null)
+            return -1;
+
         if(ctx.KW_PRIVATE() != null)
             return Modifier.PRIVATE;
         else if(ctx.KW_PROTECTED() != null)
@@ -1017,19 +1020,31 @@ public class Parser {
     public Predicate<ClassNode> parseClassPredicate() {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
-        int accessModifier = parseAccessModifier(ctx.accessModifier());
-        String name = Descriptor.get(ctx.name.getText());
+        ArrayList<Predicate<ClassNode>> predicates = new ArrayList<>();
 
-        return classNode -> {
-            if(accessModifier != -1) {
-                if(classNode.access != accessModifier)
-                    return false;
-            }
+        if(ctx.accessModifier() != null) {
+            int accessModifier = parseAccessModifier(ctx.accessModifier());
+            predicates.add(classNode -> classNode.access == accessModifier);
+        }
 
-            if(!classNode.name.equals(name))
-                return false;
+        if(ctx.name != null) {
+            String name = Descriptor.get(ctx.name.getText());
+            predicates.add(classNode -> classNode.name.equals(name));
+        }
 
-            return true;
-        };
+        if(ctx.superClassName != null) {
+            String superClassName = Descriptor.get(ctx.superClassName.getText());
+            // What about indirect inheritance?
+            predicates.add(classNode -> classNode.superName.equals(superClassName));
+        }
+
+        if(ctx.classPredicateInterface().size() > 0) {
+            List<String> interfaceNames =
+                ctx.classPredicateInterface().stream().map(x -> Descriptor.get(x.getText())).collect(Collectors.toList());
+            // What about indirect implementors?
+            predicates.add(classNode -> interfaceNames.stream().allMatch(interfaceName -> classNode.interfaces.contains(interfaceName)));
+        }
+
+        return classNode -> predicates.stream().allMatch(condition -> condition.test(classNode));
     }
 }

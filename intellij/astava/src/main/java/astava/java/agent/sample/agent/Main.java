@@ -32,6 +32,8 @@ public class Main {
         classNodeModifier.extend("public java.lang.String toString() {return myField;}");
 
         // Support parsed filters
-        instrumentation.addTransformer(new ClassNodeTransformer(classNodeModifier.when("class astava.java.agent.sample.MyClass")));
+        instrumentation.addTransformer(new ClassNodeTransformer(classNodeModifier.when(
+            "class astava.java.agent.sample.MyClass extends astava.java.agent.sample.MyOtherClass implements java.io.Serializable"
+        )));
     }
 }
