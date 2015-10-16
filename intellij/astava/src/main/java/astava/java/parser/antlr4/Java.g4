@@ -34,7 +34,11 @@ stringLiteral: STRING;
 nullLiteral: KW_NULL;
 newInstance: KW_NEW name=typeQualifier arguments;
 arguments: OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
-annotation: AT typeQualifier;
+annotation: AT typeQualifier
+    (OPEN_PAR
+        ((valueArgument=expression | annotationArgument)? (COMMA annotationArgument)*)
+    CLOSE_PAR)?;
+annotationArgument: name=ID OP_ASSIGN value=expression;
 
 AT: '@';
 OP_ASSIGN: '=';

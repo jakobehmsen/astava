@@ -333,7 +333,31 @@ public class Parser {
     }
 
     private DomBuilder parseAnnotationBuilder(JavaParser.AnnotationContext ctx) {
-        return Factory.annotation(ctx.typeQualifier().getText());
+        Map<String, Object> values = new Hashtable<>();
+        if(ctx.valueArgument != null) {
+            Object value = parsePrimitive(ctx.valueArgument);
+            values.put("value", value);
+        }
+        ctx.annotationArgument().forEach(a -> {
+            Object value = parsePrimitive(a.value);
+            values.put(a.name.getText(), value);
+        });
+
+        return Factory.annotation(ctx.typeQualifier().getText(), values);
+    }
+
+    private Object parsePrimitive(JavaParser.ExpressionContext context) {
+        return context.accept(new JavaBaseVisitor<Object>() {
+            @Override
+            public Object visitIntLiteral(JavaParser.IntLiteralContext ctx) {
+                return parseIntValue(ctx);
+            }
+
+            @Override
+            public Object visitStringLiteral(JavaParser.StringLiteralContext ctx) {
+                return parseStringValue(ctx);
+            }
+        });
     }
 
     public static String parseTypeQualifier(ClassResolver classResolver, String typeQualifier) {
@@ -796,16 +820,14 @@ public class Parser {
 
             @Override
             public ExpressionDomBuilder visitIntLiteral(@NotNull JavaParser.IntLiteralContext ctx) {
-                int value = Integer.parseInt(ctx.getText());
+                int value = parseIntValue(ctx);
 
                 return Factory.literal(value);
             }
 
             @Override
             public ExpressionDomBuilder visitStringLiteral(@NotNull JavaParser.StringLiteralContext ctx) {
-                String rawString = ctx.getText();
-                String value = rawString.substring(1, rawString.length() - 1)
-                    .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
+                String value = parseStringValue(ctx);
 
                 return Factory.literal(value);
             }
@@ -831,6 +853,17 @@ public class Parser {
             }
         });
     }
+
+    private int parseIntValue(@NotNull JavaParser.IntLiteralContext ctx) {
+        return Integer.parseInt(ctx.getText());
+    }
+
+    private String parseStringValue(@NotNull JavaParser.StringLiteralContext ctx) {
+        String rawString = ctx.getText();
+        return rawString.substring(1, rawString.length() - 1)
+            .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
+    }
+
 
     private StatementDomBuilder fieldAssignmentStatement(@NotNull JavaParser.FieldAssignmentContext ctx, boolean atRoot, boolean asStatement, ExpressionDomBuilder targetBuilder) {
         String name = ctx.ID().getText();

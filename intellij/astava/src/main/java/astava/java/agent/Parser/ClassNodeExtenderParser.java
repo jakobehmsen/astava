@@ -8,13 +8,13 @@ import astava.java.agent.MethodNodeExtenderFactory;
 import astava.java.parser.*;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
-import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.Map;
 
 public class ClassNodeExtenderParser implements ClassNodeExtender {
     private ClassResolver classResolver;
@@ -76,7 +76,7 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
             }
 
             @Override
-            public void visitAnnotation(String typeName) {
+            public void visitAnnotation(String typeName, Map<String, Object> values) {
 
             }
         }));
@@ -86,7 +86,7 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
         ClassInspector classInspector = new ClassInspector() {
             @Override
             public ClassDeclaration getClassDeclaration(String name) {
-                if(name.replace('.', '/').equals(thisClass.getName()))
+                if(Descriptor.get(name).equals(thisClass.getName()))
                     return thisClass;
                 return ClassNodeExtenderParser.this.classInspector.getClassDeclaration(name);
             }
@@ -135,8 +135,8 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
                 }
 
                 @Override
-                public void visitAnnotation(String typeName) {
-                    setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName)));
+                public void visitAnnotation(String typeName, Map<String, Object> values) {
+                    setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName), values));
                 }
             }.visit(d);
         }).forEach(x -> x.transform(classNode));

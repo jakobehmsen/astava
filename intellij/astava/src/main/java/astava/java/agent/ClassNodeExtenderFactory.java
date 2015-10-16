@@ -3,6 +3,7 @@ package astava.java.agent;
 import astava.java.Descriptor;
 import astava.java.gen.MethodGenerator;
 import astava.tree.*;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -11,6 +12,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -21,13 +23,14 @@ public class ClassNodeExtenderFactory {
         };
     }
 
-    public static ClassNodeExtender addAnnotation(String typeName) {
+    public static ClassNodeExtender addAnnotation(String typeName, Map<String, Object> values) {
         return classNode -> {
             String desc = Descriptor.getTypeDescriptor(typeName);
             //new Annotation();
             //classNode.visibleTypeAnnotations.add(new AnnotationNode(desc));
             //classNode.visibleAnnotations.add(new AnnotationNode(desc));
-            classNode.visitAnnotation(desc, true);
+            AnnotationVisitor annotation = classNode.visitAnnotation(desc, true);
+            values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
         };
     }
 

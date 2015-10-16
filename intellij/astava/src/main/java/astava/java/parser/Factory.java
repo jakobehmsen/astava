@@ -480,11 +480,11 @@ public class Factory {
         };
     }
 
-    public static DomBuilder annotation(String typeName) {
+    public static DomBuilder annotation(String typeName, Map<String, Object> values) {
         return new DomBuilder() {
             @Override
             public void accept(DomBuilderVisitor visitor) {
-                visitor.visitAnnotation(typeName);
+                visitor.visitAnnotation(typeName, values);
             }
         };
     }

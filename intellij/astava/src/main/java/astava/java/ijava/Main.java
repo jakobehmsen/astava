@@ -285,7 +285,7 @@ public class Main {
                                 }
 
                                 @Override
-                                public void visitAnnotation(String typeName) {
+                                public void visitAnnotation(String typeName, Map<String, Object> values) {
 
                                 }
                             }));
