@@ -40,6 +40,8 @@ annotation: AT typeQualifier
     CLOSE_PAR)?;
 annotationArgument: name=ID OP_ASSIGN value=expression;
 
+classPredicate: accessModifier KW_CLASS name=typeQualifier;
+
 AT: '@';
 OP_ASSIGN: '=';
 SEMI_COLON: ';';

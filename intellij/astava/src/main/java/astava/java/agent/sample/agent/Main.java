@@ -4,12 +4,13 @@ import astava.java.agent.*;
 import astava.java.agent.Parser.ClassNodeExtenderParser;
 import astava.java.parser.*;
 
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class Main {
-    public static void premain(String agentArgument, Instrumentation instrumentation) {
+    public static void premain(String agentArgument, Instrumentation instrumentation) throws IOException {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
         ClassResolver classResolver = new DefaultClassResolver(classLoader, Arrays.asList(
@@ -20,17 +21,17 @@ public class Main {
 
         ClassInspector classInspector = new DefaultClassInspector(classLoader);
 
-        ClassNodeExtenderParser myClassNodeExtenderParser = new ClassNodeExtenderParser(classResolver, classInspector);
+        ClassNodeExtenderParser classNodeModifier = new ClassNodeExtenderParser(classResolver, classInspector);
 
         //myClassNodeExtenderParser.extend("public java.lang.String myField = \"Hello1\";");
         //myClassNodeExtenderParser.extend("@astava.java.agent.sample.MyAnnotation()");
-        myClassNodeExtenderParser.extend("@astava.java.agent.sample.MyAnnotation(567, extra = \"abc\")");
-        myClassNodeExtenderParser.extend("public java.lang.String myField = myMethod();");
-        myClassNodeExtenderParser.extend("public java.lang.String myMethod() {return \"Hello there!!!\";}");
-        myClassNodeExtenderParser.extend("public int myField3 = 8;");
-        myClassNodeExtenderParser.extend("public java.lang.String toString() {return myField;}");
+        classNodeModifier.extend("@astava.java.agent.sample.MyAnnotation(567, extra = \"abc\")");
+        classNodeModifier.extend("public java.lang.String myField = myMethod();");
+        classNodeModifier.extend("public java.lang.String myMethod() {return \"Hello there!!!\";}");
+        classNodeModifier.extend("public int myField3 = 8;");
+        classNodeModifier.extend("public java.lang.String toString() {return myField;}");
 
         // Support parsed filters
-        instrumentation.addTransformer(new ClassNodeTransformer(myClassNodeExtenderParser.when(x -> x.name.equals("astava/java/agent/sample/MyClass"))));
+        instrumentation.addTransformer(new ClassNodeTransformer(classNodeModifier.when("class astava.java.agent.sample.MyClass")));
     }
 }

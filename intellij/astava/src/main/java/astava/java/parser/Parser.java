@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
@@ -21,6 +22,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -392,6 +394,17 @@ public class Parser {
             modifiers |= Modifier.STATIC;
 
         return modifiers;
+    }
+
+    private int parseAccessModifier(JavaParser.AccessModifierContext ctx) {
+        if(ctx.KW_PRIVATE() != null)
+            return Modifier.PRIVATE;
+        else if(ctx.KW_PROTECTED() != null)
+            return Modifier.PROTECTED;
+        else if(ctx.KW_PUBLIC() != null)
+            return Modifier.PUBLIC;
+
+        return -1;
     }
 
     public MutableClassDomBuilder parseClass() {
@@ -999,5 +1012,24 @@ public class Parser {
         }
 
         return null;
+    }
+
+    public Predicate<ClassNode> parseClassPredicate() {
+        JavaParser.ClassPredicateContext ctx = parser.classPredicate();
+
+        int accessModifier = parseAccessModifier(ctx.accessModifier());
+        String name = Descriptor.get(ctx.name.getText());
+
+        return classNode -> {
+            if(accessModifier != -1) {
+                if(classNode.access != accessModifier)
+                    return false;
+            }
+
+            if(!classNode.name.equals(name))
+                return false;
+
+            return true;
+        };
     }
 }
