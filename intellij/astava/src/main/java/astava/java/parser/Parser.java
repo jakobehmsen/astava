@@ -2,6 +2,7 @@ package astava.java.parser;
 
 import astava.debug.Debug;
 import astava.java.Descriptor;
+import astava.java.agent.ClassNodePredicate;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
@@ -1017,7 +1018,7 @@ public class Parser {
         return null;
     }
 
-    public Predicate<ClassNode> parseClassPredicate() {
+    /*public Predicate<ClassNode> parseClassPredicate() {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
         ArrayList<Predicate<ClassNode>> predicates = new ArrayList<>();
@@ -1046,5 +1047,52 @@ public class Parser {
         }
 
         return classNode -> predicates.stream().allMatch(condition -> condition.test(classNode));
+    }*/
+
+    public Collection<? extends ClassNodePredicate> parseClassPredicates() {
+        JavaParser.ClassPredicateContext ctx = parser.classPredicate();
+
+        ArrayList<ClassNodePredicate> predicates = new ArrayList<>();
+
+        ctx.classPredicateElement().forEach(x -> {
+            x.accept(new JavaBaseVisitor<Void>() {
+                @Override
+                public Void visitClassPredicateAccessModifier(JavaParser.ClassPredicateAccessModifierContext ctx) {
+                    int accessModifier = parseAccessModifier(ctx.accessModifier());
+                    predicates.add(classNode -> classNode.access == accessModifier);
+
+                    return null;
+                }
+
+                @Override
+                public Void visitClassPredicateName(JavaParser.ClassPredicateNameContext ctx) {
+                    String name = Descriptor.get(ctx.name.getText());
+                    predicates.add(classNode -> classNode.name.equals(name));
+
+                    return null;
+                }
+
+                @Override
+                public Void visitClassPredicateExtends(JavaParser.ClassPredicateExtendsContext ctx) {
+                    String superClassName = Descriptor.get(ctx.superClassName.getText());
+                    // What about indirect inheritance?
+                    predicates.add(classNode -> classNode.superName.equals(superClassName));
+
+                    return null;
+                }
+
+                @Override
+                public Void visitClassPredicateImplements(JavaParser.ClassPredicateImplementsContext ctx) {
+                    List<String> interfaceNames =
+                        ctx.classPredicateInterface().stream().map(x -> Descriptor.get(x.getText())).collect(Collectors.toList());
+                    // What about indirect implementors?
+                    predicates.add(classNode -> interfaceNames.stream().allMatch(interfaceName -> classNode.interfaces.contains(interfaceName)));
+
+                    return null;
+                }
+            });
+        });
+
+        return predicates;
     }
 }

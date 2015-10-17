@@ -2,6 +2,7 @@ package astava.java.agent.sample.agent;
 
 import astava.java.agent.*;
 import astava.java.agent.Parser.ClassNodeExtenderParser;
+import astava.java.agent.Parser.ClassNodePredicateParser;
 import astava.java.parser.*;
 
 import java.io.IOException;
@@ -31,9 +32,14 @@ public class Main {
         classNodeModifier.extend("public int myField3 = 8;");
         classNodeModifier.extend("public java.lang.String toString() {return myField;}");
 
+        ClassNodePredicateParser classNodePredicate = new ClassNodePredicateParser();
+
+        //classNodePredicate.add("class astava.java.agent.sample.MyClass extends astava.java.agent.sample.MyOtherClass implements java.io.Serializable");
+        classNodePredicate.add("class astava.java.agent.sample.MyClass");
+        classNodePredicate.add("extends astava.java.agent.sample.MyOtherClass");
+        classNodePredicate.add("implements java.io.Serializable");
+
         // Support parsed filters
-        instrumentation.addTransformer(new ClassNodeTransformer(classNodeModifier.when(
-            "class astava.java.agent.sample.MyClass extends astava.java.agent.sample.MyOtherClass implements java.io.Serializable"
-        )));
+        instrumentation.addTransformer(new ClassNodeTransformer(classNodeModifier.when(classNodePredicate)));
     }
 }

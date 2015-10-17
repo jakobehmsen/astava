@@ -8,10 +8,10 @@ import java.util.*;
 import java.util.function.Predicate;
 
 public class ConditionalClassNodeExtender implements ClassNodeExtender {
-    private Predicate<ClassNode> condition;
+    private ClassNodePredicate condition;
     private ClassNodeExtender extender;
 
-    public ConditionalClassNodeExtender(Predicate<ClassNode> condition, ClassNodeExtender extender) {
+    public ConditionalClassNodeExtender(ClassNodePredicate condition, ClassNodeExtender extender) {
         this.condition = condition;
         this.extender = extender;
     }

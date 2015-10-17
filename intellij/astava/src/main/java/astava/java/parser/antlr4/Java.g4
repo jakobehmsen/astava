@@ -41,9 +41,17 @@ annotation: AT typeQualifier
 annotationArgument: name=ID OP_ASSIGN value=expression;
 
 classPredicate:
-    accessModifier? KW_CLASS name=typeQualifier?
-    (KW_EXTENDS superClassName=typeQualifier)?
-    (KW_IMPLEMENTS classPredicateInterface (COMMA classPredicateInterface)*)?;
+    classPredicateElement*;
+classPredicateElement:
+    classPredicateAccessModifier | classPredicateName | classPredicateExtends | classPredicateImplements;
+classPredicateAccessModifier:
+    accessModifier;
+classPredicateName:
+    KW_CLASS name=typeQualifier;
+classPredicateExtends:
+    (KW_EXTENDS superClassName=typeQualifier);
+classPredicateImplements:
+    KW_IMPLEMENTS classPredicateInterface (COMMA classPredicateInterface)*;
 classPredicateInterface:
     typeQualifier;
 
