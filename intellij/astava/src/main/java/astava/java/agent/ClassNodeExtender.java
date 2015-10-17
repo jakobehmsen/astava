@@ -1,13 +1,11 @@
 package astava.java.agent;
 
-import astava.java.agent.Parser.ClassNodePredicateParser;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -15,13 +13,6 @@ import java.security.ProtectionDomain;
 
 public interface ClassNodeExtender extends ClassFileTransformer {
     void transform(ClassNode classNode);
-    default ClassNodeExtender when(String sourceCode) throws IOException {
-        ClassNodePredicateParser predicateParser = new ClassNodePredicateParser();
-
-        predicateParser.add(sourceCode);
-
-        return when(predicateParser);
-    }
     default ClassNodeExtender when(ClassNodePredicate condition) {
         return new ConditionalClassNodeExtender(condition, this);
     }

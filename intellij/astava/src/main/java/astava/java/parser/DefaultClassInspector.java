@@ -128,7 +128,7 @@ public class DefaultClassInspector implements ClassInspector {
 
                 @Override
                 public String getSuperName() {
-                    return physicalClass.getSuperclass().getName();
+                    return physicalClass.getSuperclass() != null ? physicalClass.getSuperclass().getName() : null;
                 }
 
                 @Override

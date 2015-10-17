@@ -32,11 +32,12 @@ public class Main {
         classNodeModifier.extend("public int myField3 = 8;");
         classNodeModifier.extend("public java.lang.String toString() {return myField;}");
 
-        ClassNodePredicateParser classNodePredicate = new ClassNodePredicateParser();
+        ClassNodePredicateParser classNodePredicate = new ClassNodePredicateParser(classInspector);
 
         //classNodePredicate.add("class astava.java.agent.sample.MyClass extends astava.java.agent.sample.MyOtherClass implements java.io.Serializable");
         classNodePredicate.add("class astava.java.agent.sample.MyClass");
-        classNodePredicate.add("extends astava.java.agent.sample.MyOtherClass");
+        //classNodePredicate.add("extends astava.java.agent.sample.MyOtherClass");
+        classNodePredicate.add("extends java.lang.Object");
         classNodePredicate.add("implements java.io.Serializable");
 
         // Support parsed filters

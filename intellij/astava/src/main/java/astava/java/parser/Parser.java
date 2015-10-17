@@ -1049,7 +1049,7 @@ public class Parser {
         return classNode -> predicates.stream().allMatch(condition -> condition.test(classNode));
     }*/
 
-    public Collection<? extends ClassNodePredicate> parseClassPredicates() {
+    public Collection<? extends ClassNodePredicate> parseClassPredicates(ClassInspector classInspector) {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
         ArrayList<ClassNodePredicate> predicates = new ArrayList<>();
@@ -1059,7 +1059,8 @@ public class Parser {
                 @Override
                 public Void visitClassPredicateAccessModifier(JavaParser.ClassPredicateAccessModifierContext ctx) {
                     int accessModifier = parseAccessModifier(ctx.accessModifier());
-                    predicates.add(classNode -> classNode.access == accessModifier);
+                    predicates.add(classNode ->
+                        classNode.access == accessModifier);
 
                     return null;
                 }
@@ -1067,7 +1068,8 @@ public class Parser {
                 @Override
                 public Void visitClassPredicateName(JavaParser.ClassPredicateNameContext ctx) {
                     String name = Descriptor.get(ctx.name.getText());
-                    predicates.add(classNode -> classNode.name.equals(name));
+                    predicates.add(classNode ->
+                        classNode.name.equals(name));
 
                     return null;
                 }
@@ -1076,7 +1078,26 @@ public class Parser {
                 public Void visitClassPredicateExtends(JavaParser.ClassPredicateExtendsContext ctx) {
                     String superClassName = Descriptor.get(ctx.superClassName.getText());
                     // What about indirect inheritance?
-                    predicates.add(classNode -> classNode.superName.equals(superClassName));
+                    predicates.add(classNode -> {
+                        if(classNode.superName.equals(superClassName))
+                            return true;
+
+                        if(classNode.superName != null) {
+                            ClassDeclaration superClass = classInspector.getClassDeclarationFromDescriptor(classNode.superName);
+
+                            while (true) {
+                                if (superClass.getSuperName() != null && Descriptor.get(superClass.getSuperName()).equals(superClassName))
+                                    return true;
+                                else {
+                                    if (superClass.getSuperName() != null)
+                                        superClass = classInspector.getClassDeclaration(superClass.getSuperName());
+                                    else
+                                        return false;
+                                }
+                            }
+                        } else
+                            return false;
+                    });
 
                     return null;
                 }
@@ -1086,7 +1107,28 @@ public class Parser {
                     List<String> interfaceNames =
                         ctx.classPredicateInterface().stream().map(x -> Descriptor.get(x.getText())).collect(Collectors.toList());
                     // What about indirect implementors?
-                    predicates.add(classNode -> interfaceNames.stream().allMatch(interfaceName -> classNode.interfaces.contains(interfaceName)));
+                    predicates.add(classNode -> {
+                        if(interfaceNames.stream().allMatch(interfaceName -> classNode.interfaces.contains(interfaceName)))
+                            return true;
+
+                        if(classNode.superName != null) {
+                            ClassDeclaration superClass = classInspector.getClassDeclarationFromDescriptor(classNode.superName);
+
+                            while(true) {
+                                final ClassDeclaration superClassToTest = superClass;
+                                if(interfaceNames.stream().map(x -> Descriptor.getName(x)).allMatch(interfaceName -> superClassToTest.getInterfaces().contains(interfaceName)))
+                                    return true;
+                                else {
+                                    if(superClass.getSuperName() != null)
+                                        superClass = classInspector.getClassDeclaration(superClass.getSuperName());
+                                    else
+                                        return false;
+                                }
+                            }
+
+                        } else
+                            return false;
+                    });
 
                     return null;
                 }
