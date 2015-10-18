@@ -14,15 +14,37 @@ parameter: type=typeQualifier name=ID;
 typeQualifier: ID (DOT ID)*;
 modifiers: accessModifier? KW_ABSTRACT? KW_STATIC?;
 accessModifier: KW_PUBLIC | KW_PRIVATE | KW_PROTECTED;
-statement: delimitedStatement SEMI_COLON;
+statement: nonDelimitedStatement | delimitedStatement SEMI_COLON;
+
+nonDelimitedStatement: ifElseStatement;
+ifElseStatement: 
+    KW_IF OPEN_PAR condition=expression CLOSE_PAR 
+    ifTrueBlock=singleOrMultiStatement
+    (KW_ELSE ifFalseBlock=singleOrMultiStatement)?;
+
+singleOrMultiStatement: OPEN_BRA statement* CLOSE_BRA | statement;
+
 delimitedStatement: 
     returnStatement | variableDeclaration | expression;
 returnStatement: KW_RETURN expression;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
-expression: assignment | leafExpression;
+
+// Expression precedence following http://www.cs.bilkent.edu.tr/~guvenir/courses/CS101/op_precedence.html
+expression: assignment | expression4;
 assignment: name=ID OP_ASSIGN value=expression;
+
+expression4: expressionLogicalAnd | expression9;
+expressionLogicalAnd: first=expression9 (AMPERSAND expression)*;
+
+expression9: instanceOfExpression | expression13;
+instanceOfExpression: expression13 KW_INSTANCE_OF typeQualifier;
+
+expression13: typeCastExpression | leafExpression;
+typeCastExpression: OPEN_PAR typeQualifier CLOSE_PAR expression;
+
+// TODO: Add support for boolean literals true and false
 leafExpression: 
-    (invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | newInstance)
+    (invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | thisLiteral | newInstance)
     chainElement*;
 invocation: ID arguments;
 chainElement: DOT (fieldAssignment | fieldAccess | invocation);
@@ -32,6 +54,7 @@ ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR && _input.LT(2).getType() 
 intLiteral: INT;
 stringLiteral: STRING;
 nullLiteral: KW_NULL;
+thisLiteral: KW_THIS;
 newInstance: KW_NEW name=typeQualifier arguments;
 arguments: OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
 annotation: AT typeQualifier
@@ -55,6 +78,7 @@ classPredicateImplements:
 classPredicateInterface:
     typeQualifier;
 
+AMPERSAND: '&&';
 AT: '@';
 OP_ASSIGN: '=';
 SEMI_COLON: ';';
@@ -75,6 +99,10 @@ KW_CLASS: 'class';
 KW_NULL: 'null';
 KW_EXTENDS: 'extends';
 KW_IMPLEMENTS: 'implements';
+KW_INSTANCE_OF: 'instanceof';
+KW_IF: 'if';
+KW_ELSE: 'else';
+KW_THIS: 'this';
 fragment DIGIT: [0-9];
 fragment LETTER: [A-Z]|[a-z];
 ID: (LETTER | '_') (LETTER | '_' | DIGIT)*;

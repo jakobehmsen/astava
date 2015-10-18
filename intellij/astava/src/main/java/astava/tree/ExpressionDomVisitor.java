@@ -69,7 +69,11 @@ public interface ExpressionDomVisitor {
 
 
         public T returnFrom(ExpressionDom expression) {
+            if(expression == null)
+                new String();
+
             expression.accept(this);
+
             return result;
         }
     }

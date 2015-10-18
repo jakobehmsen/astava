@@ -2,6 +2,7 @@ package astava.java.parser;
 
 import astava.debug.Debug;
 import astava.java.Descriptor;
+import astava.java.LogicalOperator;
 import astava.java.agent.ClassNodePredicate;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
@@ -13,7 +14,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
@@ -23,7 +23,6 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -587,6 +586,20 @@ public class Parser {
             }
 
             @Override
+            public StatementDomBuilder visitNonDelimitedStatement(JavaParser.NonDelimitedStatementContext ctx) {
+                return ctx.getChild(0).accept(this);
+            }
+
+            @Override
+            public StatementDomBuilder visitIfElseStatement(JavaParser.IfElseStatementContext ctx) {
+                ExpressionDomBuilder conditionBuilder = parseExpressionBuilder(ctx.condition, true);
+                StatementDomBuilder ifTrueBlockBuilder = parseBlock(ctx.ifTrueBlock.statement());
+                StatementDomBuilder ifFalseBlockBuilder = ctx.ifFalseBlock != null ? parseBlock(ctx.ifFalseBlock.statement()) : Factory.block(Arrays.asList());
+
+                return Factory.ifElse(conditionBuilder, ifTrueBlockBuilder, ifFalseBlockBuilder);
+            }
+
+            @Override
             public StatementDomBuilder visitDelimitedStatement(@NotNull JavaParser.DelimitedStatementContext ctx) {
                 return ctx.getChild(0).accept(this);
             }
@@ -653,6 +666,12 @@ public class Parser {
         });
     }
 
+    private StatementDomBuilder parseBlock(List<JavaParser.StatementContext> statementContexts) {
+        return Factory.block(
+            statementContexts.stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList())
+        );
+    }
+
     private StatementDomBuilder buildAssignment(String name, JavaParser.ExpressionContext valueCtx, boolean atRoot) {
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(valueCtx, atRoot);
 
@@ -663,7 +682,7 @@ public class Parser {
         return parseExpressionBuilder(parser.expression(), true);
     }
 
-    public ExpressionDomBuilder parseExpressionBuilder(JavaParser.ExpressionContext ctx, boolean atRoot) {
+    public ExpressionDomBuilder parseExpressionBuilder(ParserRuleContext ctx, boolean atRoot) {
         return parseExpressionBuilder(ctx, atRoot, false);
     }
 
@@ -671,12 +690,12 @@ public class Parser {
     private static final int NAME_PARAMETER = 1;
     private static final int NAME_FIELD = 2;
 
-    private static <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
-        return parseAmbiguousName(ids.stream().map(x -> x.getText()).collect(Collectors.toList()), cr, cd, nameHandler, fieldChainHandler);
+    private static <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler, Map<String, String> locals) {
+        return parseAmbiguousName(ids.stream().map(x -> x.getText()).collect(Collectors.toList()), cr, cd, nameHandler, fieldChainHandler, locals);
     }
 
     //private <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
-    public static <T> T parseAmbiguousName(List<String> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
+    public static <T> T parseAmbiguousName(List<String> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler, Map<String, String> locals) {
         // Find longest getName that can be resolved
         String name = "";
 
@@ -692,18 +711,24 @@ public class Parser {
             if (i == 1) {
                 name = ids.get(0);
 
-                // Try match with field first
-                String fieldName = name;
-                FieldDeclaration fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst().orElse(null);
-                if (fieldDeclaration == null) {
-                    // What if simple getName cannot be resolved? Then it may be that getName is a field related to the class being defined
-                    name = cr.resolveSimpleName(name);
+                // Try match with variable first
+                if(locals.containsKey(name)) {
+
+                } else {
+
+                    // Then try match with field first
+                    String fieldName = name;
+                    FieldDeclaration fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst().orElse(null);
+                    if (fieldDeclaration == null) {
+                        // What if simple getName cannot be resolved? Then it may be that getName is a field related to the class being defined
+                        name = cr.resolveSimpleName(name);
+                    }
+
+                    // What is required to resolve an ambiguous getName?
+                    // A set of field names and a class getName resolver
+
+                    // So, a parser perhaps shouldn't yield Doms directly but rather something can yield Doms when requested?
                 }
-
-                // What is required to resolve an ambiguous getName?
-                // A set of field names and a class getName resolver
-
-                // So, a parser perhaps shouldn't yield Doms directly but rather something can yield Doms when requested?
             }
 
             List<String> fieldAccessChain;
@@ -868,6 +893,32 @@ public class Parser {
 
                 return Factory.newInstanceExpr(name, argumentBuilders);
             }
+
+            @Override
+            public ExpressionDomBuilder visitExpressionLogicalAnd(JavaParser.ExpressionLogicalAndContext ctx) {
+                ExpressionDomBuilder expressionBuilder = parseExpressionBuilder(ctx.first, false);
+
+                for (JavaParser.ExpressionContext rhsCtx : ctx.expression()) {
+                    ExpressionDomBuilder lhsBuilder = expressionBuilder;
+                    ExpressionDomBuilder rhsBuilder = parseExpressionBuilder(rhsCtx, false);
+                    expressionBuilder = Factory.logicalAnd(lhsBuilder, rhsBuilder, LogicalOperator.AND);
+                }
+
+                return expressionBuilder;
+            }
+
+            @Override
+            public ExpressionDomBuilder visitInstanceOfExpression(JavaParser.InstanceOfExpressionContext ctx) {
+                ExpressionDomBuilder target = parseExpressionBuilder(ctx.expression13(), false);
+                String typeName = ctx.typeQualifier().getText();
+
+                return Factory.instanceOf(target, typeName);
+            }
+
+            @Override
+            public ExpressionDomBuilder visitThisLiteral(JavaParser.ThisLiteralContext ctx) {
+                return Factory.self();
+            }
         });
     }
 
@@ -1001,7 +1052,9 @@ public class Parser {
             .filter(x -> x.getParameterTypes().size() == argumentTypes.size())
             .filter(x -> IntStream.range(0, argumentTypes.size()).allMatch(i ->
                 // Compare full inheritance
-                Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())))
+                isCompatible(classInspector, argumentTypes.get(i), x.getParameterTypes().get(0))
+                //Descriptor.getName(x.getParameterTypes().get(0).descriptor).equals(argumentTypes.get(i).getName())
+            ))
             .collect(Collectors.toList());
 
         if(methods.size() > 0) {
@@ -1016,6 +1069,21 @@ public class Parser {
         }
 
         return null;
+    }
+
+    private static boolean isCompatible(ClassInspector classInspector, ClassDeclaration argumentType, ParameterInfo parameterType) {
+        while(true) {
+            if (Descriptor.getName(parameterType.descriptor).equals(argumentType.getName())) {
+                return true;
+            }
+
+            if (argumentType.getSuperName() != null)
+                argumentType = classInspector.getClassDeclaration(argumentType.getSuperName());
+            else
+                break;
+        }
+
+        return false;
     }
 
     /*public Predicate<ClassNode> parseClassPredicate() {

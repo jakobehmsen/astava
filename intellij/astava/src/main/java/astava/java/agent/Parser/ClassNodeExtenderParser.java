@@ -9,12 +9,11 @@ import astava.java.parser.*;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
 public class ClassNodeExtenderParser implements ClassNodeExtender {
     private ClassResolver classResolver;
@@ -24,6 +23,10 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
     public ClassNodeExtenderParser(ClassResolver classResolver, ClassInspector classInspector) {
         this.classResolver = classResolver;
         this.classInspector = classInspector;
+    }
+
+    public void extend(String sourceCode, Function<ClassDeclaration, String>... arguments) {
+
     }
 
     public void extend(String sourceCode) {
@@ -38,11 +41,15 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
 
     @Override
     public void transform(ClassNode classNode) {
-        MutableClassDomBuilder thisBuilder = new MutableClassDomBuilder();
+        MutableClassDeclaration thisClass = new MutableClassDeclaration();
 
-        thisBuilder.setName(classNode.name);
-        thisBuilder.setSuperName(classNode.superName);
+        thisClass.setName(classNode.name);
+        thisClass.setSuperName(classNode.superName);
+
         // Include all fields and methods (members in general) of classNode
+        ((List<String>)classNode.interfaces).forEach(x -> thisClass.addInterface(Descriptor.getName(x)));
+        ASMClassDeclaration.getFields(classNode).forEach(x -> thisClass.addField(x));
+        ASMClassDeclaration.getMethods(classNode).forEach(x -> thisClass.addMethod(x));
 
         builders.stream().forEach(d -> d.accept(new DomBuilderVisitor() {
             @Override
@@ -57,12 +64,12 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
 
             @Override
             public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
-                thisBuilder.addField(fieldBuilder);
+                thisClass.addField(fieldBuilder.declare(classResolver));
             }
 
             @Override
             public void visitMethodBuilder(MethodDomBuilder methodBuilder) {
-                thisBuilder.addMethod(methodBuilder);
+                thisClass.addMethod(methodBuilder.declare(classResolver));
             }
 
             @Override
@@ -80,8 +87,6 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
 
             }
         }));
-
-        ClassDeclaration thisClass = thisBuilder.build(classResolver);
 
         ClassInspector classInspector = new ClassInspector() {
             @Override

@@ -96,6 +96,8 @@ public class DomFactory {
     }
 
     public static StatementDom ret(ExpressionDom expression) {
+        if(expression == null)
+            new String();
         return v -> v.visitReturnValue(expression);
     }
 

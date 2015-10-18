@@ -251,26 +251,30 @@ public class Factory {
             public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals) {
                 return Parser.parseAmbiguousName(nameParts, cr, cd,
                     name -> {
-                        Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                        if(locals.containsKey(name)) {
+                            return DomFactory.accessVar(name);
+                        } else {
+                            Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
-                        if (fieldDeclaration.isPresent()) {
-                            String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
+                            if (fieldDeclaration.isPresent()) {
+                                String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
 
-                            if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
-                                return DomFactory.accessStaticField(cd.getName(), name, descriptor);
+                                if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
+                                    return DomFactory.accessStaticField(cd.getName(), name, descriptor);
 
-                            return DomFactory.accessField(DomFactory.self(), name, descriptor);
+                                return DomFactory.accessField(DomFactory.self(), name, descriptor);
+                            }
                         }
 
-                        return DomFactory.accessVar(name);
+                        return null;
                     },
                     (target, fieldChainAccess) -> {
                         for (String fieldName : fieldChainAccess)
                             target = Parser.fieldAccess(cr, cd, ci, target, fieldName, locals);
 
                         return target;
-                    }
-                );
+                    },
+                    locals);
             }
 
             @Override
@@ -485,6 +489,47 @@ public class Factory {
             @Override
             public void accept(DomBuilderVisitor visitor) {
                 visitor.visitAnnotation(typeName, values);
+            }
+        };
+    }
+
+    public static StatementDomBuilder ifElse(ExpressionDomBuilder conditionBuilder, StatementDomBuilder ifTrueBuilder, StatementDomBuilder ifFalseBuilder) {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom condition = conditionBuilder.build(classResolver, classDeclaration, classInspector, locals);
+                StatementDom ifTrue = ifTrueBuilder.build(classResolver, classDeclaration, classInspector, locals);
+                StatementDom ifFalse = ifFalseBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.ifElse(condition, ifTrue, ifFalse);
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder instanceOf(ExpressionDomBuilder targetBuilder, String typeName) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.instanceOf(target, Descriptor.get(typeName));
+            }
+
+            @Override
+            public String toString() {
+                return targetBuilder + " instanceof " + typeName;
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder logicalAnd(ExpressionDomBuilder lhsBuilder, ExpressionDomBuilder rhsBuilder, int operator) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom lhs = lhsBuilder.build(classResolver, classDeclaration, classInspector, locals);
+                ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.logical(lhs, rhs, operator);
             }
         };
     }
