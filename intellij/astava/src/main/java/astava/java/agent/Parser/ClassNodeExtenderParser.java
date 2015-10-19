@@ -25,11 +25,7 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
         this.classInspector = classInspector;
     }
 
-    public void extend(String sourceCode, Function<ClassDeclaration, String>... arguments) {
-
-    }
-
-    public void extend(String sourceCode) {
+    public ClassNodeExtenderParser extend(String sourceCode) {
         try {
             new Parser(sourceCode).parse().forEach(d -> {
                 builders.add(d);
@@ -37,6 +33,8 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return this;
     }
 
     @Override

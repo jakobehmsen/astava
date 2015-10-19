@@ -16,10 +16,12 @@ public class ClassNodePredicateParser implements ClassNodePredicate {
         this.classInspector = classInspector;
     }
 
-    public void add(String sourceCode) throws IOException {
+    public ClassNodePredicateParser add(String sourceCode) throws IOException {
         Parser parser = new Parser(sourceCode);
 
         predicates.addAll(parser.parseClassPredicates(classInspector));
+
+        return this;
     }
 
     @Override

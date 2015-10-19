@@ -26,6 +26,10 @@ public class ASMClassDeclaration implements ClassDeclaration {
         return getFields(classNode);
     }
 
+    public static String getName(ClassNode classNode) {
+        return Descriptor.getName(classNode.name);
+    }
+
     public static List<FieldDeclaration> getFields(ClassNode classNode) {
         return ((List<FieldNode>)classNode.fields).stream().map(x -> fieldDeclaration(x)).collect(Collectors.toList());
     }
@@ -103,7 +107,7 @@ public class ASMClassDeclaration implements ClassDeclaration {
 
     @Override
     public String getName() {
-        return Descriptor.getName(classNode.name);
+        return getName(classNode);
     }
 
     @Override
