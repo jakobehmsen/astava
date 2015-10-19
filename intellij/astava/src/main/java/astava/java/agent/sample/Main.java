@@ -30,7 +30,8 @@ public class Main {
         ParserFactory factory = new ParserFactory(classResolver, classInspector);
 
         ClassNodePredicateParser classNodePredicate = factory.newPredicate()
-            .add("class astava.java.agent.sample.MyClass")
+            //.add("class astava.java.agent.sample.MyClass")
+            .add("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"bla\")")
             .add("extends java.lang.Object")
             .add("implements java.io.Serializable");
 
@@ -41,12 +42,12 @@ public class Main {
             factory.newExtender()
                 .extend(String.format(
                     "public boolean equals(Object other) {\n" +
-                    "   if(other instanceof %1$s) {\n" +
-                    "       %1$s otherAsThis = (%1$s)other;\n" +
-                    "       return %2$s;\n" +
-                    "   }\n" +
-                    "   return false;\n" +
-                    "}",
+                        "   if(other instanceof %1$s) {\n" +
+                        "       %1$s otherAsThis = (%1$s)other;\n" +
+                        "       return %2$s;\n" +
+                        "   }\n" +
+                        "   return false;\n" +
+                        "}",
                     ASMClassDeclaration.getName(classNode),
                     ASMClassDeclaration.getFields(classNode).stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                 ))

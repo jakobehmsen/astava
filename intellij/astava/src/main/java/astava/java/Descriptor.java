@@ -116,6 +116,10 @@ public class Descriptor {
         return getMethodDescriptorPart(typeName);
     }
 
+    public static String getDescriptorName(String descriptor) {
+        return Type.getType(descriptor).getClassName();
+    }
+
     public static String getFieldDescriptor(String typeName) {
         return getMethodDescriptorPart(typeName);
     }

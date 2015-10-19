@@ -71,7 +71,10 @@ annotationArgument: name=ID OP_ASSIGN value=expression;
 classPredicate:
     classPredicateElement*;
 classPredicateElement:
-    classPredicateAccessModifier | classPredicateName | classPredicateExtends | classPredicateImplements;
+    classPredicateAccessAnnotation | classPredicateAccessModifier | classPredicateName | classPredicateExtends |
+    classPredicateImplements;
+classPredicateAccessAnnotation:
+    annotation;
 classPredicateAccessModifier:
     accessModifier;
 classPredicateName:

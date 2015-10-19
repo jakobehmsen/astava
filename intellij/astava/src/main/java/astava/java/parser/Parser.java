@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
@@ -340,6 +341,12 @@ public class Parser {
     }
 
     private DomBuilder parseAnnotationBuilder(JavaParser.AnnotationContext ctx) {
+        Map<String, Object> values = parseAnnotationValues(ctx);
+
+        return Factory.annotation(ctx.typeQualifier().getText(), values);
+    }
+
+    private Map<String, Object> parseAnnotationValues(JavaParser.AnnotationContext ctx) {
         Map<String, Object> values = new Hashtable<>();
         if(ctx.valueArgument != null) {
             Object value = parsePrimitive(ctx.valueArgument);
@@ -349,8 +356,7 @@ public class Parser {
             Object value = parsePrimitive(a.value);
             values.put(a.name.getText(), value);
         });
-
-        return Factory.annotation(ctx.typeQualifier().getText(), values);
+        return values;
     }
 
     private Object parsePrimitive(JavaParser.ExpressionContext context) {
@@ -1147,6 +1153,44 @@ public class Parser {
 
         ctx.classPredicateElement().forEach(x -> {
             x.accept(new JavaBaseVisitor<Void>() {
+                @Override
+                public Void visitAnnotation(JavaParser.AnnotationContext ctx) {
+                    String typeName = ctx.typeQualifier().getText();
+                    Map<String, Object> values = parseAnnotationValues(ctx);
+                    predicates.add(classNode -> {
+                        if(classNode.visibleAnnotations != null && classNode.visibleAnnotations.size() > 0) {
+                            return ((List<AnnotationNode>)classNode.visibleAnnotations).stream()
+                                .anyMatch(x -> {
+                                    if(Descriptor.getDescriptorName(x.desc).equals(typeName)) {
+                                        if(values.size() > 0) {
+                                            if(x.values != null) {
+                                                return IntStream
+                                                    .iterate(0, i -> i + 2).limit(values.size())
+                                                    .allMatch(i -> {
+                                                        String name = (String)x.values.get(i);
+                                                        Object value = x.values.get(i + 1);
+
+                                                        if(values.containsKey(name)) {
+                                                            return values.get(name).equals(value);
+                                                        }
+
+                                                        return true;
+                                                    });
+                                            }
+                                        } else
+                                            return true;
+                                    }
+
+                                    return false;
+                                });
+                        }
+
+                        return false;
+                    });
+
+                    return null;
+                }
+
                 @Override
                 public Void visitClassPredicateAccessModifier(JavaParser.ClassPredicateAccessModifierContext ctx) {
                     int accessModifier = parseAccessModifier(ctx.accessModifier());
