@@ -17,27 +17,27 @@ public interface ClassNodeExtender extends ClassFileTransformer {
         return new ConditionalClassNodeExtender(condition, this);
     }
     default byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-        ClassReader cr = new ClassReader(classfileBuffer);
-        ClassNode classNode = new ClassNode(Opcodes.ASM5);
-        cr.accept(classNode, ClassReader.EXPAND_FRAMES);
-
-        System.out.println(classNode.name);
-
         try {
+            ClassReader cr = new ClassReader(classfileBuffer);
+            ClassNode classNode = new ClassNode(Opcodes.ASM5);
+            cr.accept(classNode, ClassReader.EXPAND_FRAMES);
+
+            System.out.println(classNode.name);
+
             this.transform(classNode);
+
+            ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            classNode.accept(classWriter);
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+            PrintWriter ps = new PrintWriter(os);
+            org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, ps);
+            //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
+
+            return classWriter.toByteArray();
         } catch(Exception e) {
             e.printStackTrace();
             throw e;
         }
-
-        ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        classNode.accept(classWriter);
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-        PrintWriter ps = new PrintWriter(os);
-        org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(classWriter.toByteArray()), true, ps);
-        //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
-
-        return classWriter.toByteArray();
     }
 }

@@ -44,7 +44,10 @@ typeCastExpression: OPEN_PAR typeQualifier CLOSE_PAR expression;
 
 // TODO: Add support for boolean literals true and false
 leafExpression: 
-    (invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | thisLiteral | newInstance)
+    (
+        invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | thisLiteral |
+        trueLiteral | falseLiteral | newInstance
+    )
     chainElement*;
 invocation: ID arguments;
 chainElement: DOT (fieldAssignment | fieldAccess | invocation);
@@ -55,6 +58,8 @@ intLiteral: INT;
 stringLiteral: STRING;
 nullLiteral: KW_NULL;
 thisLiteral: KW_THIS;
+trueLiteral: KW_TRUE;
+falseLiteral: KW_FALSE;
 newInstance: KW_NEW name=typeQualifier arguments;
 arguments: OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
 annotation: AT typeQualifier
@@ -103,6 +108,8 @@ KW_INSTANCE_OF: 'instanceof';
 KW_IF: 'if';
 KW_ELSE: 'else';
 KW_THIS: 'this';
+KW_TRUE: 'true';
+KW_FALSE: 'false';
 fragment DIGIT: [0-9];
 fragment LETTER: [A-Z]|[a-z];
 ID: (LETTER | '_') (LETTER | '_' | DIGIT)*;

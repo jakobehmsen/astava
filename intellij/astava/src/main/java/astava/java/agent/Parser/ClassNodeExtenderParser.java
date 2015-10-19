@@ -144,6 +144,7 @@ public class ClassNodeExtenderParser implements ClassNodeExtender {
                     setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName), values));
                 }
             }.visit(d);
-        }).forEach(x -> x.transform(classNode));
+        }).forEach(x ->
+            x.transform(classNode));
     }
 }

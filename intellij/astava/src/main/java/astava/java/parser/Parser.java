@@ -198,6 +198,11 @@ public class Parser {
             public void visitLetBe(String type) {
                 setResult(type);
             }
+
+            @Override
+            public void visitTypeCast(ExpressionDom expression, String targetType) {
+                setResult(targetType);
+            }
         }.returnFrom(expr);
     }
 
@@ -916,8 +921,26 @@ public class Parser {
             }
 
             @Override
+            public ExpressionDomBuilder visitTypeCastExpression(JavaParser.TypeCastExpressionContext ctx) {
+                String targetTypeName = ctx.typeQualifier().getText();
+                ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), false);
+
+                return Factory.typeCast(expression, targetTypeName);
+            }
+
+            @Override
             public ExpressionDomBuilder visitThisLiteral(JavaParser.ThisLiteralContext ctx) {
                 return Factory.self();
+            }
+
+            @Override
+            public ExpressionDomBuilder visitTrueLiteral(JavaParser.TrueLiteralContext ctx) {
+                return Factory.literal(true);
+            }
+
+            @Override
+            public ExpressionDomBuilder visitFalseLiteral(JavaParser.FalseLiteralContext ctx) {
+                return Factory.literal(false);
             }
         });
     }

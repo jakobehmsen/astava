@@ -467,4 +467,8 @@ public class DomFactory {
 
         return lhsType.equals(rhsType) ? Descriptor.BOOLEAN : null;
     }
+
+    public static ExpressionDom typeCast(ExpressionDom expression, String targetTypeName) {
+        return v -> v.visitTypeCast(expression, targetTypeName);
+    }
 }

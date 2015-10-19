@@ -84,6 +84,20 @@ public class Factory {
         };
     }
 
+    public static ExpressionDomBuilder literal(boolean value) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return DomFactory.literal(value);
+            }
+
+            @Override
+            public String toString() {
+                return "" + value + "";
+            }
+        };
+    }
+
     public static FieldDomBuilder field(int modifier, String name, String typeName) {
         return new FieldDomBuilder() {
             @Override
@@ -530,6 +544,22 @@ public class Factory {
                 ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals);
 
                 return DomFactory.logical(lhs, rhs, operator);
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder typeCast(ExpressionDomBuilder expressionBuilder, String targetTypeName) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.typeCast(expression, Descriptor.get(targetTypeName));
+            }
+
+            @Override
+            public String toString() {
+                return "(" + targetTypeName + ") " + expressionBuilder;
             }
         };
     }

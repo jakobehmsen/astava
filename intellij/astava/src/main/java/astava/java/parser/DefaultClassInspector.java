@@ -23,6 +23,7 @@ public class DefaultClassInspector implements ClassInspector {
     public ClassDeclaration getClassDeclaration(String name) {
         // Inspect virtual classes in class builders and physical classes in class loader
         try {
+            System.out.println("Getting class " + name);
             Class<?> physicalClass = classLoader.loadClass(name);
 
             //logln("Loaded physical class " + name);

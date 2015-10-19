@@ -60,6 +60,8 @@ public interface ExpressionDomVisitor {
 
     void visitLetBe(String type);
 
+    void visitTypeCast(ExpressionDom expression, String targetType);
+
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
 

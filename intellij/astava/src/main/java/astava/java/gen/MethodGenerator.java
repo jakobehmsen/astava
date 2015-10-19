@@ -576,6 +576,14 @@ public class MethodGenerator {
             public void visitLetBe(String type) {
                 setResult(type);
             }
+
+            @Override
+            public void visitTypeCast(ExpressionDom expression, String targetType) {
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                //generator.cast(Type.getType(resultType), Type.getType(targetType));
+                generator.checkCast(Type.getType(targetType));
+                setResult(targetType);
+            }
         }.returnFrom(expression);
     }
 
