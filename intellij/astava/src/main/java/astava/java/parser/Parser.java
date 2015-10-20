@@ -15,6 +15,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
@@ -1191,14 +1192,14 @@ public class Parser {
                     return null;
                 }
 
-                @Override
+                /*@Override
                 public Void visitClassPredicateAccessModifier(JavaParser.ClassPredicateAccessModifierContext ctx) {
                     int accessModifier = parseAccessModifier(ctx.accessModifier());
                     predicates.add(classNode ->
                         classNode.access == accessModifier);
 
                     return null;
-                }
+                }*/
 
                 @Override
                 public Void visitClassPredicateName(JavaParser.ClassPredicateNameContext ctx) {
@@ -1264,6 +1265,28 @@ public class Parser {
                         } else
                             return false;
                     });
+
+                    return null;
+                }
+
+                @Override
+                public Void visitClassPredicateField(JavaParser.ClassPredicateFieldContext ctx) {
+                    int modifier = parseModifiers(ctx.modifiers());
+                    String name = ctx.name != null ? ctx.name.getText() : null;
+                    String type = ctx.type != null ? Descriptor.getFieldDescriptor(Descriptor.get(ctx.type.getText())) : null;
+
+                    predicates.add(classNode -> ((List<FieldNode>)classNode.fields).stream().anyMatch(x -> {
+                        if(modifier != 0 && x.access != modifier)
+                            return false;
+
+                        if(name != null && !x.name.equals(name))
+                            return false;
+
+                        if(type != null && !x.desc.equals(type))
+                            return false;
+
+                        return true;
+                    }));
 
                     return null;
                 }

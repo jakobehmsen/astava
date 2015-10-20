@@ -30,13 +30,11 @@ public class Main {
         ParserFactory factory = new ParserFactory(classResolver, classInspector);
 
         ClassNodePredicateParser classNodePredicate = factory.newPredicate()
-            //.add("class astava.java.agent.sample.MyClass")
             .add("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"bla\")")
             .add("extends java.lang.Object")
-            .add("implements java.io.Serializable");
-
-        //classNodePredicate.add("class astava.java.agent.sample.MyClass extends astava.java.agent.sample.MyOtherClass implements java.io.Serializable");
-        //classNodePredicate.add("extends astava.java.agent.sample.MyOtherClass");
+            .add("implements java.io.Serializable")
+            //.add("public java.lang.String someField;")
+            .add("public;");
 
         ClassLoaderExtender loader = new ClassLoaderExtender(((ClassNodeExtender) classNode -> {
             factory.newExtender()
@@ -51,12 +49,14 @@ public class Main {
                     ASMClassDeclaration.getName(classNode),
                     ASMClassDeclaration.getFields(classNode).stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                 ))
-                .extend("public java.lang.String toString() {return \"Was changed\";}")
+                //.extend("public java.lang.String toString() {return \"Was changed\";}")
+                //.extend("public java.lang.String toString() {return someField;}")
+                .extend("public java.lang.String toString() {return \"Public fields are baaaad!!!...\";}")
                 .transform(classNode);
         }).when(classNodePredicate));
-        //Object mc = Class.forName("astava.java.agent.sample.MyClass").newInstance();
-        Object mc1 = Class.forName("astava.java.agent.sample.MyClass", false, loader).newInstance();
-        Object mc2 = Class.forName("astava.java.agent.sample.MyClass", false, loader).newInstance();
+
+        Object mc1 = Class.forName(MyClass.class.getName(), false, loader).newInstance();
+        Object mc2 = Class.forName(MyClass.class.getName(), false, loader).newInstance();
 
         try {
             mc1.getClass().getField("someField").set(mc1, "someValue");

@@ -71,12 +71,12 @@ annotationArgument: name=ID OP_ASSIGN value=expression;
 classPredicate:
     classPredicateElement*;
 classPredicateElement:
-    classPredicateAccessAnnotation | classPredicateAccessModifier | classPredicateName | classPredicateExtends |
-    classPredicateImplements;
+    classPredicateAccessAnnotation | /*classPredicateAccessModifier | */classPredicateName | classPredicateExtends |
+    classPredicateImplements | classPredicateMember;
 classPredicateAccessAnnotation:
     annotation;
-classPredicateAccessModifier:
-    accessModifier;
+/*classPredicateAccessModifier:
+    accessModifier;*/
 classPredicateName:
     KW_CLASS name=typeQualifier;
 classPredicateExtends:
@@ -85,12 +85,21 @@ classPredicateImplements:
     KW_IMPLEMENTS classPredicateInterface (COMMA classPredicateInterface)*;
 classPredicateInterface:
     typeQualifier;
+classPredicateMember:
+    classPredicateField | classPredicateMethod;
+classPredicateField:
+    modifiers type=typeQualifier? name=ID? SEMI_COLON;
+classPredicateMethod:
+    modifiers returnType=typeQualifier? name=ID? classPredicateMethodParameters SEMI_COLON;
+classPredicateMethodParameters:
+    OPEN_PAR ((typeQualifier (COMMA typeQualifier)*) | anyParams=ELLIPSIS)? CLOSE_PAR;
 
 AMPERSAND: '&&';
 AT: '@';
 OP_ASSIGN: '=';
 SEMI_COLON: ';';
 DOT: '.';
+ELLIPSIS: '...';
 COMMA: ',';
 OPEN_PAR: '(';
 CLOSE_PAR: ')';
