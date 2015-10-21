@@ -34,6 +34,8 @@ public class Main {
             .add("extends java.lang.Object")
             .add("implements java.io.Serializable")
             //.add("public java.lang.String someField;")
+            //.add("public java.lang.String toString();")
+            .add("boolean (...);")
             .add("public;");
 
         ClassLoaderExtender loader = new ClassLoaderExtender(((ClassNodeExtender) classNode -> {

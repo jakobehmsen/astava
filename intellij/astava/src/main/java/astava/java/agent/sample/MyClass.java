@@ -19,4 +19,8 @@ public class MyClass extends MyOtherClass {
     public String toString() {
         return super.toString();
     }
+
+    public boolean someMethod(int arg0, int arg1) {
+        return false;
+    }
 }

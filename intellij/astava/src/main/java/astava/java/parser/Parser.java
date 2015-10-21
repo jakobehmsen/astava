@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -1284,6 +1285,38 @@ public class Parser {
 
                         if(type != null && !x.desc.equals(type))
                             return false;
+
+                        return true;
+                    }));
+
+                    return null;
+                }
+
+                @Override
+                public Void visitClassPredicateMethod(JavaParser.ClassPredicateMethodContext ctx) {
+                    int modifier = parseModifiers(ctx.modifiers());
+                    String name = ctx.name != null ? ctx.name.getText() : null;
+                    String returnType = ctx.returnType != null ? Descriptor.getFieldDescriptor(Descriptor.get(ctx.returnType.getText())) : null;
+
+                    boolean anyParams = ctx.classPredicateMethodParameters().anyParams != null;
+                    List<String> parameterTypes = ctx.classPredicateMethodParameters().typeQualifier().stream()
+                        .map(x -> Descriptor.getFieldDescriptor(Descriptor.get(x.getText()))).collect(Collectors.toList());
+
+                    predicates.add(classNode -> ((List<MethodNode>)classNode.methods).stream().anyMatch(x -> {
+                        if(modifier != 0 && x.access != modifier)
+                            return false;
+
+                        if(name != null && !x.name.equals(name))
+                            return false;
+
+                        if(returnType != null && !Type.getReturnType(x.desc).getDescriptor().equals(returnType))
+                            return false;
+
+                        if(!anyParams) {
+                            Type[] xParameters = Type.getArgumentTypes(x.desc);
+                            return parameterTypes.size() == xParameters.length &&
+                                IntStream.range(0, parameterTypes.size()).allMatch(i -> parameterTypes.get(i).equals(xParameters[i].getDescriptor()));
+                        }
 
                         return true;
                     }));
