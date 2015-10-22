@@ -1,20 +1,16 @@
 package astava.java.agent.sample;
 
-import astava.java.Descriptor;
 import astava.java.agent.ClassLoaderExtender;
 import astava.java.agent.ClassNodeExtender;
-import astava.java.agent.Parser.ClassNodeExtenderParser;
-import astava.java.agent.Parser.ClassNodePredicateParser;
 import astava.java.agent.Parser.ParserFactory;
 import astava.java.parser.*;
 
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class Main {
-    public static void main(String[] args) throws ClassNotFoundException, IllegalAccessException, InstantiationException, IOException {
+    public static void main(String[] args) throws Exception {
         //MyClass mc = new MyClass("Ignored");
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
@@ -29,6 +25,53 @@ public class Main {
 
         ParserFactory factory = new ParserFactory(classResolver, classInspector);
 
+        /*factory.modClass(classNode -> {
+            return factory.modClass(String.format(
+                "public boolean equals(Object other) {\n" +
+                    "   if(other instanceof %1$s) {\n" +
+                    "       %1$s otherAsThis = (%1$s)other;\n" +
+                    "       return %2$s;\n" +
+                    "   }\n" +
+                    "   return false;\n" +
+                    "}",
+                ASMClassDeclaration.getName(classNode),
+                ASMClassDeclaration.getFields(classNode).stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
+            ));
+        }).when(
+            factory.whenClass("implements java.io.Serializable")
+            .and(factory.whenClass("extends java.lang.Object"))
+            .and(factory.whenClass("implements java.io.Serializable"))
+            .and(factory.whenClass("boolean (...);"))
+            .and(factory.whenClass("public;"))
+        );*/
+
+        ClassLoaderExtender loader = new ClassLoaderExtender(
+            factory.whenClass("implements java.io.Serializable")
+            .and(factory.whenClass("extends java.lang.Object"))
+            .and(factory.whenClass("implements java.io.Serializable"))
+            .and(factory.whenClass("boolean (...);"))
+            .and(factory.whenClass("public;"))
+            .then(
+                factory.modClass(classNode -> {
+                    return factory.modClass(String.format(
+                        "public boolean equals(Object other) {\n" +
+                            "   if(other instanceof %1$s) {\n" +
+                            "       %1$s otherAsThis = (%1$s)other;\n" +
+                            "       return %2$s;\n" +
+                            "   }\n" +
+                            "   return false;\n" +
+                            "}",
+                        ASMClassDeclaration.getName(classNode),
+                        ASMClassDeclaration.getFields(classNode).stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
+                    ));
+                })
+            ),
+            classResolver, classInspector);
+
+        /*MethodNodePredicateParser methodNodePredicate = factory.newMethodPredicate();
+
+        methodNodePredicate.extend("private;");
+
         ClassNodePredicateParser classNodePredicate = factory.newPredicate()
             .add("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"bla\")")
             .add("extends java.lang.Object")
@@ -42,12 +85,12 @@ public class Main {
             factory.newExtender()
                 .extend(String.format(
                     "public boolean equals(Object other) {\n" +
-                        "   if(other instanceof %1$s) {\n" +
-                        "       %1$s otherAsThis = (%1$s)other;\n" +
-                        "       return %2$s;\n" +
-                        "   }\n" +
-                        "   return false;\n" +
-                        "}",
+                    "   if(other instanceof %1$s) {\n" +
+                    "       %1$s otherAsThis = (%1$s)other;\n" +
+                    "       return %2$s;\n" +
+                    "   }\n" +
+                    "   return false;\n" +
+                    "}",
                     ASMClassDeclaration.getName(classNode),
                     ASMClassDeclaration.getFields(classNode).stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                 ))
@@ -55,7 +98,7 @@ public class Main {
                 //.extend("public java.lang.String toString() {return someField;}")
                 .extend("public java.lang.String toString() {return \"Public fields are baaaad!!!...\";}")
                 .transform(classNode);
-        }).when(classNodePredicate));
+        }).when(classNodePredicate), classResolver, classInspector);*/
 
         Object mc1 = Class.forName(MyClass.class.getName(), false, loader).newInstance();
         Object mc2 = Class.forName(MyClass.class.getName(), false, loader).newInstance();

@@ -1,5 +1,7 @@
 package astava.java.agent;
 
+import astava.java.parser.ClassInspector;
+import astava.java.parser.ClassResolver;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -9,19 +11,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
 
 public class ClassLoaderExtender extends ClassLoader {
-    private ClassNodeExtender extender;
+    private ClassResolver classResolver;
+    private ClassInspector classInspector;
+    private ExClassNodeExtender extender;
 
-    public ClassLoaderExtender(ClassNodeExtender extender) {
-        this(ClassLoader.getSystemClassLoader(), extender);
+    public ClassLoaderExtender(ExClassNodeExtender extender, ClassResolver classResolver, ClassInspector classInspector) {
+        this(ClassLoader.getSystemClassLoader(), classResolver, extender, classInspector);
     }
 
-    public ClassLoaderExtender(ClassLoader parent, ClassNodeExtender extender) {
+    public ClassLoaderExtender(ClassLoader parent, ClassResolver classResolver, ExClassNodeExtender extender, ClassInspector classInspector) {
         super(parent);
+        this.classResolver = classResolver;
+        this.classInspector = classInspector;
         this.extender = extender;
     }
 
@@ -54,7 +57,7 @@ public class ClassLoaderExtender extends ClassLoader {
 
             System.out.println(classNode.name);
 
-            extender.transform(classNode);
+            extender.transform(classNode, classResolver, classInspector);
 
             ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             classNode.accept(classWriter);

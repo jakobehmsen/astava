@@ -6,10 +6,10 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.function.BiPredicate;
 
 public class ConditionalMethodNodeExtender implements ClassNodeExtender {
-    private BiPredicate<ClassNode, MethodNode> condition;
+    private MethodNodePredicate condition;
     private MethodNodeExtender extender;
 
-    public ConditionalMethodNodeExtender(BiPredicate<ClassNode, MethodNode> condition, MethodNodeExtender extender) {
+    public ConditionalMethodNodeExtender(MethodNodePredicate condition, MethodNodeExtender extender) {
         this.condition = condition;
         this.extender = extender;
     }

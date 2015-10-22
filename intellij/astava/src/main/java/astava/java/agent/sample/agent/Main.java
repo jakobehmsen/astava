@@ -2,8 +2,6 @@ package astava.java.agent.sample.agent;
 
 import astava.java.Descriptor;
 import astava.java.agent.*;
-import astava.java.agent.Parser.ClassNodeExtenderParser;
-import astava.java.agent.Parser.ClassNodePredicateParser;
 import astava.java.parser.*;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -26,7 +24,7 @@ public class Main {
 
             ClassInspector classInspector = new DefaultClassInspector(classLoader);
 
-            ClassNodeExtenderParser classNodeModifier = new ClassNodeExtenderParser(classResolver, classInspector);
+            /*ClassNodeExtenderParser classNodeModifier = new ClassNodeExtenderParser(classResolver, classInspector);
 
             //myClassNodeExtenderParser.extend("public java.lang.String myField = \"Hello1\";");
             //myClassNodeExtenderParser.extend("@astava.java.agent.sample.MyAnnotation()");
@@ -42,7 +40,7 @@ public class Main {
             classNodePredicate.add("class astava.java.agent.sample.MyClass");
             //classNodePredicate.add("extends astava.java.agent.sample.MyOtherClass");
             classNodePredicate.add("extends java.lang.Object");
-            classNodePredicate.add("implements java.io.Serializable");
+            classNodePredicate.add("implements java.io.Serializable");*/
 
             // Support parsed filters
             //instrumentation.addTransformer(classNodeModifier.when(classNodePredicate));

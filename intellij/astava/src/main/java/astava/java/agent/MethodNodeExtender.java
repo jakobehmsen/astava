@@ -7,7 +7,7 @@ import java.util.function.BiPredicate;
 
 public interface MethodNodeExtender {
     void transform(ClassNode classNode, MethodNode methodNode);
-    default ClassNodeExtender when(BiPredicate<ClassNode, MethodNode> condition) {
+    default ClassNodeExtender when(MethodNodePredicate condition) {
         return new ConditionalMethodNodeExtender(condition, this);
     }
 }

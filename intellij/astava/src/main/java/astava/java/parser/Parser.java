@@ -16,6 +16,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -25,6 +26,7 @@ import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -1148,7 +1150,7 @@ public class Parser {
         return classNode -> predicates.stream().allMatch(condition -> condition.test(classNode));
     }*/
 
-    public Collection<? extends ClassNodePredicate> parseClassPredicates(ClassInspector classInspector) {
+    public List<ClassNodePredicate> parseClassPredicates(ClassInspector classInspector) {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
         ArrayList<ClassNodePredicate> predicates = new ArrayList<>();
@@ -1327,5 +1329,9 @@ public class Parser {
         });
 
         return predicates;
+    }
+
+    public List<BiPredicate<ClassNode, MethodNode>> parseMethodPredicates() {
+        return null;
     }
 }

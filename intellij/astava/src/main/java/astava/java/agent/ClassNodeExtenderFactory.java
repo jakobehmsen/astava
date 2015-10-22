@@ -2,12 +2,16 @@ package astava.java.agent;
 
 import astava.java.Descriptor;
 import astava.java.gen.MethodGenerator;
+import astava.java.parser.ClassInspector;
+import astava.java.parser.ClassResolver;
+import astava.java.parser.MutableClassDeclaration;
 import astava.tree.*;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -17,14 +21,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ClassNodeExtenderFactory {
-    public static ClassNodeExtender setSuperName(String superName) {
-        return classNode -> {
-            classNode.superName = superName;
-        };
+    public static ExDeclaringClassNodeExtenderTransformer setSuperName(String superName) {
+        return (classNode, thisClass, classResolver, classInspector) -> classNode.superName = superName;
     }
 
-    public static ClassNodeExtender addAnnotation(String typeName, Map<String, Object> values) {
-        return classNode -> {
+    public static ExDeclaringClassNodeExtenderTransformer addAnnotation(String typeName, Map<String, Object> values) {
+        return (classNode, thisClass, classResolver, classInspector) -> {
             String desc = Descriptor.getTypeDescriptor(typeName);
             //new Annotation();
             //classNode.visibleTypeAnnotations.add(new AnnotationNode(desc));
@@ -34,8 +36,8 @@ public class ClassNodeExtenderFactory {
         };
     }
 
-    public static ClassNodeExtender addField(FieldDom fieldDom) {
-        return classNode -> {
+    public static ExDeclaringClassNodeExtenderTransformer addField(FieldDom fieldDom) {
+        return (classNode, thisClass, classResolver, classInspector) -> {
             FieldNode f = fieldDom.accept(new FieldDomVisitor<FieldNode>() {
                 @Override
                 public FieldNode visitCustomField(CustomFieldDom fieldDom) {
@@ -53,8 +55,8 @@ public class ClassNodeExtenderFactory {
         };
     }
 
-    public static ClassNodeExtender addMethod(MethodDom methodDom) {
-        return classNode -> {
+    public static ExDeclaringClassNodeExtenderTransformer addMethod(MethodDom methodDom) {
+        return (classNode, thisClass, classResolver, classInspector) -> {
             MethodNode methodNode = new StatementDomVisitor.Return<MethodNode>() {
                 @Override
                 public void visitASM(MethodNode methodNode) {
@@ -62,7 +64,7 @@ public class ClassNodeExtenderFactory {
                 }
             }.returnFrom(methodDom.getBody());
 
-            if(methodNode == null) {
+            if (methodNode == null) {
                 int modifiers = methodDom.getModifier();
                 String methodName = methodDom.getName();
                 List<ParameterInfo> parameters = methodDom.getParameterTypes();
@@ -70,7 +72,7 @@ public class ClassNodeExtenderFactory {
                 StatementDom body = methodDom.getBody();
 
                 Type[] parameterTypes = new Type[parameters.size()];
-                for(int i = 0; i < parameters.size(); i++)
+                for (int i = 0; i < parameters.size(); i++)
                     parameterTypes[i] = Type.getType(parameters.get(i).descriptor);
 
                 List<String> parameterTypeNames = parameters.stream().map(x -> x.descriptor).collect(Collectors.toList());
@@ -88,13 +90,13 @@ public class ClassNodeExtenderFactory {
 
             //System.out.println(classNode.name);
             IntStream.range(0, classNode.methods.size()).filter(i -> methodDom.getName().equals(((MethodNode) classNode.methods.get(i)).name)).findAny().ifPresent(i ->
-                classNode.methods.remove(i)
+                    classNode.methods.remove(i)
             );
-            /*classNode.methods.stream()
-                .filter(x ->
-                    methodDom.getName().equals(((MethodNode) x).name))
-                .forEach(x ->
-                    classNode.methods.remove(x));*/
+        /*classNode.methods.stream()
+            .filter(x ->
+                methodDom.getName().equals(((MethodNode) x).name))
+            .forEach(x ->
+                classNode.methods.remove(x));*/
             //System.out.println(classNode.name);
 
             classNode.methods.add(methodNode);

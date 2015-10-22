@@ -94,6 +94,13 @@ classPredicateMethod:
 classPredicateMethodParameters:
     OPEN_PAR ((typeQualifier (COMMA typeQualifier)*) | anyParams=ELLIPSIS)? CLOSE_PAR;
 
+methodPredicate:
+    methodPredicateElement*;
+methodPredicateElement:
+    methodPredicateElementAnnotation;
+methodPredicateElementAnnotation:
+    annotation;
+
 AMPERSAND: '&&';
 AT: '@';
 OP_ASSIGN: '=';

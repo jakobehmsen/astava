@@ -13,9 +13,6 @@ import java.security.ProtectionDomain;
 
 public interface ClassNodeExtender extends ClassFileTransformer {
     void transform(ClassNode classNode);
-    default ClassNodeExtender when(ClassNodePredicate condition) {
-        return new ConditionalClassNodeExtender(condition, this);
-    }
     default byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         try {
             ClassReader cr = new ClassReader(classfileBuffer);
