@@ -48,7 +48,7 @@ public class Main {
             factory.whenClass("implements java.io.Serializable")
             .and(factory.whenClass("extends java.lang.Object"))
             .and(factory.whenClass("implements java.io.Serializable"))
-            .and(factory.whenClass("boolean (...);"))
+            .and(factory.whenClass("boolean (...)"))
             .and(factory.whenClass("public;"))
             .then(
                 factory.modClass((classNode, thisClass) -> {

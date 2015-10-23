@@ -90,7 +90,7 @@ classPredicateMember:
 classPredicateField:
     modifiers type=typeQualifier? name=ID? SEMI_COLON;
 classPredicateMethod:
-    modifiers returnType=typeQualifier? name=ID? classPredicateMethodParameters SEMI_COLON;
+    modifiers returnType=typeQualifier? name=ID? classPredicateMethodParameters;
 classPredicateMethodParameters:
     OPEN_PAR ((typeQualifier (COMMA typeQualifier)*) | anyParams=ELLIPSIS)? CLOSE_PAR;
 
