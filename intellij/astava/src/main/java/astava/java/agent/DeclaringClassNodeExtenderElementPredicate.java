@@ -17,4 +17,9 @@ public interface DeclaringClassNodeExtenderElementPredicate {
     default DeclaringClassNodeExtenderElement then(DeclaringClassNodeExtenderElement element) {
         return new ConditionalDeclaringClassNodeExtenderElement(this, element);
     }
+
+    default DeclaringClassNodeExtenderElementPredicate not() {
+        return (classNode, thisClass, classResolver) ->
+            !test(classNode, thisClass, classResolver);
+    }
 }
