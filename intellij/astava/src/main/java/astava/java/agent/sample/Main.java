@@ -1,7 +1,6 @@
 package astava.java.agent.sample;
 
 import astava.java.agent.ClassLoaderExtender;
-import astava.java.agent.ClassNodeExtender;
 import astava.java.agent.Parser.ParserFactory;
 import astava.java.parser.*;
 

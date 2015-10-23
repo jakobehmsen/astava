@@ -24,14 +24,14 @@ import java.util.stream.IntStream;
 import java.util.ListIterator;
 
 public class MethodNodeExtenderFactory {
-    public static MethodNodeExtender sequence(MethodNodeExtender... extenders) {
-        return (classNode, methodNode) -> {
-            Arrays.asList(extenders).forEach(x -> x.transform(classNode, methodNode));
+    public static ExDeclaringMethodNodeExtenderTransformer sequence(ExDeclaringMethodNodeExtenderTransformer... extenders) {
+        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
+            Arrays.asList(extenders).forEach(x -> x.transform(classNode, thisClass, classResolver, classInspector, methodNode));
         };
     }
 
-    public static MethodNodeExtender setBody(StatementDom replacement) {
-        return (classNode, methodNode) -> {
+    public static ExDeclaringMethodNodeExtenderTransformer setBody(StatementDom replacement) {
+        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
             InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
             methodNode.instructions.clear();
@@ -125,57 +125,5 @@ public class MethodNodeExtenderFactory {
                 //generator.visitInsn(Opcodes.ARETURN);
             });
         };
-    }
-
-    public static void append(ClassNode classNode, MethodNode methodNode, StatementDom statement) {
-        MethodGenerator.generate(methodNode, (mn, generator) -> {
-            Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
-            List<ParameterInfo> parameters = IntStream.range(0, argumentTypes.length).mapToObj(i -> new ParameterInfo(
-                argumentTypes[i].getDescriptor(),
-                methodNode.parameters != null ? ((ParameterNode)methodNode.parameters.get(i)).name : "arg" + i
-            )).collect(Collectors.toList());
-
-            InsnList originalInstructions = new InsnList();
-            originalInstructions.add(methodNode.instructions);
-            methodNode.instructions.clear();
-
-            ListIterator it = originalInstructions.iterator();
-
-            Label returnLabel = new Label();
-
-            while(it.hasNext()) {
-                AbstractInsnNode insn = (AbstractInsnNode)it.next();
-
-                if(insn.getOpcode()== Opcodes.IRETURN
-                    ||insn.getOpcode()==Opcodes.RETURN
-                    ||insn.getOpcode()==Opcodes.ARETURN
-                    ||insn.getOpcode()==Opcodes.LRETURN
-                    ||insn.getOpcode()==Opcodes.DRETURN) {
-                    generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
-                } else {
-                    insn.accept(generator);
-                }
-            }
-
-            System.out.println("Class name: " + classNode.name);
-            System.out.println("Method name: " + methodNode.name);
-            System.out.println("Method parameter count: " + (methodNode.parameters != null ? methodNode.parameters.size() : 0));
-            Printer printer=new Textifier();
-            mn.accept(new TraceMethodVisitor(printer));
-            //printer.getText().forEach(x -> System.out.print(x.toString()));
-
-            generator.visitLabel(returnLabel);
-
-            MethodGenerator methodGenerator = new MethodGenerator(classNode.name, parameters, statement);
-            methodGenerator.populateMethodBody(methodNode, originalInstructions, generator);
-
-            generator.returnValue();
-
-            printer=new Textifier();
-            mn.accept(new TraceMethodVisitor(printer));
-            //printer.getText().forEach(x -> System.out.print(x.toString()));
-            //generator.ret();
-            //generator.visitInsn(Opcodes.ARETURN);
-        });
     }
 }
