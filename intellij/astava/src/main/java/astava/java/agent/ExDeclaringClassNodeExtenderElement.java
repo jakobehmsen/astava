@@ -26,8 +26,8 @@ public interface ExDeclaringClassNodeExtenderElement extends ExClassNodeExtender
     default void transform(ClassNode classNode, ClassResolver classResolver, ClassInspector classInspector) {
         MutableClassDeclaration thisClass = new MutableClassDeclaration();
 
-        thisClass.setName(classNode.name);
-        thisClass.setSuperName(classNode.superName);
+        thisClass.setName(Descriptor.getName(classNode.name));
+        thisClass.setSuperName(classNode.superName != null ? Descriptor.getName(classNode.superName) : null);
 
         // Include all fields and methods (members in general) of classNode
         ((List<String>)classNode.interfaces).forEach(x -> thisClass.addInterface(Descriptor.getName(x)));
