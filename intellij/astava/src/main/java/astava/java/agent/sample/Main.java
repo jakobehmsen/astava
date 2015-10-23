@@ -52,7 +52,7 @@ public class Main {
             .and(factory.whenClass("boolean (...);"))
             .and(factory.whenClass("public;"))
             .then(
-                factory.modClass(classNode -> {
+                factory.modClass((classNode, thisClass) -> {
                     return factory.modClass(String.format(
                         "public boolean equals(Object other) {\n" +
                             "   if(other instanceof %1$s) {\n" +
@@ -61,8 +61,8 @@ public class Main {
                             "   }\n" +
                             "   return false;\n" +
                             "}",
-                        ASMClassDeclaration.getName(classNode),
-                        ASMClassDeclaration.getFields(classNode).stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
+                        thisClass.getName(),
+                        thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                     ));
                 })
             ),

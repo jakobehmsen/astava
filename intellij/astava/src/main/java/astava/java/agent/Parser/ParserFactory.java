@@ -90,11 +90,11 @@ public class ParserFactory {
         return (classNode, thisClass, classResolver1) -> predicates.stream().allMatch(p -> p.test(classNode));
     }
 
-    public ExDeclaringClassNodeExtenderElement modClass(FunctionException<ClassNode, ExDeclaringClassNodeExtenderElement> function) throws Exception {
+    public ExDeclaringClassNodeExtenderElement modClass(BiFunctionException<ClassNode, ClassDeclaration, ExDeclaringClassNodeExtenderElement> function) throws Exception {
         return (classNode, thisClass, classResolver1) -> {
             try {
                 return function
-                    .apply(classNode)
+                    .apply(classNode, thisClass)
                     .declare(classNode, thisClass, classResolver1);
             } catch (Exception e) {
                 e.printStackTrace();
