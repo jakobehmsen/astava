@@ -20,14 +20,15 @@ public class ConditionalDeclaringMethodNodeExtenderElement implements DeclaringC
 
     @Override
     public DeclaringClassNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver) {
-        List<DeclaringClassNodeExtenderTransformer> transformers = ((List<MethodNode>)classNode.fields).stream()
-            .filter(m -> predicate.test(classNode, thisClass, classResolver, m))
+        List<DeclaringClassNodeExtenderTransformer> transformers = ((List<MethodNode>)classNode.methods).stream()
+            .filter(m ->
+                predicate.test(classNode, thisClass, classResolver, m))
             .map(m -> new DeclaringClassNodeExtenderTransformer() {
-                DeclaringClassNodeExtenderTransformer transformer = element.declare(classNode, thisClass, classResolver, m);
+                DeclaringMethodNodeExtenderTransformer transformer = element.declare(classNode, thisClass, classResolver, m);
 
                 @Override
                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector) {
-                    transformer.transform(classNode, thisClass, classResolver, classInspector);
+                    transformer.transform(classNode, thisClass, classResolver, classInspector, m);
                 }
             })
             .collect(Collectors.toList());

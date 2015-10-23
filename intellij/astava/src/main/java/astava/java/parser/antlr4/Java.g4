@@ -97,9 +97,20 @@ classPredicateMethodParameters:
 methodPredicate:
     methodPredicateElement*;
 methodPredicateElement:
-    methodPredicateElementAnnotation;
-methodPredicateElementAnnotation:
+    methodPredicateAnnotation
+    | methodPredicateAccessModifiers
+    | methodPredicateAccessTypeAndName
+    | methodPredicateParameters
+    ;
+methodPredicateAnnotation:
     annotation;
+methodPredicateAccessModifiers:
+    modifier+;
+methodPredicateAccessTypeAndName:
+    (returnType=typeQualifier | ELLIPSIS) name=ID?;
+methodPredicateParameters:
+    OPEN_PAR (typeQualifier (COMMA typeQualifier)*)? CLOSE_PAR;
+modifier: KW_PRIVATE | KW_PUBLIC | KW_PROTECTED | KW_STATIC | KW_ABSTRACT;
 
 AMPERSAND: '&&';
 AT: '@';

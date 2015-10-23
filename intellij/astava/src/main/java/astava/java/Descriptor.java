@@ -92,7 +92,7 @@ public class Descriptor {
         return mdBuilder.toString();
     }
 
-    private static String getMethodDescriptorPart(String typeName) {
+    public static String getMethodDescriptorPart(String typeName) {
         switch(typeName) {
             case "V":
             case "Z":

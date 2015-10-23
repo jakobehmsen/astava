@@ -4,6 +4,7 @@ import astava.debug.Debug;
 import astava.java.Descriptor;
 import astava.java.LogicalOperator;
 import astava.java.agent.ClassNodePredicate;
+import astava.java.agent.DeclaringClassNodeExtenderElementMethodNodePredicate;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
@@ -28,6 +29,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -1159,7 +1161,10 @@ public class Parser {
             x.accept(new JavaBaseVisitor<Void>() {
                 @Override
                 public Void visitAnnotation(JavaParser.AnnotationContext ctx) {
-                    String typeName = ctx.typeQualifier().getText();
+                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx);
+                    predicates.add(classNode -> hasAnnotation.test((List<AnnotationNode>)classNode.visibleAnnotations));
+
+                    /*String typeName = ctx.typeQualifier().getText();
                     Map<String, Object> values = parseAnnotationValues(ctx);
                     predicates.add(classNode -> {
                         if(classNode.visibleAnnotations != null && classNode.visibleAnnotations.size() > 0) {
@@ -1190,7 +1195,7 @@ public class Parser {
                         }
 
                         return false;
-                    });
+                    });*/
 
                     return null;
                 }
@@ -1331,7 +1336,110 @@ public class Parser {
         return predicates;
     }
 
-    public List<BiPredicate<ClassNode, MethodNode>> parseMethodPredicates() {
-        return null;
+    private Predicate<List<AnnotationNode>> hasAnnotationPredicate(JavaParser.AnnotationContext annotationContext) {
+        String typeName = annotationContext.typeQualifier().getText();
+        Map<String, Object> values = parseAnnotationValues(annotationContext);
+
+        return visibleAnnotations -> {
+            if(visibleAnnotations != null && visibleAnnotations.size() > 0) {
+                return ((List<AnnotationNode>)visibleAnnotations).stream()
+                    .anyMatch(x -> {
+                        if(Descriptor.getDescriptorName(x.desc).equals(typeName)) {
+                            if(values.size() > 0) {
+                                if(x.values != null) {
+                                    return IntStream
+                                        .iterate(0, i -> i + 2).limit(values.size())
+                                        .allMatch(i -> {
+                                            String name = (String)x.values.get(i);
+                                            Object value = x.values.get(i + 1);
+
+                                            if(values.containsKey(name)) {
+                                                return values.get(name).equals(value);
+                                            }
+
+                                            return true;
+                                        });
+                                }
+                            } else
+                                return true;
+                        }
+
+                        return false;
+                    });
+            }
+
+            return false;
+        };
+    }
+
+    public List<DeclaringClassNodeExtenderElementMethodNodePredicate> parseMethodPredicates() {
+        JavaParser.MethodPredicateContext ctx = parser.methodPredicate();
+
+        return ctx.methodPredicateElement().stream()
+            .map(x -> x.accept(new JavaBaseVisitor<DeclaringClassNodeExtenderElementMethodNodePredicate>() {
+                @Override
+                public DeclaringClassNodeExtenderElementMethodNodePredicate visitMethodPredicateAnnotation(JavaParser.MethodPredicateAnnotationContext ctx) {
+                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx.annotation());
+
+                    return (classNode, thisClass, classResolver, methodNode) ->
+                        hasAnnotation.test((List<AnnotationNode>) methodNode.visibleAnnotations);
+                }
+
+                @Override
+                public DeclaringClassNodeExtenderElementMethodNodePredicate visitMethodPredicateAccessModifiers(JavaParser.MethodPredicateAccessModifiersContext ctx) {
+                    int modifiers = ctx.modifier().stream()
+                        .mapToInt(x -> mapModifier(x.getText()))
+                        .reduce((x, y) -> x & y).getAsInt();
+
+                    return (classNode, thisClass, classResolver, methodNode) ->
+                        methodNode.access == modifiers;
+                }
+
+                @Override
+                public DeclaringClassNodeExtenderElementMethodNodePredicate visitMethodPredicateAccessTypeAndName(JavaParser.MethodPredicateAccessTypeAndNameContext ctx) {
+                    String returnType = ctx.returnType != null ? Descriptor.getMethodDescriptorPart(Descriptor.get(ctx.returnType.getText())) : null;
+                    String name = ctx.name != null ? ctx.name.getText() : null;
+
+                    return (classNode, thisClass, classResolver, methodNode) -> {
+                        if (returnType != null && !Type.getReturnType(methodNode.desc).getDescriptor().equals(returnType))
+                            return false;
+
+                        if (name != null && !methodNode.name.equals(name))
+                            return false;
+
+                        return true;
+                    };
+                }
+
+                @Override
+                public DeclaringClassNodeExtenderElementMethodNodePredicate visitMethodPredicateParameters(JavaParser.MethodPredicateParametersContext ctx) {
+                    List<String> parameterTypes = ctx.typeQualifier().stream()
+                        .map(x -> Descriptor.getFieldDescriptor(Descriptor.get(x.getText()))).collect(Collectors.toList());
+
+                    return (classNode, thisClass, classResolver, methodNode) -> {
+                        Type[] xParameters = Type.getArgumentTypes(methodNode.desc);
+                        return parameterTypes.size() == xParameters.length &&
+                            IntStream.range(0, parameterTypes.size()).allMatch(i -> parameterTypes.get(i).equals(xParameters[i].getDescriptor()));
+                    };
+                }
+            }))
+            .collect(Collectors.toList());
+    }
+
+    private int mapModifier(String str) {
+        switch (str) {
+            case "private":
+                return Modifier.PRIVATE;
+            case "protected":
+                return Modifier.PROTECTED;
+            case "public":
+                return Modifier.PUBLIC;
+            case "static":
+                return Modifier.STATIC;
+            case "abstract":
+                return Modifier.ABSTRACT;
+        }
+
+        return -1;
     }
 }

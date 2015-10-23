@@ -1,8 +1,10 @@
 package astava.java.agent.sample;
 
-import astava.java.agent.ClassLoaderExtender;
+import astava.java.agent.*;
 import astava.java.agent.Parser.ParserFactory;
 import astava.java.parser.*;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -51,8 +53,8 @@ public class Main {
             .and(factory.whenClass("boolean (...)"))
             .and(factory.whenClass("public;"))
             .then(
-                factory.modClass((classNode, thisClass) -> {
-                    return factory.modClass(String.format(
+                factory.modClass((classNode, thisClass) ->
+                    factory.modClass(String.format(
                         "public boolean equals(Object other) {\n" +
                             "   if(other instanceof %1$s) {\n" +
                             "       %1$s otherAsThis = (%1$s)other;\n" +
@@ -62,9 +64,20 @@ public class Main {
                             "}",
                         thisClass.getName(),
                         thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
-                    ));
-                })
-            ),
+                    ))
+                ).andThen(
+                    factory
+                        .whenMethod("public boolean")
+                        .then(new DeclaringMethodNodeExtenderElement() {
+                            @Override
+                            public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
+                                return (classNode1, thisClass1, classResolver1, classInspector1, methodNode1) ->
+                                    methodNode1.toString();
+                            }
+                        })
+                )
+            )
+            ,
             classResolver, classInspector);
 
         /*MethodNodePredicateParser methodNodePredicate = factory.newMethodPredicate();

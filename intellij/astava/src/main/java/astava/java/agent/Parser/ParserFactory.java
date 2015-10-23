@@ -7,6 +7,7 @@ import astava.java.parser.*;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -101,5 +102,12 @@ public class ParserFactory {
                 return null;
             }
         };
+    }
+
+    public DeclaringClassNodeExtenderElementMethodNodePredicate whenMethod(String sourceCode) throws IOException {
+        List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates();
+
+        return (classNode, thisClass, classResolver1, methodNode) ->
+            predicates.stream().allMatch(p -> p.test(classNode, thisClass, classResolver1, methodNode));
     }
 }

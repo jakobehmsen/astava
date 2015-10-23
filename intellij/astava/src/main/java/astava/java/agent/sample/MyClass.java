@@ -23,4 +23,12 @@ public class MyClass extends MyOtherClass {
     public boolean someMethod(int arg0, int arg1) {
         return false;
     }
+
+    public boolean someOtherMethod(int arg0, int arg1, String str) {
+        return false;
+    }
+
+    private boolean someOtherMethod2(int arg0, int arg1, String str) {
+        return false;
+    }
 }
