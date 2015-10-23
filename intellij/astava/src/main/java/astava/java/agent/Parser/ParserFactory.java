@@ -36,10 +36,10 @@ public class ParserFactory {
         return new MethodNodePredicateParser();
     }*/
 
-    public ExDeclaringClassNodeExtenderElement modClass(String sourceCode) throws IOException {
-        List<ExDeclaringClassNodeExtenderElement> elements = new Parser(sourceCode).parse().stream().map(d -> new ExDeclaringClassNodeExtenderElement() {
+    public DeclaringClassNodeExtenderElement modClass(String sourceCode) throws IOException {
+        List<DeclaringClassNodeExtenderElement> elements = new Parser(sourceCode).parse().stream().map(d -> new DeclaringClassNodeExtenderElement() {
             @Override
-            public ExDeclaringClassNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver) {
+            public DeclaringClassNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver) {
                 d.accept(new DefaultDomBuilderVisitor() {
                     @Override
                     public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
@@ -52,7 +52,7 @@ public class ParserFactory {
                     }
                 });
 
-                return (classNode1, thisClass1, classResolver1, classInspector1) -> new DefaultDomBuilderVisitor.Return<ExDeclaringClassNodeExtenderTransformer>() {
+                return (classNode1, thisClass1, classResolver1, classInspector1) -> new DefaultDomBuilderVisitor.Return<DeclaringClassNodeExtenderTransformer>() {
                     @Override
                     public void visitFieldBuilder(FieldDomBuilder fieldBuilder) {
                         FieldDom fieldDom = fieldBuilder.declare(classResolver1).build(thisClass1);
@@ -81,16 +81,16 @@ public class ParserFactory {
             }
         }).collect(Collectors.toList());
 
-        return ExDeclaringClassNodeExtenderUtil.composeElement(elements);
+        return DeclaringClassNodeExtenderUtil.composeElement(elements);
     }
 
-    public ExDeclaringClassNodeExtenderElementPredicate whenClass(String sourceCode) throws IOException {
+    public DeclaringClassNodeExtenderElementPredicate whenClass(String sourceCode) throws IOException {
         List<ClassNodePredicate> predicates = new Parser(sourceCode).parseClassPredicates(classInspector);
 
         return (classNode, thisClass, classResolver1) -> predicates.stream().allMatch(p -> p.test(classNode));
     }
 
-    public ExDeclaringClassNodeExtenderElement modClass(BiFunctionException<ClassNode, ClassDeclaration, ExDeclaringClassNodeExtenderElement> function) throws Exception {
+    public DeclaringClassNodeExtenderElement modClass(BiFunctionException<ClassNode, ClassDeclaration, DeclaringClassNodeExtenderElement> function) throws Exception {
         return (classNode, thisClass, classResolver1) -> {
             try {
                 return function

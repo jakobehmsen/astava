@@ -2,16 +2,11 @@ package astava.java.agent;
 
 import astava.java.Descriptor;
 import astava.java.gen.MethodGenerator;
-import astava.java.parser.ClassInspector;
-import astava.java.parser.ClassResolver;
-import astava.java.parser.MutableClassDeclaration;
 import astava.tree.*;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -21,11 +16,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ClassNodeExtenderFactory {
-    public static ExDeclaringClassNodeExtenderTransformer setSuperName(String superName) {
+    public static DeclaringClassNodeExtenderTransformer setSuperName(String superName) {
         return (classNode, thisClass, classResolver, classInspector) -> classNode.superName = superName;
     }
 
-    public static ExDeclaringClassNodeExtenderTransformer addAnnotation(String typeName, Map<String, Object> values) {
+    public static DeclaringClassNodeExtenderTransformer addAnnotation(String typeName, Map<String, Object> values) {
         return (classNode, thisClass, classResolver, classInspector) -> {
             String desc = Descriptor.getTypeDescriptor(typeName);
             //new Annotation();
@@ -36,7 +31,7 @@ public class ClassNodeExtenderFactory {
         };
     }
 
-    public static ExDeclaringClassNodeExtenderTransformer addField(FieldDom fieldDom) {
+    public static DeclaringClassNodeExtenderTransformer addField(FieldDom fieldDom) {
         return (classNode, thisClass, classResolver, classInspector) -> {
             FieldNode f = fieldDom.accept(new FieldDomVisitor<FieldNode>() {
                 @Override
@@ -55,7 +50,7 @@ public class ClassNodeExtenderFactory {
         };
     }
 
-    public static ExDeclaringClassNodeExtenderTransformer addMethod(MethodDom methodDom) {
+    public static DeclaringClassNodeExtenderTransformer addMethod(MethodDom methodDom) {
         return (classNode, thisClass, classResolver, classInspector) -> {
             MethodNode methodNode = new StatementDomVisitor.Return<MethodNode>() {
                 @Override

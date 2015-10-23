@@ -4,17 +4,17 @@ import astava.java.parser.ClassResolver;
 import astava.java.parser.MutableClassDeclaration;
 import org.objectweb.asm.tree.ClassNode;
 
-public interface ExDeclaringClassNodeExtenderElementPredicate {
+public interface DeclaringClassNodeExtenderElementPredicate {
     boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver);
 
-    default ExDeclaringClassNodeExtenderElementPredicate and(ExDeclaringClassNodeExtenderElementPredicate next) {
-        ExDeclaringClassNodeExtenderElementPredicate self = this;
+    default DeclaringClassNodeExtenderElementPredicate and(DeclaringClassNodeExtenderElementPredicate next) {
+        DeclaringClassNodeExtenderElementPredicate self = this;
 
         return (classNode, thisClass, classResolver) ->
             self.test(classNode, thisClass, classResolver) && next.test(classNode, thisClass, classResolver);
     }
 
-    default ExDeclaringClassNodeExtenderElement then(ExDeclaringClassNodeExtenderElement element) {
-        return new ExConditionalExDeclaringClassNodeExtenderElement(this, element);
+    default DeclaringClassNodeExtenderElement then(DeclaringClassNodeExtenderElement element) {
+        return new ConditionalDeclaringClassNodeExtenderElement(this, element);
     }
 }

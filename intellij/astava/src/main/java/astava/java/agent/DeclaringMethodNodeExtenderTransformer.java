@@ -6,9 +6,9 @@ import astava.java.parser.MutableClassDeclaration;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public interface ExDeclaringMethodNodeExtenderTransformer {
+public interface DeclaringMethodNodeExtenderTransformer {
     void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode);
-    default ExDeclaringClassNodeExtenderTransformer when(ExDeclaringClassNodeExtenderElementMethodNodePredicate condition) {
-        return new ExConditionalExDeclaringMethodNodeExtenderTransformer(condition, this);
+    default DeclaringClassNodeExtenderTransformer when(DeclaringClassNodeExtenderElementMethodNodePredicate condition) {
+        return new ConditionalDeclaringMethodNodeExtenderTransformer(condition, this);
     }
 }

@@ -7,13 +7,12 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class ExConditionalExDeclaringMethodNodeExtenderTransformer implements ExDeclaringClassNodeExtenderTransformer {
-    private ExDeclaringClassNodeExtenderElementMethodNodePredicate predicate;
-    private ExDeclaringMethodNodeExtenderTransformer transformer;
+public class ConditionalDeclaringMethodNodeExtenderTransformer implements DeclaringClassNodeExtenderTransformer {
+    private DeclaringClassNodeExtenderElementMethodNodePredicate predicate;
+    private DeclaringMethodNodeExtenderTransformer transformer;
 
-    public ExConditionalExDeclaringMethodNodeExtenderTransformer(ExDeclaringClassNodeExtenderElementMethodNodePredicate predicate, ExDeclaringMethodNodeExtenderTransformer transformer) {
+    public ConditionalDeclaringMethodNodeExtenderTransformer(DeclaringClassNodeExtenderElementMethodNodePredicate predicate, DeclaringMethodNodeExtenderTransformer transformer) {
         this.predicate = predicate;
         this.transformer = transformer;
     }

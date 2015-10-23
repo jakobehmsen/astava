@@ -15,13 +15,13 @@ import java.io.PrintWriter;
 public class ClassLoaderExtender extends ClassLoader {
     private ClassResolver classResolver;
     private ClassInspector classInspector;
-    private ExClassNodeExtender extender;
+    private ClassNodeExtender extender;
 
-    public ClassLoaderExtender(ExClassNodeExtender extender, ClassResolver classResolver, ClassInspector classInspector) {
+    public ClassLoaderExtender(ClassNodeExtender extender, ClassResolver classResolver, ClassInspector classInspector) {
         this(ClassLoader.getSystemClassLoader(), classResolver, extender, classInspector);
     }
 
-    public ClassLoaderExtender(ClassLoader parent, ClassResolver classResolver, ExClassNodeExtender extender, ClassInspector classInspector) {
+    public ClassLoaderExtender(ClassLoader parent, ClassResolver classResolver, ClassNodeExtender extender, ClassInspector classInspector) {
         super(parent);
         this.classResolver = classResolver;
         this.classInspector = classInspector;

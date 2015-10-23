@@ -1,22 +1,16 @@
 package astava.java.agent;
 
 import astava.java.gen.MethodGenerator;
-import astava.java.parser.ClassInspector;
-import astava.java.parser.ClassResolver;
-import astava.java.parser.MutableClassDeclaration;
 import astava.tree.ParameterInfo;
 import astava.tree.StatementDom;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.GeneratorAdapter;
-import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
-import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,13 +18,13 @@ import java.util.stream.IntStream;
 import java.util.ListIterator;
 
 public class MethodNodeExtenderFactory {
-    public static ExDeclaringMethodNodeExtenderTransformer sequence(ExDeclaringMethodNodeExtenderTransformer... extenders) {
+    public static DeclaringMethodNodeExtenderTransformer sequence(DeclaringMethodNodeExtenderTransformer... extenders) {
         return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
             Arrays.asList(extenders).forEach(x -> x.transform(classNode, thisClass, classResolver, classInspector, methodNode));
         };
     }
 
-    public static ExDeclaringMethodNodeExtenderTransformer setBody(StatementDom replacement) {
+    public static DeclaringMethodNodeExtenderTransformer setBody(StatementDom replacement) {
         return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
             InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
@@ -48,7 +42,7 @@ public class MethodNodeExtenderFactory {
         };
     }
 
-    public static ExDeclaringMethodNodeExtenderTransformer append(StatementDom statement) {
+    public static DeclaringMethodNodeExtenderTransformer append(StatementDom statement) {
         return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
             /*InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
