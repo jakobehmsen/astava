@@ -16,16 +16,17 @@ modifiers: accessModifier? KW_ABSTRACT? KW_STATIC?;
 accessModifier: KW_PUBLIC | KW_PRIVATE | KW_PROTECTED;
 statement: nonDelimitedStatement | delimitedStatement SEMI_COLON;
 
-nonDelimitedStatement: ifElseStatement;
+nonDelimitedStatement: ifElseStatement | methodBody;
 ifElseStatement: 
     KW_IF OPEN_PAR condition=expression CLOSE_PAR 
     ifTrueBlock=singleOrMultiStatement
     (KW_ELSE ifFalseBlock=singleOrMultiStatement)?;
+methodBody: ELLIPSIS;
 
 singleOrMultiStatement: OPEN_BRA statement* CLOSE_BRA | statement;
 
 delimitedStatement: 
-    returnStatement | variableDeclaration | expression;
+    returnStatement | variableDeclaration | throwStatement | expression;
 returnStatement: KW_RETURN expression;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 
@@ -33,8 +34,11 @@ variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 expression: assignment | expression4;
 assignment: name=ID OP_ASSIGN value=expression;
 
-expression4: expressionLogicalAnd | expression9;
-expressionLogicalAnd: first=expression9 (AMPERSAND expression)*;
+expression4: expressionLogicalAnd | expression8;
+expressionLogicalAnd: first=expression8 (AMPERSAND expression)*;
+
+expression8: relationalExpression | expression9;
+relationalExpression: first=expression9 (OP_EQUALS expression)*;
 
 expression9: instanceOfExpression | expression13;
 instanceOfExpression: expression13 KW_INSTANCE_OF typeQualifier;
@@ -62,6 +66,8 @@ trueLiteral: KW_TRUE;
 falseLiteral: KW_FALSE;
 newInstance: KW_NEW name=typeQualifier arguments;
 arguments: OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
+throwStatement: KW_THROW expression;
+
 annotation: AT typeQualifier
     (OPEN_PAR
         ((valueArgument=expression | annotationArgument)? (COMMA annotationArgument)*)
@@ -115,13 +121,16 @@ modifier: KW_PRIVATE | KW_PUBLIC | KW_PROTECTED | KW_STATIC | KW_ABSTRACT;
 methodModification:
     methodModificationElement*;
 methodModificationElement:
-    methodModificationAnnotation;
+    methodModificationAnnotation | methodModificationBody;
 methodModificationAnnotation:
     annotation;
+methodModificationBody:
+    statement+;
 
 AMPERSAND: '&&';
 AT: '@';
 OP_ASSIGN: '=';
+OP_EQUALS: '==';
 SEMI_COLON: ';';
 DOT: '.';
 ELLIPSIS: '...';
@@ -147,6 +156,7 @@ KW_ELSE: 'else';
 KW_THIS: 'this';
 KW_TRUE: 'true';
 KW_FALSE: 'false';
+KW_THROW: 'throw';
 fragment DIGIT: [0-9];
 fragment LETTER: [A-Z]|[a-z];
 ID: (LETTER | '_') (LETTER | '_' | DIGIT)*;

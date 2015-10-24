@@ -64,10 +64,10 @@ public class ASMClassDeclaration implements ClassDeclaration {
     }
 
     public static List<MethodDeclaration> getMethods(ClassNode classNode) {
-        return ((List<MethodNode>)classNode.methods).stream().map(x -> methodDeclaration(x)).collect(Collectors.toList());
+        return ((List<MethodNode>)classNode.methods).stream().map(x -> getMethod(x)).collect(Collectors.toList());
     }
 
-    private static MethodDeclaration methodDeclaration(MethodNode methodNode) {
+    public static MethodDeclaration getMethod(MethodNode methodNode) {
         return new MethodDeclaration() {
             @Override
             public int getModifier() {

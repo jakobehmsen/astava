@@ -40,6 +40,8 @@ public interface StatementDomVisitor {
 
     void visitMethodBody();
 
+    void visitThrow(ExpressionDom expression);
+
     class Default implements StatementDomVisitor {
         @Override
         public void visitVariableDeclaration(String type, String name) {
@@ -123,6 +125,11 @@ public interface StatementDomVisitor {
 
         @Override
         public void visitMethodBody() {
+
+        }
+
+        @Override
+        public void visitThrow(ExpressionDom expression) {
 
         }
     }

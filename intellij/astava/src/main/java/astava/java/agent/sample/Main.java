@@ -11,7 +11,14 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class Main {
+    private static Boolean o(String str) {
+        System.out.println(str);
+        return true;
+    }
+
     public static void main(String[] args) throws Exception {
+        boolean b = new Object() == new Object();
+
         //MyClass mc = new MyClass("Ignored");
 
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
@@ -53,26 +60,46 @@ public class Main {
             .and(factory.whenClass("boolean (...)"))
             .and(factory.whenClass("public;"))
             .then(
-                factory.modClass((classNode, thisClass) ->
-                    factory.modClass(String.format(
-                        "public boolean equals(Object other) {\n" +
+                factory.modClass((classNode, thisClass) -> String.format(
+                    "public boolean equals(Object other) {\n" +
                         "   if(other instanceof %1$s) {\n" +
                         "       %1$s otherAsThis = (%1$s)other;\n" +
                         "       return %2$s;\n" +
                         "   }\n" +
                         "   return false;\n" +
                         "}",
-                        thisClass.getName(),
-                        thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
-                    ))
-                ).andThen(
+                    thisClass.getName(),
+                    thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
+                )).andThen(
                     factory
                         .whenMethod("public boolean")
-                        .then(factory.modMethod("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"A boolean return type!!!\")"))
+                        .and(factory.whenMethod("@" + MyNotNullAnnotation.class.getName()))
+                        .then(
+                            factory.modMethod("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"A boolean return type!!!\")")
+                                .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
+                                    ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
+                                        .map(p -> String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");\n", p.getName()))
+                                        .collect(Collectors.joining())
+                                        + "..." // Means insert before
+                                ))
+                            /*.andThen(
+                                factory.whenParameter("@" + MyNotNullAnnotation.class.getName())
+                                .then(factory.modMethodFromParameter((classNode, thisClass, methodNode, p) ->
+                                        String.format("if(%1$s == null) throw new NullReferenceException(\"%1$s\")", p.getName())
+                                            + "..." // Means insert before
+                                        )
+                                    )
+                            )*/
+                        )
                 )
             )
             ,
             classResolver, classInspector);
+
+        /*
+        factory.whenParameter("@" + MyNotNullAnnotation.class.getName())")
+        .then()
+        */
 
         /*MethodNodePredicateParser methodNodePredicate = factory.newMethodPredicate();
 
@@ -120,6 +147,8 @@ public class Main {
             mc2.getClass().getField("someOtherField").set(mc2, "someOtherValue2");
 
             System.out.println(mc1.equals(mc2));
+
+            mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", "Second");
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

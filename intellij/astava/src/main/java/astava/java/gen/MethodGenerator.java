@@ -213,6 +213,12 @@ public class MethodGenerator {
             public void visitMethodBody() {
                 methodNode.instructions.add(originalInstructions);
             }
+
+            @Override
+            public void visitThrow(ExpressionDom expression) {
+                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                generator.throwException();
+            }
         });
 
         return Descriptor.VOID;

@@ -548,6 +548,18 @@ public class Factory {
         };
     }
 
+    public static ExpressionDomBuilder compare(ExpressionDomBuilder lhsBuilder, ExpressionDomBuilder rhsBuilder, int operator) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom lhs = lhsBuilder.build(classResolver, classDeclaration, classInspector, locals);
+                ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.compare(lhs, rhs, operator);
+            }
+        };
+    }
+
     public static ExpressionDomBuilder typeCast(ExpressionDomBuilder expressionBuilder, String targetTypeName) {
         return new ExpressionDomBuilder() {
             @Override
@@ -560,6 +572,36 @@ public class Factory {
             @Override
             public String toString() {
                 return "(" + targetTypeName + ") " + expressionBuilder;
+            }
+        };
+    }
+
+    public static StatementDomBuilder throwStatement(ExpressionDomBuilder expressionBuilder) {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.throwStatement(expression);
+            }
+
+            @Override
+            public String toString() {
+                return "throw " + expressionBuilder;
+            }
+        };
+    }
+
+    public static StatementDomBuilder methodBody() {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                return DomFactory.methodBody();
+            }
+
+            @Override
+            public String toString() {
+                return "...";
             }
         };
     }

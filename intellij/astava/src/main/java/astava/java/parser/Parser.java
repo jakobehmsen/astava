@@ -2,11 +2,14 @@ package astava.java.parser;
 
 import astava.debug.Debug;
 import astava.java.Descriptor;
+import astava.java.DomFactory;
 import astava.java.LogicalOperator;
+import astava.java.RelationalOperator;
 import astava.java.agent.ClassNodePredicate;
 import astava.java.agent.DeclaringClassNodeExtenderElementMethodNodePredicate;
 import astava.java.agent.DeclaringMethodNodeExtenderElement;
 import astava.java.agent.DeclaringMethodNodeExtenderTransformer;
+import astava.java.gen.MethodGenerator;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
@@ -19,10 +22,10 @@ import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
+import org.objectweb.asm.util.Printer;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,7 +33,6 @@ import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -620,6 +622,11 @@ public class Parser {
             }
 
             @Override
+            public StatementDomBuilder visitMethodBody(JavaParser.MethodBodyContext ctx) {
+                return Factory.methodBody();
+            }
+
+            @Override
             public StatementDomBuilder visitDelimitedStatement(@NotNull JavaParser.DelimitedStatementContext ctx) {
                 return ctx.getChild(0).accept(this);
             }
@@ -682,6 +689,13 @@ public class Parser {
             @Override
             public StatementDomBuilder visitAssignment(@NotNull JavaParser.AssignmentContext ctx) {
                 return buildAssignment(ctx.name.getText(), ctx.value, atRoot);
+            }
+
+            @Override
+            public StatementDomBuilder visitThrowStatement(JavaParser.ThrowStatementContext ctx) {
+                ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
+
+                return Factory.throwStatement(expression);
             }
         });
     }
@@ -922,6 +936,19 @@ public class Parser {
                     ExpressionDomBuilder lhsBuilder = expressionBuilder;
                     ExpressionDomBuilder rhsBuilder = parseExpressionBuilder(rhsCtx, false);
                     expressionBuilder = Factory.logicalAnd(lhsBuilder, rhsBuilder, LogicalOperator.AND);
+                }
+
+                return expressionBuilder;
+            }
+
+            @Override
+            public ExpressionDomBuilder visitRelationalExpression(JavaParser.RelationalExpressionContext ctx) {
+                ExpressionDomBuilder expressionBuilder = parseExpressionBuilder(ctx.first, false);
+
+                for (JavaParser.ExpressionContext rhsCtx : ctx.expression()) {
+                    ExpressionDomBuilder lhsBuilder = expressionBuilder;
+                    ExpressionDomBuilder rhsBuilder = parseExpressionBuilder(rhsCtx, false);
+                    expressionBuilder = Factory.compare(lhsBuilder, rhsBuilder, RelationalOperator.EQ);
                 }
 
                 return expressionBuilder;
@@ -1465,6 +1492,43 @@ public class Parser {
                                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
                                     AnnotationVisitor annotation = methodNode.visitAnnotation(desc, true);
                                     values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
+                                }
+                            };
+                        }
+                    };
+                }
+
+                @Override
+                public DeclaringMethodNodeExtenderElement visitMethodModificationBody(JavaParser.MethodModificationBodyContext ctx) {
+                    StatementDomBuilder statementDomBuilder =
+                        Factory.block(ctx.statement().stream().map(x -> parseStatementBuilder(x, true)).collect(Collectors.toList()));
+
+                    return new DeclaringMethodNodeExtenderElement() {
+                        @Override
+                        public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
+                            return new DeclaringMethodNodeExtenderTransformer() {
+                                @Override
+                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
+                                    Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
+                                        .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
+                                    StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
+
+                                    InsnList originalInstructions = new InsnList();
+                                    originalInstructions.add(methodNode.instructions);
+                                    methodNode.instructions.clear();
+
+                                    MethodGenerator methodGenerator = new MethodGenerator(
+                                        classNode.name,
+                                        ASMClassDeclaration.getMethod(methodNode).getParameterTypes(),
+                                        statement);
+
+                                    MethodGenerator.generate(methodNode, (mn, generator) -> {
+                                        methodGenerator.populateMethodBody(mn, originalInstructions, generator);
+                                    });
+
+                                    Printer printer=new Textifier();
+                                    methodNode.accept(new TraceMethodVisitor(printer));
+                                    printer.getText().forEach(x -> System.out.print(x.toString()));
                                 }
                             };
                         }

@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class ParserFactory {
@@ -91,7 +92,19 @@ public class ParserFactory {
         return (classNode, thisClass, classResolver1) -> predicates.stream().allMatch(p -> p.test(classNode));
     }
 
-    public DeclaringClassNodeExtenderElement modClass(BiFunctionException<ClassNode, ClassDeclaration, DeclaringClassNodeExtenderElement> function) throws Exception {
+    public DeclaringClassNodeExtenderElement modClass(BiFunction<ClassNode, ClassDeclaration, String> function) throws IOException {
+        return (classNode, thisClass, classResolver1) -> {
+            try {
+                String sourceCode = function.apply(classNode, thisClass);
+                return modClass(sourceCode).declare(classNode, thisClass, classResolver1);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        };
+    }
+
+    /*public DeclaringClassNodeExtenderElement modClass(BiFunctionException<ClassNode, ClassDeclaration, DeclaringClassNodeExtenderElement> function) throws Exception {
         return (classNode, thisClass, classResolver1) -> {
             try {
                 return function
@@ -102,7 +115,7 @@ public class ParserFactory {
                 return null;
             }
         };
-    }
+    }*/
 
     public DeclaringClassNodeExtenderElementMethodNodePredicate whenMethod(String sourceCode) throws IOException {
         List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates();
@@ -115,5 +128,17 @@ public class ParserFactory {
         List<DeclaringMethodNodeExtenderElement> predicates = new Parser(sourceCode).parseMethodModifications();
 
         return predicates.stream().reduce((x, y) -> x.andThen(y)).get();
+    }
+
+    public DeclaringMethodNodeExtenderElement modMethod(TriFunction<ClassNode, ClassDeclaration, MethodNode, String> function) throws Exception {
+        return (classNode, thisClass, classResolver1, methodNode) -> {
+            try {
+                String sourceCode = function.apply(classNode, thisClass, methodNode);
+                return modMethod(sourceCode).declare(classNode, thisClass, classResolver1, methodNode);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        };
     }
 }

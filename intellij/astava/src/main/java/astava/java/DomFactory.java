@@ -234,6 +234,8 @@ public class DomFactory {
     }
 
     public static ExpressionDom compare(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        if(lhs == null)
+            new String();
         return v -> v.visitCompare(operator, lhs, rhs);
     }
 
@@ -470,5 +472,9 @@ public class DomFactory {
 
     public static ExpressionDom typeCast(ExpressionDom expression, String targetTypeName) {
         return v -> v.visitTypeCast(expression, targetTypeName);
+    }
+
+    public static StatementDom throwStatement(ExpressionDom expression) {
+        return v -> v.visitThrow(expression);
     }
 }

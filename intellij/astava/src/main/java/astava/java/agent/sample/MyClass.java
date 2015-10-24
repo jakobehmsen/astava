@@ -24,11 +24,17 @@ public class MyClass extends MyOtherClass {
         return false;
     }
 
-    public boolean someOtherMethod(int arg0, int arg1, String str) {
+    public boolean someOtherMethod(int arg0, int arg1, @MyNotNullAnnotation String str) {
         return false;
     }
 
-    private boolean someOtherMethod2(int arg0, int arg1, String str) {
+    @MyNotNullAnnotation
+    private boolean someOtherMethod2(String str1, String str2) {
+        return false;
+    }
+
+    @MyNotNullAnnotation
+    public boolean someOtherMethod3(String str1, String str2) {
         return false;
     }
 }

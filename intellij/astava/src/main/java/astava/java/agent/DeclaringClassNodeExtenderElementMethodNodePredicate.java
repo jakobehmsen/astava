@@ -10,4 +10,9 @@ public interface DeclaringClassNodeExtenderElementMethodNodePredicate {
     default DeclaringClassNodeExtenderElement then(DeclaringMethodNodeExtenderElement element) {
         return new ConditionalDeclaringMethodNodeExtenderElement(this, element);
     }
+
+    default DeclaringClassNodeExtenderElementMethodNodePredicate and(DeclaringClassNodeExtenderElementMethodNodePredicate other) {
+        return (classNode, thisClass, classResolver, methodNode) ->
+            this.test(classNode, thisClass, classResolver, methodNode) && other.test(classNode, thisClass, classResolver, methodNode);
+    }
 }
