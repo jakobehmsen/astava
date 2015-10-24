@@ -5,6 +5,8 @@ import astava.java.Descriptor;
 import astava.java.LogicalOperator;
 import astava.java.agent.ClassNodePredicate;
 import astava.java.agent.DeclaringClassNodeExtenderElementMethodNodePredicate;
+import astava.java.agent.DeclaringMethodNodeExtenderElement;
+import astava.java.agent.DeclaringMethodNodeExtenderTransformer;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
 import astava.java.parser.antlr4.JavaParser;
@@ -15,6 +17,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -1441,5 +1444,33 @@ public class Parser {
         }
 
         return -1;
+    }
+
+    public List<DeclaringMethodNodeExtenderElement> parseMethodModifications() {
+        JavaParser.MethodModificationContext ctx = parser.methodModification();
+
+        return ctx.methodModificationElement().stream()
+            .map(x -> x.accept(new JavaBaseVisitor<DeclaringMethodNodeExtenderElement>() {
+                @Override
+                public DeclaringMethodNodeExtenderElement visitMethodModificationAnnotation(JavaParser.MethodModificationAnnotationContext ctx) {
+                    String typeName = ctx.annotation().typeQualifier().getText();
+                    String desc = Descriptor.getTypeDescriptor(Descriptor.get(typeName));
+                    Map<String, Object> values = parseAnnotationValues(ctx.annotation());
+
+                    return new DeclaringMethodNodeExtenderElement() {
+                        @Override
+                        public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
+                            return new DeclaringMethodNodeExtenderTransformer() {
+                                @Override
+                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
+                                    AnnotationVisitor annotation = methodNode.visitAnnotation(desc, true);
+                                    values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
+                                }
+                            };
+                        }
+                    };
+                }
+            }))
+            .collect(Collectors.toList());
     }
 }

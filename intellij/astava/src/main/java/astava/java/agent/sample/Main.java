@@ -56,25 +56,19 @@ public class Main {
                 factory.modClass((classNode, thisClass) ->
                     factory.modClass(String.format(
                         "public boolean equals(Object other) {\n" +
-                            "   if(other instanceof %1$s) {\n" +
-                            "       %1$s otherAsThis = (%1$s)other;\n" +
-                            "       return %2$s;\n" +
-                            "   }\n" +
-                            "   return false;\n" +
-                            "}",
+                        "   if(other instanceof %1$s) {\n" +
+                        "       %1$s otherAsThis = (%1$s)other;\n" +
+                        "       return %2$s;\n" +
+                        "   }\n" +
+                        "   return false;\n" +
+                        "}",
                         thisClass.getName(),
                         thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                     ))
                 ).andThen(
                     factory
                         .whenMethod("public boolean")
-                        .then(new DeclaringMethodNodeExtenderElement() {
-                            @Override
-                            public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
-                                return (classNode1, thisClass1, classResolver1, classInspector1, methodNode1) ->
-                                    methodNode1.toString();
-                            }
-                        })
+                        .then(factory.modMethod("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"A boolean return type!!!\")"))
                 )
             )
             ,

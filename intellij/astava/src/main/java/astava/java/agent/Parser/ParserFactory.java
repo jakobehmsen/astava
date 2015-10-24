@@ -110,4 +110,10 @@ public class ParserFactory {
         return (classNode, thisClass, classResolver1, methodNode) ->
             predicates.stream().allMatch(p -> p.test(classNode, thisClass, classResolver1, methodNode));
     }
+
+    public DeclaringMethodNodeExtenderElement modMethod(String sourceCode) throws IOException {
+        List<DeclaringMethodNodeExtenderElement> predicates = new Parser(sourceCode).parseMethodModifications();
+
+        return predicates.stream().reduce((x, y) -> x.andThen(y)).get();
+    }
 }

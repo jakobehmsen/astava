@@ -112,6 +112,13 @@ methodPredicateParameters:
     OPEN_PAR (typeQualifier (COMMA typeQualifier)*)? CLOSE_PAR;
 modifier: KW_PRIVATE | KW_PUBLIC | KW_PROTECTED | KW_STATIC | KW_ABSTRACT;
 
+methodModification:
+    methodModificationElement*;
+methodModificationElement:
+    methodModificationAnnotation;
+methodModificationAnnotation:
+    annotation;
+
 AMPERSAND: '&&';
 AT: '@';
 OP_ASSIGN: '=';

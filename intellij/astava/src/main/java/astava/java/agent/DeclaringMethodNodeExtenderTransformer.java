@@ -11,4 +11,11 @@ public interface DeclaringMethodNodeExtenderTransformer {
     default DeclaringClassNodeExtenderTransformer when(DeclaringClassNodeExtenderElementMethodNodePredicate condition) {
         return new ConditionalDeclaringMethodNodeExtenderTransformer(condition, this);
     }
+
+    default DeclaringMethodNodeExtenderTransformer andThen(DeclaringMethodNodeExtenderTransformer next) {
+        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
+            this.transform(classNode, thisClass, classResolver, classInspector, methodNode);
+            next.transform(classNode, thisClass, classResolver, classInspector, methodNode);
+        };
+    }
 }
