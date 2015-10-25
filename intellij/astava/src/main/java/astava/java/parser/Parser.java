@@ -5,10 +5,7 @@ import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;
-import astava.java.agent.ClassNodePredicate;
-import astava.java.agent.DeclaringClassNodeExtenderElementMethodNodePredicate;
-import astava.java.agent.DeclaringMethodNodeExtenderElement;
-import astava.java.agent.DeclaringMethodNodeExtenderTransformer;
+import astava.java.agent.*;
 import astava.java.gen.MethodGenerator;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
@@ -720,29 +717,26 @@ public class Parser {
         return parseExpressionBuilder(ctx, atRoot, false);
     }
 
-    private static final int NAME_VARIABLE = 0;
-    private static final int NAME_PARAMETER = 1;
-    private static final int NAME_FIELD = 2;
-
-    private static <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler, Map<String, String> locals) {
-        return parseAmbiguousName(ids.stream().map(x -> x.getText()).collect(Collectors.toList()), cr, cd, nameHandler, fieldChainHandler, locals);
-    }
-
     //private <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
-    public static <T> T parseAmbiguousName(List<String> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler, Map<String, String> locals) {
+    public static <T> T parseAmbiguousName(List<String> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<String, String, T> classFieldAccessHandler, BiFunction<T, List<String>, T> fieldChainHandler, Map<String, String> locals) {
         // Find longest getName that can be resolved
         String name = "";
 
         if(ids.size() > 1) {
             int i = ids.size();
 
+            T handledName = null;
+
+            boolean isClass = false;
             for (; i > 1; i--) {
                 name = ids.subList(0, i).stream().collect(Collectors.joining("."));
-                if (cr.canResolveAmbiguous(name))
+                if (cr.canResolveAmbiguous(name)) {
+                    isClass = true;
                     break;
+                }
             }
 
-            if (i == 1) {
+            if (!isClass &&  i == 1) {
                 name = ids.get(0);
 
                 // Try match with variable first
@@ -763,6 +757,11 @@ public class Parser {
 
                     // So, a parser perhaps shouldn't yield Doms directly but rather something can yield Doms when requested?
                 }
+
+                handledName = nameHandler.apply(name);
+            } else {
+                handledName = classFieldAccessHandler.apply(name, ids.get(i));
+                i++;
             }
 
             List<String> fieldAccessChain;
@@ -773,7 +772,7 @@ public class Parser {
             } else
                 fieldAccessChain = Arrays.asList();
 
-            T handledName = nameHandler.apply(name);
+            //T handledName = nameHandler.apply(name);
             return fieldChainHandler.apply(handledName, fieldAccessChain);
         } else
             name = ids.get(0);
@@ -1473,7 +1472,7 @@ public class Parser {
         return -1;
     }
 
-    public List<DeclaringMethodNodeExtenderElement> parseMethodModifications() {
+    public List<DeclaringMethodNodeExtenderElement> parseMethodModifications(ClassInspector classInspector) {
         JavaParser.MethodModificationContext ctx = parser.methodModification();
 
         return ctx.methodModificationElement().stream()
@@ -1503,6 +1502,42 @@ public class Parser {
                     StatementDomBuilder statementDomBuilder =
                         Factory.block(ctx.statement().stream().map(x -> parseStatementBuilder(x, true)).collect(Collectors.toList()));
 
+                    List<List<JavaParser.StatementContext>> bodySplit = ctx.statement().stream()
+                        .reduce(new ArrayList<>(Arrays.asList(new ArrayList<>())),
+                            (list, s) -> {
+                                boolean isMethodBody = s.accept(new JavaBaseVisitor<Boolean>() {
+                                    @Override
+                                    public Boolean visitMethodBody(JavaParser.MethodBodyContext ctx) {
+                                        return true;
+                                    }
+                                }) != null;
+                                if (isMethodBody)
+                                    list.add(new ArrayList<>());
+                                else
+                                    list.get(list.size() - 1).add(s);
+
+                                return list;
+                            },
+                            (list1, list2) -> {
+                                list1.addAll(list2);
+                                return list1;
+                            });
+
+                    if (bodySplit.size() > 1) {
+                        // There are method body constructs
+                        return IntStream.range(0, bodySplit.size())
+                            .mapToObj(i -> {
+                                StatementDomBuilder part =
+                                    Factory.block(bodySplit.get(i).stream().map(x -> parseStatementBuilder(x, true)).collect(Collectors.toList()));
+
+                                return i == 0
+                                    ? MethodNodeExtenderFactory.prepend(part, classInspector)
+                                    : MethodNodeExtenderFactory.append(part, classInspector);
+                            }).reduce((x, y) -> x.andThen(y)).get();
+                    } else {
+                        // Simply replace body
+                    }
+
                     return new DeclaringMethodNodeExtenderElement() {
                         @Override
                         public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
@@ -1526,7 +1561,7 @@ public class Parser {
                                         methodGenerator.populateMethodBody(mn, originalInstructions, generator);
                                     });
 
-                                    Printer printer=new Textifier();
+                                    Printer printer = new Textifier();
                                     methodNode.accept(new TraceMethodVisitor(printer));
                                     printer.getText().forEach(x -> System.out.print(x.toString()));
                                 }

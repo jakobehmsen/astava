@@ -78,9 +78,10 @@ public class Main {
                             factory.modMethod("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"A boolean return type!!!\")")
                                 .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
                                     ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
-                                        .map(p -> String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");\n", p.getName()))
+                                        .map(p -> String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");", p.getName()))
                                         .collect(Collectors.joining())
-                                        + "..." // Means insert before
+                                        + "\n..."
+                                        + "\njava.lang.System.out.println(\"Ending call\");"
                                 ))
                             /*.andThen(
                                 factory.whenParameter("@" + MyNotNullAnnotation.class.getName())

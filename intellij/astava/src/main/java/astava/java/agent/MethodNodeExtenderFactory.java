@@ -1,6 +1,8 @@
 package astava.java.agent;
 
+import astava.java.Descriptor;
 import astava.java.gen.MethodGenerator;
+import astava.java.parser.*;
 import astava.tree.ParameterInfo;
 import astava.tree.StatementDom;
 import org.objectweb.asm.tree.*;
@@ -13,6 +15,7 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.ListIterator;
@@ -115,6 +118,64 @@ public class MethodNodeExtenderFactory {
                 printer=new Textifier();
                 mn.accept(new TraceMethodVisitor(printer));
                 //printer.getText().forEach(x -> System.out.print(x.toString()));
+                //generator.ret();
+                //generator.visitInsn(Opcodes.ARETURN);
+            });
+        };
+    }
+
+    public static DeclaringMethodNodeExtenderElement append(StatementDomBuilder statementDomBuilder, ClassInspector classInspector) {
+        return new DeclaringMethodNodeExtenderElement() {
+            @Override
+            public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
+                Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
+                    .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
+                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
+                return append(statement);
+            }
+        };
+    }
+
+    public static DeclaringMethodNodeExtenderElement prepend(StatementDomBuilder statementDomBuilder, ClassInspector classInspector) {
+        return new DeclaringMethodNodeExtenderElement() {
+            @Override
+            public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
+                Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
+                    .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
+                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
+                return prepend(statement);
+            }
+        };
+    }
+
+    private static DeclaringMethodNodeExtenderTransformer prepend(StatementDom statement) {
+        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
+            MethodGenerator.generate(methodNode, (mn, generator) -> {
+                Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
+                List<ParameterInfo> parameters = IntStream.range(0, argumentTypes.length).mapToObj(i -> new ParameterInfo(
+                    argumentTypes[i].getDescriptor(),
+                    methodNode.parameters != null ? ((ParameterNode)methodNode.parameters.get(i)).name : "arg" + i
+                )).collect(Collectors.toList());
+
+                InsnList originalInstructions = new InsnList();
+                originalInstructions.add(methodNode.instructions);
+                methodNode.instructions.clear();
+
+                System.out.println("Class name: " + classNode.name);
+                System.out.println("Method name: " + methodNode.name);
+                System.out.println("Method parameter count: " + (methodNode.parameters != null ? methodNode.parameters.size() : 0));
+                Printer printer=new Textifier();
+                mn.accept(new TraceMethodVisitor(printer));
+                //printer.getText().forEach(x -> System.out.print(x.toString()));
+
+                MethodGenerator methodGenerator = new MethodGenerator(classNode.name, parameters, statement);
+                methodGenerator.populateMethodBody(methodNode, originalInstructions, generator);
+
+                originalInstructions.accept(methodNode);
+
+                printer=new Textifier();
+                mn.accept(new TraceMethodVisitor(printer));
+                printer.getText().forEach(x -> System.out.print(x.toString()));
                 //generator.ret();
                 //generator.visitInsn(Opcodes.ARETURN);
             });

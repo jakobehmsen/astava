@@ -273,11 +273,24 @@ public class Factory {
                             if (fieldDeclaration.isPresent()) {
                                 String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
 
+                                // Should this be supported??? Static access?
                                 if (Modifier.isStatic(fieldDeclaration.get().getModifier()))
-                                    return DomFactory.accessStaticField(cd.getName(), name, descriptor);
+                                    return DomFactory.accessStaticField(Descriptor.get(cd.getName()), name, descriptor);
 
                                 return DomFactory.accessField(DomFactory.self(), name, descriptor);
                             }
+                        }
+
+                        return null;
+                    },
+                    (className, fieldName) -> {
+                        ClassDeclaration classDeclaration = ci.getClassDeclaration(className);
+                        Optional<FieldDeclaration> fieldDeclaration =
+                            classDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
+
+                        if (fieldDeclaration.isPresent()) {
+                            String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
+                            return DomFactory.accessStaticField(Descriptor.get(classDeclaration.getName()), fieldName, descriptor);
                         }
 
                         return null;

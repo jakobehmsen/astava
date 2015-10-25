@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -64,8 +65,8 @@ public class ClassLoaderExtender extends ClassLoader {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
 
             PrintWriter ps = new PrintWriter(os);
+            cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
             org.objectweb.asm.util.CheckClassAdapter.verify(new org.objectweb.asm.ClassReader(classWriter.toByteArray()), true, ps);
-            //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
 
             byte[] bytes = classWriter.toByteArray();
 
