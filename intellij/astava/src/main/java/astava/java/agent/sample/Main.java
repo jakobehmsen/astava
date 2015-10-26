@@ -95,7 +95,7 @@ public class Main {
                                 String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name))*/
 
                             factory.modMethod((classNode, thisClass, methodNode) ->
-                                "if(false) {\n" +
+                                "if(true) {\n" +
                                 "    java.lang.System.out.println(\"Accepting call to method\");\n" +
                                 "    ...\n" +
                                 "} else {\n" +

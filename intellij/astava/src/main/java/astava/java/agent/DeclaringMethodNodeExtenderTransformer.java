@@ -12,7 +12,11 @@ import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
+import java.util.List;
+
 public interface DeclaringMethodNodeExtenderTransformer {
+    void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions);
+
     default void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
         InsnList originalInstructions = new InsnList();
         originalInstructions.add(methodNode.instructions);
@@ -25,25 +29,14 @@ public interface DeclaringMethodNodeExtenderTransformer {
         Printer printer = new Textifier();
         methodNode.accept(new TraceMethodVisitor(printer));
         printer.getText().forEach(x -> System.out.print(x.toString()));
-
-        /*methodNode.visitCode();
-
-        Method m = new Method(methodNode.name, methodNode.desc);
-        GeneratorAdapter generator;
-        try {
-            generator = new GeneratorAdapter(methodNode.access, m, methodNode);
-        } catch(Exception e) {
-            generator = null;
-        }
-
-        transform(classNode, thisClass, classResolver, classInspector, methodNode, generator);
-
-        methodNode.visitEnd();
-        methodNode.visitMaxs(0, 0);*/
     }
-    void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions);
+
     default DeclaringClassNodeExtenderTransformer when(DeclaringClassNodeExtenderElementMethodNodePredicate condition) {
-        return new ConditionalDeclaringMethodNodeExtenderTransformer(condition, this);
+        return (classNode, thisClass, classResolver, classInspector) -> {
+            ((List<MethodNode>)classNode.methods).stream()
+                .filter(m -> condition.test(classNode, thisClass, classResolver, m))
+                .forEach(m -> this.transform(classNode, thisClass, classResolver, classInspector, m));
+        };
     }
 
     default DeclaringMethodNodeExtenderTransformer andThen(DeclaringMethodNodeExtenderTransformer next) {

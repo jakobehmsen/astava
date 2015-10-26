@@ -518,75 +518,8 @@ public class Parser {
             .collect(Collectors.toList());
         String returnType = isConstructor ? "void" : ctx.returnType.getText();
         List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
-        //statementBuilders.forEach(x -> x.appendLocals(locals));
 
         return Factory.method(modifiers, name, tmpParameters, returnType, statementBuilders);
-
-        /*return new MethodDomBuilder() {
-            @Override
-            public String getName() {
-                return name;
-            }
-
-            @Override
-            public MethodDeclaration declare(ClassResolver classResolver) {
-                String returnType = isConstructor ? Descriptor.VOID : parseTypeQualifier(classResolver, ctx.returnType.getText());
-                int modifiers = parseModifiers(ctx.modifiers());
-                // Somehow, the name should be checked as to the class name
-                List<ParameterInfo> parameters = ctx.parameters().parameter().stream()
-                    .map(x -> new ParameterInfo(parseTypeQualifier(classResolver, x.type.getText()), x.name.getText()))
-                    .collect(Collectors.toList());
-
-                return new MethodDeclaration() {
-                    @Override
-                    public int getModifier() {
-                        return modifiers;
-                    }
-
-                    @Override
-                    public String getName() {
-                        return name;
-                    }
-
-                    @Override
-                    public List<ParameterInfo> getParameterTypes() {
-                        return parameters;
-                    }
-
-                    @Override
-                    public String getReturnTypeName() {
-                        return returnType;
-                    }
-
-                    @Override
-                    public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
-                        Hashtable<String, String> locals = new Hashtable<>();
-                        locals.putAll(parameters.stream().collect(Collectors.toMap(x -> x.name, x -> x.descriptor)));
-                        //locals.addAll(parameters.stream().map(x -> x.name).collect(Collectors.toList()));
-                        List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
-                        statementBuilders.forEach(x -> x.appendLocals(locals));
-                        List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals)).collect(Collectors.toList());
-                        StatementDom body = block(statements);
-
-                        // Ugly hack
-                        // Instead: every leaf statement should either be a ret statement or one is injected
-                        // This logic probably shouldn't be located here?
-                        if(returnType.equals(Descriptor.VOID)) {
-                            statements.add(ret());
-                        }
-
-                        if(isConstructor) {
-                            // Call super constructor
-                            statements.add(0,
-                                invokeSpecial(Descriptor.get(classDeclaration.getSuperName()), "<init>", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.VOID), self(), Arrays.asList())
-                            );
-                        }
-
-                        return methodDeclaration(modifiers, name, parameters, returnType, body);
-                    }
-                };
-            }
-        };*/
     }
 
     public StatementDomBuilder parseStatementBuilder() {
@@ -627,7 +560,6 @@ public class Parser {
             @Override
             public StatementDomBuilder visitExpression(@NotNull JavaParser.ExpressionContext ctx) {
                 //// How to convert expression into statement?
-                //return super.visitExpression(ctx);
 
                 return parseExpressionAsStatement((ParserRuleContext)ctx.getChild(0), atRoot);
             }
@@ -636,17 +568,6 @@ public class Parser {
             public StatementDomBuilder visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
                 ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
                 return Factory.ret(expression);
-                /*return new StatementDomBuilder() {
-                    @Override
-                    public void appendLocals(Map<String, String> locals) {
-
-                    }
-
-                    @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
-                        return ret(expression.build(classResolver, classDeclaration, classInspector, locals));
-                    }
-                };*/
             }
 
             @Override
@@ -713,7 +634,6 @@ public class Parser {
         return parseExpressionBuilder(ctx, atRoot, false);
     }
 
-    //private <T> T parseAmbiguousNameFromTerminalNodes(List<TerminalNode> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<T, List<String>, T> fieldChainHandler) {
     public static <T> T parseAmbiguousName(List<String> ids, ClassResolver cr, ClassDeclaration cd, Function<String, T> nameHandler, BiFunction<String, String, T> classFieldAccessHandler, BiFunction<T, List<String>, T> fieldChainHandler, Map<String, String> locals) {
         // Find longest getName that can be resolved
         String name = "";
@@ -1028,40 +948,6 @@ public class Parser {
         };
     }
 
-    /*private StatementDomBuilder invocationStatement(@NotNull JavaParser.InvocationContext ctx, boolean atRoot, ExpressionDomBuilder targetBuilder) {
-        List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
-            .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
-
-        return (cr, cd, ci, locals) -> {
-            String methodName = ctx.ID().getText();
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
-            List<ExpressionDom> arguments = argumentBuilders.stream()
-                .map(x -> x.build(cr, cd, ci, locals)).collect(Collectors.toList());
-
-            String targetType = expressionResultType(ci, cd, target, locals);
-            ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-
-            List<ClassDeclaration> argumentTypes = arguments.stream().map(x -> {
-                String expressionResultType = expressionResultType(ci, cd, x, locals);
-                String expressionResultTypeName = Descriptor.getName(expressionResultType);
-
-                return ci.getClassDeclaration(expressionResultTypeName);
-            }).collect(Collectors.toList());
-
-            return resolveMethod(ci, targetClassDeclaration, methodName, argumentTypes, (c, m) -> {
-                int invocation = c.isInterface() ? Invocation.INTERFACE : Invocation.VIRTUAL;
-
-                String methodDescriptor =
-                    Descriptor.getMethodDescriptor(m.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
-                        Descriptor.get(m.getReturnTypeName())
-                    );
-
-                String declaringClassDescriptor = Descriptor.get(c.getName());
-                return invoke(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
-            });
-        };
-    }*/
-
     private ExpressionDomBuilder invocationExpression(@NotNull JavaParser.InvocationContext ctx, boolean atRoot, ExpressionDomBuilder targetBuilder) {
         List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
             .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
@@ -1146,37 +1032,6 @@ public class Parser {
         return false;
     }
 
-    /*public Predicate<ClassNode> parseClassPredicate() {
-        JavaParser.ClassPredicateContext ctx = parser.classPredicate();
-
-        ArrayList<Predicate<ClassNode>> predicates = new ArrayList<>();
-
-        if(ctx.accessModifier() != null) {
-            int accessModifier = parseAccessModifier(ctx.accessModifier());
-            predicates.add(classNode -> classNode.access == accessModifier);
-        }
-
-        if(ctx.name != null) {
-            String name = Descriptor.get(ctx.name.getText());
-            predicates.add(classNode -> classNode.name.equals(name));
-        }
-
-        if(ctx.superClassName != null) {
-            String superClassName = Descriptor.get(ctx.superClassName.getText());
-            // What about indirect inheritance?
-            predicates.add(classNode -> classNode.superName.equals(superClassName));
-        }
-
-        if(ctx.classPredicateInterface().size() > 0) {
-            List<String> interfaceNames =
-                ctx.classPredicateInterface().stream().map(x -> Descriptor.get(x.getText())).collect(Collectors.toList());
-            // What about indirect implementors?
-            predicates.add(classNode -> interfaceNames.stream().allMatch(interfaceName -> classNode.interfaces.contains(interfaceName)));
-        }
-
-        return classNode -> predicates.stream().allMatch(condition -> condition.test(classNode));
-    }*/
-
     public List<ClassNodePredicate> parseClassPredicates(ClassInspector classInspector) {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
@@ -1188,39 +1043,6 @@ public class Parser {
                 public Void visitAnnotation(JavaParser.AnnotationContext ctx) {
                     Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx);
                     predicates.add(classNode -> hasAnnotation.test((List<AnnotationNode>)classNode.visibleAnnotations));
-
-                    /*String typeName = ctx.typeQualifier().getText();
-                    Map<String, Object> values = parseAnnotationValues(ctx);
-                    predicates.add(classNode -> {
-                        if(classNode.visibleAnnotations != null && classNode.visibleAnnotations.size() > 0) {
-                            return ((List<AnnotationNode>)classNode.visibleAnnotations).stream()
-                                .anyMatch(x -> {
-                                    if(Descriptor.getDescriptorName(x.desc).equals(typeName)) {
-                                        if(values.size() > 0) {
-                                            if(x.values != null) {
-                                                return IntStream
-                                                    .iterate(0, i -> i + 2).limit(values.size())
-                                                    .allMatch(i -> {
-                                                        String name = (String)x.values.get(i);
-                                                        Object occurrences = x.values.get(i + 1);
-
-                                                        if(values.containsKey(name)) {
-                                                            return values.get(name).equals(occurrences);
-                                                        }
-
-                                                        return true;
-                                                    });
-                                            }
-                                        } else
-                                            return true;
-                                    }
-
-                                    return false;
-                                });
-                        }
-
-                        return false;
-                    });*/
 
                     return null;
                 }
@@ -1544,23 +1366,12 @@ public class Parser {
                                         .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
                                     StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
 
-                                    //InsnList originalInstructions = new InsnList();
-                                    //originalInstructions.add(methodNode.instructions);
-                                    //methodNode.instructions.clear();
-
                                     MethodGenerator methodGenerator = new MethodGenerator(
                                         classNode.name,
                                         ASMClassDeclaration.getMethod(methodNode).getParameterTypes(),
                                         statement);
 
-                                    /*MethodGenerator.generate(methodNode, (mn, generator) -> {
-                                        methodGenerator.populateMethodBody(mn, originalInstructions, generator);
-                                    });*/
                                     methodGenerator.populateMethodBody(methodNode, originalInstructions, generator);
-
-                                    /*Printer printer = new Textifier();
-                                    methodNode.accept(new TraceMethodVisitor(printer));
-                                    printer.getText().forEach(x -> System.out.print(x.toString()));*/
                                 }
                             };
                         }

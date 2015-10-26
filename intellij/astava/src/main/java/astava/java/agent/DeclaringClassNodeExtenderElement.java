@@ -49,6 +49,6 @@ public interface DeclaringClassNodeExtenderElement extends ClassNodeExtender {
     }
 
     default DeclaringClassNodeExtenderElement when(DeclaringClassNodeExtenderElementPredicate predicate) {
-        return new ConditionalDeclaringClassNodeExtenderElement(predicate, this);
+        return predicate.then(this);
     }
 }
