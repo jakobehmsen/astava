@@ -3,12 +3,15 @@ package astava.java.gen;
 import astava.java.*;
 import astava.tree.*;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.*;
@@ -36,7 +39,7 @@ public class MethodGenerator {
     }
 
     public void generate(MethodNode methodNode) {
-        generate(methodNode, new InsnList());
+        generate(methodNode, methodNode.instructions);
     }
 
     //public void generate(GeneratorAdapter generator) {
@@ -81,13 +84,22 @@ public class MethodGenerator {
         //labelScope.verify();
     }
 
+    private static class MethodBodyInjection {
+        public int occurrences;
+        public int withReturn;
+    }
+
     public void populateMethodBody(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator) {
         LabelScope labelScope = new LabelScope();
-        populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope);
+        MethodBodyInjection injectedMethodBody = new MethodBodyInjection();
+        populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, injectedMethodBody);
+        if(injectedMethodBody.occurrences > 0) {
+            generator.returnValue();
+        }
         labelScope.verify();
     }
 
-    public String populateMethodStatement(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, StatementDom statement, Label breakLabel, LabelScope labelScope) {
+    public String populateMethodStatement(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, StatementDom statement, Label breakLabel, LabelScope labelScope, MethodBodyInjection methodBodyInjection) {
         statement.accept(new StatementDomVisitor() {
             @Override
             public void visitVariableDeclaration(String type, String name) {
@@ -133,7 +145,7 @@ public class MethodGenerator {
             @Override
             public void visitBlock(List<StatementDom> statements) {
                 statements.forEach(s ->
-                    populateMethodStatement(methodNode, originalInstructions, generator, s, breakLabel, labelScope));
+                    populateMethodStatement(methodNode, originalInstructions, generator, s, breakLabel, labelScope, methodBodyInjection));
             }
 
             @Override
@@ -142,10 +154,10 @@ public class MethodGenerator {
                 Label ifFalseLabel = generator.newLabel();
 
                 String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, ifFalseLabel, false);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope);
+                populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope, methodBodyInjection);
                 generator.goTo(endLabel);
                 generator.visitLabel(ifFalseLabel);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope);
+                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, methodBodyInjection);
                 generator.visitLabel(endLabel);
             }
 
@@ -194,12 +206,12 @@ public class MethodGenerator {
                         switchEnd = end;
 
                         StatementDom body = keyToBodyMap.get(key);
-                        populateMethodStatement(methodNode, originalInstructions, generator, body, end, labelScope);
+                        populateMethodStatement(methodNode, originalInstructions, generator, body, end, labelScope, methodBodyInjection);
                     }
 
                     @Override
                     public void generateDefault() {
-                        populateMethodStatement(methodNode, originalInstructions, generator, defaultBody, switchEnd, labelScope);
+                        populateMethodStatement(methodNode, originalInstructions, generator, defaultBody, switchEnd, labelScope, methodBodyInjection);
                     }
                 });
             }
@@ -211,7 +223,56 @@ public class MethodGenerator {
 
             @Override
             public void visitMethodBody() {
-                methodNode.instructions.add(originalInstructions);
+                //methodNode.instructions.add(originalInstructions);
+
+                Label returnLabel = new Label();
+
+                ListIterator it = originalInstructions.iterator();
+
+                boolean withReturn = false;
+                while(it.hasNext()) {
+                    AbstractInsnNode insn = (AbstractInsnNode)it.next();
+
+                    if(insn.getOpcode() == Opcodes.IRETURN
+                        || insn.getOpcode() == Opcodes.RETURN
+                        || insn.getOpcode() == Opcodes.ARETURN
+                        || insn.getOpcode() == Opcodes.LRETURN
+                        || insn.getOpcode() == Opcodes.DRETURN) {
+                        generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
+                        if(!withReturn) {
+                            withReturn = true;
+                            methodBodyInjection.withReturn++;
+                        }
+                    } else if(insn.getOpcode() == Opcodes.F_NEW
+                        || insn.getOpcode() == Opcodes.F_FULL
+                        || insn.getOpcode() == Opcodes.F_APPEND
+                        || insn.getOpcode() == Opcodes.F_CHOP
+                        || insn.getOpcode() == Opcodes.F_SAME
+                        || insn.getOpcode() == Opcodes.F_SAME1) {
+                        // Do nothing?
+                        insn.toString();
+                        insn.accept(generator);
+
+                        insn.accept(new MethodVisitor(Opcodes.ASM5) {
+                            @Override
+                            public void visitFrame(int i, int i1, Object[] objects, int i2, Object[] objects1) {
+                                super.visitFrame(i, i1, objects, i2, objects1);
+                            }
+
+                            @Override
+                            public void visitLabel(Label label) {
+                                super.visitLabel(label);
+                            }
+                        });
+                    } else {
+
+                        insn.accept(generator);
+                    }
+                }
+
+                methodBodyInjection.occurrences++;
+
+                generator.visitLabel(returnLabel);
             }
 
             @Override
@@ -500,12 +561,13 @@ public class MethodGenerator {
                 List<String> expressionResultTypes = new ArrayList<>();
 
                 LabelScope labelScope = new LabelScope();
+                MethodBodyInjection returnLabel = new MethodBodyInjection();
 
                 codeList.forEach(code -> {
                     code.accept(new CodeDomVisitor() {
                         @Override
                         public void visitStatement(StatementDom statementDom) {
-                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope);
+                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope, returnLabel);
                         }
 
                         @Override
@@ -516,11 +578,16 @@ public class MethodGenerator {
                     });
                 });
 
+                int expressionCount = 0;
+
+                expressionCount += expressionResultTypes.size();
+                expressionCount += returnLabel.withReturn; // Method body with a return counts as an expression
+
                 labelScope.verify();
 
-                if(expressionResultTypes.size() > 1)
+                if(expressionCount > 1)
                     throw new IllegalArgumentException("Expression block has multiple expressions.");
-                else if(expressionResultTypes.isEmpty())
+                else if(expressionCount == 0)
                     throw new IllegalArgumentException("Expression block has no expressions.");
 
                 setResult(expressionResultTypes.get(0));
@@ -603,7 +670,7 @@ public class MethodGenerator {
         String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
 
         if(codeLevel == CODE_LEVEL_EXPRESSION && returnType.equals(Descriptor.VOID))
-            throw new IllegalArgumentException("Invocations at expression level must return non-void value.");
+            throw new IllegalArgumentException("Invocations at expression level must return non-void occurrences.");
 
         // Push target for instance invocations
         if(target != null)
@@ -628,7 +695,7 @@ public class MethodGenerator {
         }
 
         if(codeLevel == CODE_LEVEL_STATEMENT && !returnType.equals(Descriptor.VOID))
-            generator.pop(); // Pop unused return value
+            generator.pop(); // Pop unused return occurrences
 
         return returnType;
     }

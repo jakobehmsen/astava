@@ -354,10 +354,10 @@ public class Factory {
 
                     /*
                     if (Modifier.isStatic(fieldDeclaration.get().getModifier())) {
-                        return astava.java.Factory.assignStaticField(cd.getName(), fieldDeclaration.get().getName(), descriptor, value);
+                        return astava.java.Factory.assignStaticField(cd.getName(), fieldDeclaration.get().getName(), descriptor, occurrences);
                     }
 
-                    return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, value);
+                    return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, occurrences);
                     */
 
                     return DomFactory.top(DomFactory.self(), (newTarget, newTargetLast) -> {

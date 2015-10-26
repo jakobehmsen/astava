@@ -65,7 +65,7 @@ public class ClassLoaderExtender extends ClassLoader {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
 
             PrintWriter ps = new PrintWriter(os);
-            cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
+            //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
             org.objectweb.asm.util.CheckClassAdapter.verify(new org.objectweb.asm.ClassReader(classWriter.toByteArray()), true, ps);
 
             byte[] bytes = classWriter.toByteArray();

@@ -22,13 +22,13 @@ import java.util.ListIterator;
 
 public class MethodNodeExtenderFactory {
     public static DeclaringMethodNodeExtenderTransformer sequence(DeclaringMethodNodeExtenderTransformer... extenders) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
-            Arrays.asList(extenders).forEach(x -> x.transform(classNode, thisClass, classResolver, classInspector, methodNode));
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
+            Arrays.asList(extenders).forEach(x -> x.transform(classNode, thisClass, classResolver, classInspector, methodNode, g));
         };
     }
 
     public static DeclaringMethodNodeExtenderTransformer setBody(StatementDom replacement) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
             InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
             methodNode.instructions.clear();
@@ -46,7 +46,7 @@ public class MethodNodeExtenderFactory {
     }
 
     public static DeclaringMethodNodeExtenderTransformer append(StatementDom statement) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
             /*InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
 
@@ -73,6 +73,15 @@ public class MethodNodeExtenderFactory {
 
 
             MethodGenerator.generate(methodNode, (mn, generator) -> {
+                System.out.println("Append:");
+                System.out.println("Class name: " + classNode.name);
+                System.out.println("Method name: " + methodNode.name);
+                System.out.println("Method parameter count: " + (methodNode.parameters != null ? methodNode.parameters.size() : 0));
+                System.out.println("Before:");
+                Printer printer=new Textifier();
+                mn.accept(new TraceMethodVisitor(printer));
+                printer.getText().forEach(x -> System.out.print(x.toString()));
+
                 Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
                 List<ParameterInfo> parameters = IntStream.range(0, argumentTypes.length).mapToObj(i -> new ParameterInfo(
                     argumentTypes[i].getDescriptor(),
@@ -101,13 +110,6 @@ public class MethodNodeExtenderFactory {
                     }
                 }
 
-                System.out.println("Class name: " + classNode.name);
-                System.out.println("Method name: " + methodNode.name);
-                System.out.println("Method parameter count: " + (methodNode.parameters != null ? methodNode.parameters.size() : 0));
-                Printer printer=new Textifier();
-                mn.accept(new TraceMethodVisitor(printer));
-                //printer.getText().forEach(x -> System.out.print(x.toString()));
-
                 generator.visitLabel(returnLabel);
 
                 MethodGenerator methodGenerator = new MethodGenerator(classNode.name, parameters, statement);
@@ -115,9 +117,10 @@ public class MethodNodeExtenderFactory {
 
                 generator.returnValue();
 
+                System.out.println("After:");
                 printer=new Textifier();
                 mn.accept(new TraceMethodVisitor(printer));
-                //printer.getText().forEach(x -> System.out.print(x.toString()));
+                printer.getText().forEach(x -> System.out.print(x.toString()));
                 //generator.ret();
                 //generator.visitInsn(Opcodes.ARETURN);
             });
@@ -131,7 +134,7 @@ public class MethodNodeExtenderFactory {
                 Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                     .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
                 StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
-                return append(statement);
+                return MethodNodeExtenderFactory.append(statement);
             }
         };
     }
@@ -143,14 +146,23 @@ public class MethodNodeExtenderFactory {
                 Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                     .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
                 StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
-                return prepend(statement);
+                return MethodNodeExtenderFactory.prepend(statement);
             }
         };
     }
 
     private static DeclaringMethodNodeExtenderTransformer prepend(StatementDom statement) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode) -> {
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
             MethodGenerator.generate(methodNode, (mn, generator) -> {
+                System.out.println("Prepend:");
+                System.out.println("Class name: " + classNode.name);
+                System.out.println("Method name: " + methodNode.name);
+                System.out.println("Method parameter count: " + (methodNode.parameters != null ? methodNode.parameters.size() : 0));
+                System.out.println("Before:");
+                Printer printer=new Textifier();
+                mn.accept(new TraceMethodVisitor(printer));
+                printer.getText().forEach(x -> System.out.print(x.toString()));
+
                 Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
                 List<ParameterInfo> parameters = IntStream.range(0, argumentTypes.length).mapToObj(i -> new ParameterInfo(
                     argumentTypes[i].getDescriptor(),
@@ -161,18 +173,12 @@ public class MethodNodeExtenderFactory {
                 originalInstructions.add(methodNode.instructions);
                 methodNode.instructions.clear();
 
-                System.out.println("Class name: " + classNode.name);
-                System.out.println("Method name: " + methodNode.name);
-                System.out.println("Method parameter count: " + (methodNode.parameters != null ? methodNode.parameters.size() : 0));
-                Printer printer=new Textifier();
-                mn.accept(new TraceMethodVisitor(printer));
-                //printer.getText().forEach(x -> System.out.print(x.toString()));
-
                 MethodGenerator methodGenerator = new MethodGenerator(classNode.name, parameters, statement);
                 methodGenerator.populateMethodBody(methodNode, originalInstructions, generator);
 
                 originalInstructions.accept(methodNode);
 
+                System.out.println("After:");
                 printer=new Textifier();
                 mn.accept(new TraceMethodVisitor(printer));
                 printer.getText().forEach(x -> System.out.print(x.toString()));

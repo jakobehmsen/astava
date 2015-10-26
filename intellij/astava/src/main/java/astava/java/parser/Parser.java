@@ -19,6 +19,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
@@ -358,7 +359,7 @@ public class Parser {
         Map<String, Object> values = new Hashtable<>();
         if(ctx.valueArgument != null) {
             Object value = parsePrimitive(ctx.valueArgument);
-            values.put("value", value);
+            values.put("occurrences", value);
         }
         ctx.annotationArgument().forEach(a -> {
             Object value = parsePrimitive(a.value);
@@ -1206,10 +1207,10 @@ public class Parser {
                                                     .iterate(0, i -> i + 2).limit(values.size())
                                                     .allMatch(i -> {
                                                         String name = (String)x.values.get(i);
-                                                        Object value = x.values.get(i + 1);
+                                                        Object occurrences = x.values.get(i + 1);
 
                                                         if(values.containsKey(name)) {
-                                                            return values.get(name).equals(value);
+                                                            return values.get(name).equals(occurrences);
                                                         }
 
                                                         return true;
@@ -1488,7 +1489,7 @@ public class Parser {
                         public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                             return new DeclaringMethodNodeExtenderTransformer() {
                                 @Override
-                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
+                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator) {
                                     AnnotationVisitor annotation = methodNode.visitAnnotation(desc, true);
                                     values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
                                 }
@@ -1502,7 +1503,7 @@ public class Parser {
                     StatementDomBuilder statementDomBuilder =
                         Factory.block(ctx.statement().stream().map(x -> parseStatementBuilder(x, true)).collect(Collectors.toList()));
 
-                    List<List<JavaParser.StatementContext>> bodySplit = ctx.statement().stream()
+                    /*List<List<JavaParser.StatementContext>> bodySplit = ctx.statement().stream()
                         .reduce(new ArrayList<>(Arrays.asList(new ArrayList<>())),
                             (list, s) -> {
                                 boolean isMethodBody = s.accept(new JavaBaseVisitor<Boolean>() {
@@ -1536,34 +1537,35 @@ public class Parser {
                             }).reduce((x, y) -> x.andThen(y)).get();
                     } else {
                         // Simply replace body
-                    }
+                    }*/
 
                     return new DeclaringMethodNodeExtenderElement() {
                         @Override
                         public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                             return new DeclaringMethodNodeExtenderTransformer() {
                                 @Override
-                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
+                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator) {
                                     Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                                         .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
                                     StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
 
                                     InsnList originalInstructions = new InsnList();
-                                    originalInstructions.add(methodNode.instructions);
-                                    methodNode.instructions.clear();
+                                    /*originalInstructions.add(methodNode.instructions);
+                                    methodNode.instructions.clear();*/
 
                                     MethodGenerator methodGenerator = new MethodGenerator(
                                         classNode.name,
                                         ASMClassDeclaration.getMethod(methodNode).getParameterTypes(),
                                         statement);
 
-                                    MethodGenerator.generate(methodNode, (mn, generator) -> {
+                                    /*MethodGenerator.generate(methodNode, (mn, generator) -> {
                                         methodGenerator.populateMethodBody(mn, originalInstructions, generator);
-                                    });
+                                    });*/
+                                    methodGenerator.populateMethodBody(methodNode, originalInstructions, generator);
 
-                                    Printer printer = new Textifier();
+                                    /*Printer printer = new Textifier();
                                     methodNode.accept(new TraceMethodVisitor(printer));
-                                    printer.getText().forEach(x -> System.out.print(x.toString()));
+                                    printer.getText().forEach(x -> System.out.print(x.toString()));*/
                                 }
                             };
                         }

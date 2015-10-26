@@ -35,6 +35,12 @@ public class MyClass extends MyOtherClass {
 
     @MyNotNullAnnotation
     public boolean someOtherMethod3(String str1, String str2) {
+        System.out.println("Within someOtherMethod3");
         return false;
+    }
+
+    @MyNotNullAnnotation
+    public void someOtherMethod4(String str1, String str2) {
+        System.out.println("Within someOtherMethod4");
     }
 }

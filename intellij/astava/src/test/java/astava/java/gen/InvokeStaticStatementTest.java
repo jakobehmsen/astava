@@ -60,9 +60,9 @@ public class InvokeStaticStatementTest {
 
     @Test
     public void testInvokeStaticIntWithinLoop() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        // Unused return value should implicitly be popped
+        // Unused return occurrences should implicitly be popped
         // This is asserted inserting a static invocation within a loop in which verification is performed.
-        // I.e., if the return value isn't implicitly popped, an exception is thrown.
+        // I.e., if the return occurrences isn't implicitly popped, an exception is thrown.
 
         int count = 10;
         StatementDom invocation = invokeStatic(Descriptor.get(InvokeStaticStatementTest.class), "vToI2", Descriptor.getMethodDescriptor(Arrays.asList(), Descriptor.INT), Arrays.asList());

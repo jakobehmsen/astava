@@ -75,14 +75,31 @@ public class Main {
                         .whenMethod("public boolean")
                         .and(factory.whenMethod("@" + MyNotNullAnnotation.class.getName()))
                         .then(
-                            factory.modMethod("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"A boolean return type!!!\")")
-                                .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
-                                    ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
-                                        .map(p -> String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");", p.getName()))
-                                        .collect(Collectors.joining())
-                                        + "\n..."
-                                        + "\njava.lang.System.out.println(\"Ending call\");"
-                                ))
+                            factory.modMethod((classNode, thisClass, methodNode) ->
+                                String.format("\njava.lang.System.out.println(\"Starting call to %1$s\");", methodNode.name)).prepend()
+                            .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
+                                String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name)).append())
+                            .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
+                                String.format("\njava.lang.System.out.println(\"Testing arguments...\");") + "\n" +
+                                ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
+                                .map(p ->
+                                    String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");", p.getName())
+                                ).collect(Collectors.joining())).prepend())
+
+                            /*factory.modMethod((classNode, thisClass, methodNode) ->
+                                String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name)).append()*/
+
+                            /*factory.modMethod("@astava.java.agent.sample.MyAnnotation(occurrences=333, extra=\"A boolean return type!!!\")")
+                            .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
+                                String.format("\njava.lang.System.out.println(\"Starting call to %1$s\");", methodNode.name)
+                                + ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
+                                    .map(p -> String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");", p.getName()))
+                                    .collect(Collectors.joining())
+                                    + "\n..."
+                                    + String.format("\njava.lang.System.out.println(\"Repeating call to %1$s\");", methodNode.name)
+                                    + "\n..."
+                                    + String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name)
+                            ))*/
                             /*.andThen(
                                 factory.whenParameter("@" + MyNotNullAnnotation.class.getName())
                                 .then(factory.modMethodFromParameter((classNode, thisClass, methodNode, p) ->
@@ -107,7 +124,7 @@ public class Main {
         methodNodePredicate.extend("private;");
 
         ClassNodePredicateParser classNodePredicate = factory.newPredicate()
-            .add("@astava.java.agent.sample.MyAnnotation(value=333, extra=\"bla\")")
+            .add("@astava.java.agent.sample.MyAnnotation(occurrences=333, extra=\"bla\")")
             .add("extends java.lang.Object")
             .add("implements java.io.Serializable")
             //.add("public java.lang.String someField;")
@@ -150,6 +167,8 @@ public class Main {
             System.out.println(mc1.equals(mc2));
 
             mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", "Second");
+            mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", null);
+            mc2.getClass().getMethod("someOtherMethod4", String.class, String.class).invoke(mc2, "First", "Second");
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }
