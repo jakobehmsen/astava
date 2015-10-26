@@ -75,7 +75,7 @@ public class Main {
                         .whenMethod("public boolean")
                         .and(factory.whenMethod("@" + MyNotNullAnnotation.class.getName()))
                         .then(
-                            factory.modMethod((classNode, thisClass, methodNode) ->
+                            /*factory.modMethod((classNode, thisClass, methodNode) ->
                                 String.format("\njava.lang.System.out.println(\"Starting call to %1$s\");", methodNode.name)).prepend()
                             .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
                                 String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name)).append())
@@ -84,10 +84,25 @@ public class Main {
                                 ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                                 .map(p ->
                                     String.format("if(%1$s == null) throw new java.lang.NullPointerException(\"%1$s\");", p.getName())
-                                ).collect(Collectors.joining())).prepend())
+                                ).collect(Collectors.joining())).prepend())*/
 
                             /*factory.modMethod((classNode, thisClass, methodNode) ->
                                 String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name)).append()*/
+
+                            /*factory.modMethod((classNode, thisClass, methodNode) ->
+                                String.format("\njava.lang.System.out.println(\"Starting call to %1$s\");", methodNode.name) + "\n" +
+                                "..." + "\n" + // A ... construct should occur at most once for a particular path
+                                String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name))*/
+
+                            factory.modMethod((classNode, thisClass, methodNode) ->
+                                "if(false) {\n" +
+                                "    java.lang.System.out.println(\"Accepting call to method\");\n" +
+                                "    ...\n" +
+                                "} else {\n" +
+                                "    java.lang.System.out.println(\"Rejecting call to method\");\n" +
+                                "    return false;\n" +
+                                "}"
+                            )
 
                             /*factory.modMethod("@astava.java.agent.sample.MyAnnotation(occurrences=333, extra=\"A boolean return type!!!\")")
                             .andThen(factory.modMethod((classNode, thisClass, methodNode) ->

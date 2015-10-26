@@ -22,16 +22,16 @@ import java.util.ListIterator;
 
 public class MethodNodeExtenderFactory {
     public static DeclaringMethodNodeExtenderTransformer sequence(DeclaringMethodNodeExtenderTransformer... extenders) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
-            Arrays.asList(extenders).forEach(x -> x.transform(classNode, thisClass, classResolver, classInspector, methodNode, g));
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g, originalInstructions) -> {
+            Arrays.asList(extenders).forEach(x -> x.transform(classNode, thisClass, classResolver, classInspector, methodNode, g, originalInstructions));
         };
     }
 
     public static DeclaringMethodNodeExtenderTransformer setBody(StatementDom replacement) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
-            InsnList originalInstructions = new InsnList();
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g, originalInstructions) -> {
+            /*InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
-            methodNode.instructions.clear();
+            methodNode.instructions.clear();*/
 
             MethodGenerator.generate(methodNode, (mn, generator) -> {
                 Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
@@ -46,7 +46,7 @@ public class MethodNodeExtenderFactory {
     }
 
     public static DeclaringMethodNodeExtenderTransformer append(StatementDom statement) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g, originalInstructions) -> {
             /*InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
 
@@ -88,9 +88,9 @@ public class MethodNodeExtenderFactory {
                     methodNode.parameters != null ? ((ParameterNode)methodNode.parameters.get(i)).name : "arg" + i
                 )).collect(Collectors.toList());
 
-                InsnList originalInstructions = new InsnList();
+                /*InsnList originalInstructions = new InsnList();
                 originalInstructions.add(methodNode.instructions);
-                methodNode.instructions.clear();
+                methodNode.instructions.clear();*/
 
                 ListIterator it = originalInstructions.iterator();
 
@@ -152,7 +152,7 @@ public class MethodNodeExtenderFactory {
     }
 
     private static DeclaringMethodNodeExtenderTransformer prepend(StatementDom statement) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode, g) -> {
+        return (classNode, thisClass, classResolver, classInspector, methodNode, g, originalInstructions) -> {
             MethodGenerator.generate(methodNode, (mn, generator) -> {
                 System.out.println("Prepend:");
                 System.out.println("Class name: " + classNode.name);
@@ -169,9 +169,9 @@ public class MethodNodeExtenderFactory {
                     methodNode.parameters != null ? ((ParameterNode)methodNode.parameters.get(i)).name : "arg" + i
                 )).collect(Collectors.toList());
 
-                InsnList originalInstructions = new InsnList();
+                /*InsnList originalInstructions = new InsnList();
                 originalInstructions.add(methodNode.instructions);
-                methodNode.instructions.clear();
+                methodNode.instructions.clear();*/
 
                 MethodGenerator methodGenerator = new MethodGenerator(classNode.name, parameters, statement);
                 methodGenerator.populateMethodBody(methodNode, originalInstructions, generator);

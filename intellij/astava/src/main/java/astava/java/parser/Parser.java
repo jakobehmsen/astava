@@ -2,7 +2,6 @@ package astava.java.parser;
 
 import astava.debug.Debug;
 import astava.java.Descriptor;
-import astava.java.DomFactory;
 import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;
 import astava.java.agent.*;
@@ -16,14 +15,10 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.NotNull;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.util.Printer;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -1489,7 +1484,7 @@ public class Parser {
                         public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                             return new DeclaringMethodNodeExtenderTransformer() {
                                 @Override
-                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator) {
+                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                                     AnnotationVisitor annotation = methodNode.visitAnnotation(desc, true);
                                     values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
                                 }
@@ -1544,14 +1539,14 @@ public class Parser {
                         public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                             return new DeclaringMethodNodeExtenderTransformer() {
                                 @Override
-                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator) {
+                                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                                     Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                                         .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
                                     StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
 
-                                    InsnList originalInstructions = new InsnList();
-                                    /*originalInstructions.add(methodNode.instructions);
-                                    methodNode.instructions.clear();*/
+                                    //InsnList originalInstructions = new InsnList();
+                                    //originalInstructions.add(methodNode.instructions);
+                                    //methodNode.instructions.clear();
 
                                     MethodGenerator methodGenerator = new MethodGenerator(
                                         classNode.name,
