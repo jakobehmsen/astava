@@ -553,7 +553,7 @@ public class Parser {
                 ArrayList<CodeDomBuilder> catchBlocks = new ArrayList<>();
 
                 ctx.catchBlock().forEach(c -> {
-                    StatementDomBuilder blockBuilder = parseBlock(ctx.tryBlock().statement());
+                    StatementDomBuilder blockBuilder = parseBlock(c.statement());
                     String type = c.type.getText();
                     String name = c.name.getText();
                     catchBlocks.add(Factory.catchBlock(type, name, blockBuilder));

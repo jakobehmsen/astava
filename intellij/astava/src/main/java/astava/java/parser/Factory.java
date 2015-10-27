@@ -649,7 +649,8 @@ public class Factory {
 
             @Override
             public String toString() {
-                return "try {\n" + tryBlockBuilder + "\n}\n" + catchBlockBuilders;
+                return "try {\n" + tryBlockBuilder + "\n}\n" +
+                    catchBlockBuilders.stream().map(x -> x.toString()).collect(Collectors.joining("\n"));
             }
         };
     }

@@ -253,7 +253,7 @@ public class MethodGenerator {
                         || insn.getOpcode() == Opcodes.F_SAME1) {
                         // Do nothing?
                         insn.toString();
-                        /*insn.accept(generator);
+                        insn.accept(generator);
 
                         insn.accept(new MethodVisitor(Opcodes.ASM5) {
                             @Override
@@ -265,7 +265,7 @@ public class MethodGenerator {
                             public void visitLabel(Label label) {
                                 super.visitLabel(label);
                             }
-                        });*/
+                        });
                     } else {
 
                         insn.accept(generator);
@@ -317,7 +317,7 @@ public class MethodGenerator {
                             catchScope.declareVar(generator, type, name);
 
                             generator.storeLocal(catchScope.getVarId(name));
-                            populateMethodStatement(methodNode, originalInstructions, generator, tryBlock, breakLabel, labelScope, methodBodyInjection, catchScope);
+                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, breakLabel, labelScope, methodBodyInjection, catchScope);
 
                             generator.visitTryCatchBlock(start, end, handler, type);
                         }

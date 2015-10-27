@@ -56,7 +56,6 @@ public class Main {
         ClassLoaderExtender loader = new ClassLoaderExtender(
             factory.whenClass("implements java.io.Serializable")
             .and(factory.whenClass("extends java.lang.Object"))
-            .and(factory.whenClass("implements java.io.Serializable"))
             .and(factory.whenClass("boolean (...)"))
             .and(factory.whenClass("public;"))
             .then(
@@ -107,14 +106,14 @@ public class Main {
 
                             factory.modMethod((classNode, thisClass, methodNode) ->
                                     "try {\n" +
-                                        "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
-                                        //"    return true;\n" +
-                                        "    ...\n" +
-                                        "    java.lang.System.out.println(\"Call went fine :)\");\n" +
-                                        "} catch (java.lang.RuntimeException e) {\n" +
-                                        "    java.lang.System.out.println(\"Caught error during call to method\");\n" +
-                                        //"    return false;\n" +
-                                        "}"
+                                    "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
+                                    //"    return true;\n" +
+                                    "    ...\n" +
+                                    "    java.lang.System.out.println(\"Call went fine :)\");\n" +
+                                    "} catch (java.lang.RuntimeException e) {\n" +
+                                    "    java.lang.System.out.println(\"Caught error during call to method\");\n" +
+                                    //"    return false;\n" +
+                                    "}"
                             )
 
                             /*factory.modMethod("@astava.java.agent.sample.MyAnnotation(occurrences=333, extra=\"A boolean return type!!!\")")
