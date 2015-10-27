@@ -1,6 +1,7 @@
 package astava.java;
 
 import astava.tree.*;
+import sun.tools.tree.Statement;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -476,5 +477,13 @@ public class DomFactory {
 
     public static StatementDom throwStatement(ExpressionDom expression) {
         return v -> v.visitThrow(expression);
+    }
+
+    public static StatementDom tryCatchStatement(StatementDom tryBlock, List<CodeDom> catchBlocks) {
+        return v -> v.visitTryCatch(tryBlock, catchBlocks);
+    }
+
+    public static CodeDom catchBlock(String type, String name, StatementDom block) {
+        return v -> v.visitCatch(type, name, block);
     }
 }

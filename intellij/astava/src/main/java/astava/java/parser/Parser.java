@@ -548,6 +548,26 @@ public class Parser {
             }
 
             @Override
+            public StatementDomBuilder visitTryCatchStatement(JavaParser.TryCatchStatementContext ctx) {
+                StatementDomBuilder tryBlockBuilder = parseBlock(ctx.tryBlock().statement());
+                ArrayList<CodeDomBuilder> catchBlocks = new ArrayList<>();
+
+                ctx.catchBlock().forEach(c -> {
+                    StatementDomBuilder blockBuilder = parseBlock(ctx.tryBlock().statement());
+                    String type = c.type.getText();
+                    String name = c.name.getText();
+                    catchBlocks.add(Factory.catchBlock(type, name, blockBuilder));
+                });
+
+                if(ctx.finallyBlock() != null) {
+                    StatementDomBuilder blockBuilder = parseBlock(ctx.finallyBlock().statement());
+                    catchBlocks.add(Factory.catchBlock(null, null, blockBuilder));
+                }
+
+                return Factory.tryCatch(tryBlockBuilder, catchBlocks);
+            }
+
+            @Override
             public StatementDomBuilder visitMethodBody(JavaParser.MethodBodyContext ctx) {
                 return Factory.methodBody();
             }

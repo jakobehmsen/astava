@@ -618,4 +618,39 @@ public class Factory {
             }
         };
     }
+
+    public static CodeDomBuilder catchBlock(String type, String name, StatementDomBuilder blockBuilder) {
+        return new CodeDomBuilder() {
+            @Override
+            public CodeDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                StatementDom block = blockBuilder.build(classResolver, classDeclaration, classInspector, locals);
+
+                return DomFactory.catchBlock(Descriptor.get(type), name, block);
+            }
+
+            @Override
+            public String toString() {
+                return "catch(" + type + " " + name + ") {\n" + blockBuilder + "\n}";
+            }
+        };
+    }
+
+    public static StatementDomBuilder tryCatch(StatementDomBuilder tryBlockBuilder, ArrayList<CodeDomBuilder> catchBlockBuilders) {
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                StatementDom tryBlock = tryBlockBuilder.build(classResolver, classDeclaration, classInspector, locals);
+                List<CodeDom> catchBlocks = catchBlockBuilders.stream()
+                    .map(x -> x.build(classResolver, classDeclaration, classInspector, locals))
+                        .collect(Collectors.toList());
+
+                return DomFactory.tryCatchStatement(tryBlock, catchBlocks);
+            }
+
+            @Override
+            public String toString() {
+                return "try {\n" + tryBlockBuilder + "\n}\n" + catchBlockBuilders;
+            }
+        };
+    }
 }

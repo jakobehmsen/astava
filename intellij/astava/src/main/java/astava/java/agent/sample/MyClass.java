@@ -39,8 +39,27 @@ public class MyClass extends MyOtherClass {
         return true;
     }
 
+    /*@MyNotNullAnnotation
+    public boolean someOtherMethod5(String str1, String str2) {
+        try {
+
+        } catch(Exception e) {
+
+        }
+    }*/
+
     @MyNotNullAnnotation
     public void someOtherMethod4(String str1, String str2) {
         System.out.println("Within someOtherMethod4");
+        throw new RuntimeException("ASFSD");
+    }
+
+    public void someOtherMethod5(String str1, String str2) {
+        try {
+            System.out.println("Within someOtherMethod4");
+            throw new RuntimeException("ASFSD");
+        } catch(Exception e) {
+            System.out.println("Exc someOtherMethod4");
+        }
     }
 }

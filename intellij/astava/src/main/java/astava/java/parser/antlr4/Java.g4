@@ -16,11 +16,16 @@ modifiers: accessModifier? KW_ABSTRACT? KW_STATIC?;
 accessModifier: KW_PUBLIC | KW_PRIVATE | KW_PROTECTED;
 statement: nonDelimitedStatement | delimitedStatement SEMI_COLON;
 
-nonDelimitedStatement: ifElseStatement | methodBody;
+nonDelimitedStatement: ifElseStatement | tryCatchStatement | methodBody;
 ifElseStatement: 
     KW_IF OPEN_PAR condition=expression CLOSE_PAR 
     ifTrueBlock=singleOrMultiStatement
     (KW_ELSE ifFalseBlock=singleOrMultiStatement)?;
+tryCatchStatement:
+    tryBlock catchBlock* finallyBlock?;
+tryBlock: KW_TRY OPEN_BRA statement* CLOSE_BRA;
+catchBlock: KW_CATCH OPEN_PAR type=typeQualifier name=ID CLOSE_PAR OPEN_BRA statement* CLOSE_BRA;
+finallyBlock: KW_FINALLY OPEN_BRA statement* CLOSE_BRA;
 methodBody: ELLIPSIS;
 
 singleOrMultiStatement: OPEN_BRA statement* CLOSE_BRA | statement;
@@ -157,6 +162,9 @@ KW_THIS: 'this';
 KW_TRUE: 'true';
 KW_FALSE: 'false';
 KW_THROW: 'throw';
+KW_TRY: 'try';
+KW_CATCH: 'catch';
+KW_FINALLY: 'finally';
 fragment DIGIT: [0-9];
 fragment LETTER: [A-Z]|[a-z];
 ID: (LETTER | '_') (LETTER | '_' | DIGIT)*;

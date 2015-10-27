@@ -72,7 +72,8 @@ public class Main {
                     thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                 )).andThen(
                     factory
-                        .whenMethod("public boolean")
+                        //.whenMethod("public boolean")
+                        .whenMethod("public void")
                         .and(factory.whenMethod("@" + MyNotNullAnnotation.class.getName()))
                         .then(
                             /*factory.modMethod((classNode, thisClass, methodNode) ->
@@ -94,7 +95,7 @@ public class Main {
                                 "..." + "\n" + // A ... construct should occur at most once for a particular path
                                 String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name))*/
 
-                            factory.modMethod((classNode, thisClass, methodNode) ->
+                            /*factory.modMethod((classNode, thisClass, methodNode) ->
                                 "if(true) {\n" +
                                 "    java.lang.System.out.println(\"Accepting call to method\");\n" +
                                 "    ...\n" +
@@ -102,6 +103,18 @@ public class Main {
                                 "    java.lang.System.out.println(\"Rejecting call to method\");\n" +
                                 "    return false;\n" +
                                 "}"
+                            )*/
+
+                            factory.modMethod((classNode, thisClass, methodNode) ->
+                                    "try {\n" +
+                                        "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
+                                        //"    return true;\n" +
+                                        "    ...\n" +
+                                        "    java.lang.System.out.println(\"Call went fine :)\");\n" +
+                                        "} catch (java.lang.RuntimeException e) {\n" +
+                                        "    java.lang.System.out.println(\"Caught error during call to method\");\n" +
+                                        //"    return false;\n" +
+                                        "}"
                             )
 
                             /*factory.modMethod("@astava.java.agent.sample.MyAnnotation(occurrences=333, extra=\"A boolean return type!!!\")")

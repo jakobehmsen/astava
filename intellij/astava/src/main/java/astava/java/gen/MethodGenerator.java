@@ -11,7 +11,6 @@ import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.*;
@@ -24,7 +23,7 @@ import static astava.java.DomFactory.*;
 public class MethodGenerator {
     private String thisClassName;
     private StatementDom body;
-    private GenerateScope methodScope;
+    //private GenerateScope methodScope;
     private List<ParameterInfo> parameters;
 
     public MethodGenerator(ClassGenerator classGenerator, List<ParameterInfo> parameters, StatementDom body) {
@@ -35,7 +34,7 @@ public class MethodGenerator {
         this.thisClassName = thisClassName;
         this.parameters = parameters;
         this.body = body;
-        this.methodScope = new GenerateScope();
+        //this.methodScope = new GenerateScope(outerScope);
     }
 
     public void generate(MethodNode methodNode) {
@@ -92,49 +91,49 @@ public class MethodGenerator {
     public void populateMethodBody(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator) {
         LabelScope labelScope = new LabelScope();
         MethodBodyInjection injectedMethodBody = new MethodBodyInjection();
-        populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, injectedMethodBody);
+        populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, injectedMethodBody, new GenerateScope());
         if(injectedMethodBody.occurrences > 0) {
             generator.returnValue();
         }
         labelScope.verify();
     }
 
-    public String populateMethodStatement(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, StatementDom statement, Label breakLabel, LabelScope labelScope, MethodBodyInjection methodBodyInjection) {
+    public String populateMethodStatement(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, StatementDom statement, Label breakLabel, LabelScope labelScope, MethodBodyInjection methodBodyInjection, GenerateScope scope) {
         statement.accept(new StatementDomVisitor() {
             @Override
             public void visitVariableDeclaration(String type, String name) {
-                methodScope.declareVar(generator, type, name);
+                scope.declareVar(generator, type, name);
             }
 
             @Override
             public void visitVariableAssignment(String name, ExpressionDom value) {
-                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true);
-                int id = methodScope.getVarId(name);
+                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true, scope);
+                int id = scope.getVarId(name);
                 generator.storeLocal(id, Type.getType(valueType));
             }
 
             @Override
             public void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value) {
-                String targetType = populateMethodExpression(methodNode, originalInstructions, generator, target, null, true);
-                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true);
+                String targetType = populateMethodExpression(methodNode, originalInstructions, generator, target, null, true, scope);
+                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true, scope);
                 generator.putField(Type.getType(targetType), name, Type.getType(Descriptor.getFieldDescriptor(type)));
             }
 
             @Override
             public void visitStaticFieldAssignment(String typeName, String name, String type, ExpressionDom value) {
-                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true);
+                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true, scope);
                 generator.putStatic(Type.getType(typeName), name, Type.getType(Descriptor.getFieldDescriptor(type)));
             }
 
             @Override
             public void visitIncrement(String name, int amount) {
-                int id = methodScope.getVarId(name);
+                int id = scope.getVarId(name);
                 generator.iinc(id, amount);
             }
 
             @Override
             public void visitReturnValue(ExpressionDom expression) {
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
 
                 if (resultType.equals(Descriptor.VOID))
                     throw new IllegalArgumentException("Expression of return statement results in void.");
@@ -145,7 +144,7 @@ public class MethodGenerator {
             @Override
             public void visitBlock(List<StatementDom> statements) {
                 statements.forEach(s ->
-                    populateMethodStatement(methodNode, originalInstructions, generator, s, breakLabel, labelScope, methodBodyInjection));
+                    populateMethodStatement(methodNode, originalInstructions, generator, s, breakLabel, labelScope, methodBodyInjection, scope));
             }
 
             @Override
@@ -153,11 +152,11 @@ public class MethodGenerator {
                 Label endLabel = generator.newLabel();
                 Label ifFalseLabel = generator.newLabel();
 
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, ifFalseLabel, false);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope, methodBodyInjection);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, ifFalseLabel, false, scope);
+                populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope, methodBodyInjection, scope);
                 generator.goTo(endLabel);
                 generator.visitLabel(ifFalseLabel);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, methodBodyInjection);
+                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, methodBodyInjection, scope);
                 generator.visitLabel(endLabel);
             }
 
@@ -173,12 +172,12 @@ public class MethodGenerator {
 
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-                populateMethodInvocation(methodNode, originalInstructions, generator, methodScope, invocation, target, type, name, descriptor, arguments, CODE_LEVEL_STATEMENT);
+                populateMethodInvocation(methodNode, originalInstructions, generator, scope, invocation, target, type, name, descriptor, arguments, CODE_LEVEL_STATEMENT);
             }
 
             @Override
             public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-                populateMethodNewInstance(methodNode, originalInstructions, generator, methodScope, type, parameterTypes, arguments, CODE_LEVEL_STATEMENT);
+                populateMethodNewInstance(methodNode, originalInstructions, generator, scope, type, parameterTypes, arguments, CODE_LEVEL_STATEMENT);
             }
 
             @Override
@@ -193,7 +192,7 @@ public class MethodGenerator {
 
             @Override
             public void visitSwitch(ExpressionDom expression, Map<Integer, StatementDom> cases, StatementDom defaultBody) {
-                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
 
                 Map<Integer, StatementDom> keyToBodyMap = cases;
                 int[] keys = keyToBodyMap.keySet().stream().mapToInt(x -> (int) x).toArray();
@@ -206,12 +205,12 @@ public class MethodGenerator {
                         switchEnd = end;
 
                         StatementDom body = keyToBodyMap.get(key);
-                        populateMethodStatement(methodNode, originalInstructions, generator, body, end, labelScope, methodBodyInjection);
+                        populateMethodStatement(methodNode, originalInstructions, generator, body, end, labelScope, methodBodyInjection, scope);
                     }
 
                     @Override
                     public void generateDefault() {
-                        populateMethodStatement(methodNode, originalInstructions, generator, defaultBody, switchEnd, labelScope, methodBodyInjection);
+                        populateMethodStatement(methodNode, originalInstructions, generator, defaultBody, switchEnd, labelScope, methodBodyInjection, scope);
                     }
                 });
             }
@@ -229,6 +228,9 @@ public class MethodGenerator {
 
                 ListIterator it = originalInstructions.iterator();
 
+                // Strip away frames and store return value in a special local variable
+                // After strip away frames and beforevstore return value in a special local variable
+                // try with try catch in void method
                 boolean withReturn = false;
                 while(it.hasNext()) {
                     AbstractInsnNode insn = (AbstractInsnNode)it.next();
@@ -251,7 +253,7 @@ public class MethodGenerator {
                         || insn.getOpcode() == Opcodes.F_SAME1) {
                         // Do nothing?
                         insn.toString();
-                        insn.accept(generator);
+                        /*insn.accept(generator);
 
                         insn.accept(new MethodVisitor(Opcodes.ASM5) {
                             @Override
@@ -263,7 +265,7 @@ public class MethodGenerator {
                             public void visitLabel(Label label) {
                                 super.visitLabel(label);
                             }
-                        });
+                        });*/
                     } else {
 
                         insn.accept(generator);
@@ -277,15 +279,59 @@ public class MethodGenerator {
 
             @Override
             public void visitThrow(ExpressionDom expression) {
-                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
                 generator.throwException();
+            }
+
+            @Override
+            public void visitTryCatch(StatementDom tryBlock, List<CodeDom> catchBlocks) {
+                Label start = generator.newLabel();
+                Label end = generator.newLabel();
+                Label endAll = generator.newLabel();
+
+                generator.visitLabel(start);
+                populateMethodStatement(methodNode, originalInstructions, generator, tryBlock, breakLabel, labelScope, methodBodyInjection, scope);
+                generator.visitLabel(end);
+                generator.visitJumpInsn(Opcodes.GOTO, endAll);
+
+                catchBlocks.forEach(cb -> {
+                    cb.accept(new CodeDomVisitor() {
+                        @Override
+                        public void visitStatement(StatementDom statementDom) {
+
+                        }
+
+                        @Override
+                        public void visitExpression(ExpressionDom expressionDom) {
+
+                        }
+
+                        @Override
+                        public void visitCatch(String type, String name, StatementDom statementDom) {
+                            Label handler = generator.newLabel();
+
+                            generator.visitLabel(handler);
+
+                            GenerateScope catchScope = new GenerateScope(scope);
+
+                            catchScope.declareVar(generator, type, name);
+
+                            generator.storeLocal(catchScope.getVarId(name));
+                            populateMethodStatement(methodNode, originalInstructions, generator, tryBlock, breakLabel, labelScope, methodBodyInjection, catchScope);
+
+                            generator.visitTryCatchBlock(start, end, handler, type);
+                        }
+                    });
+                });
+
+                generator.visitLabel(endAll);
             }
         });
 
         return Descriptor.VOID;
     }
 
-    public String populateMethodExpression(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, ExpressionDom expression, Label ifFalseLabel, boolean reifyCondition) {
+    public String populateMethodExpression(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, ExpressionDom expression, Label ifFalseLabel, boolean reifyCondition, GenerateScope scope) {
         return new ExpressionDomVisitor.Return<String>() {
             @Override
             public void visitBooleanLiteral(boolean value) {
@@ -379,8 +425,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, false);
-                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, false, scope);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope);
 
                 String resultType = arithmeticResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
@@ -400,8 +446,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope);
                 String resultType = shiftResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
@@ -420,8 +466,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope);
                 String resultType = bitwiseResultType(lhsResultType, rhsResultType);
                 Type t = Type.getType(resultType);
                 generator.math(op, t);
@@ -443,8 +489,8 @@ public class MethodGenerator {
                     default: op = -1;
                 }
 
-                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition);
-                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition);
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope);
 
                 Type t = Type.getType(lhsResultType);
 
@@ -473,8 +519,8 @@ public class MethodGenerator {
                     case LogicalOperator.AND: {
                         Label lhsIfFalseLabel = ifFalseLabel != null ? ifFalseLabel : generator.newLabel();
                         boolean lhsReify = ifFalseLabel != null ? false : true;
-                        String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, lhsIfFalseLabel, lhsReify);
-                        String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition);
+                        String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, lhsIfFalseLabel, lhsReify, scope);
+                        String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope);
 
                         if(ifFalseLabel == null) {
                             generator.visitLabel(lhsIfFalseLabel);
@@ -487,12 +533,12 @@ public class MethodGenerator {
                     case LogicalOperator.OR: {
                         Label endLabel = generator.newLabel();
                         Label nextTestLabel = generator.newLabel();
-                        String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, nextTestLabel, false);
+                        String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, nextTestLabel, false, scope);
                         if(reifyCondition)
                             generator.push(true);
                         generator.goTo(endLabel);
                         generator.visitLabel(nextTestLabel);
-                        String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition);
+                        String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope);
                         generator.visitLabel(endLabel);
                         resultType = logicalResultType(lhsResultType, rhsResultType);
 
@@ -511,16 +557,16 @@ public class MethodGenerator {
                     generator.loadArg(parameterOrdinal.getAsInt());
                     setResult(parameters.get(parameterOrdinal.getAsInt()).descriptor);
                 } else {
-                    int id = methodScope.getVarId(name);
+                    int id = scope.getVarId(name);
                     generator.loadLocal(id);
 
-                    setResult(methodScope.getVarType(name));
+                    setResult(scope.getVarType(name));
                 }
             }
 
             @Override
             public void visitFieldAccess(ExpressionDom target, String name, String fieldTypeName) {
-                String targetType = populateMethodExpression(methodNode, originalInstructions, generator, target, null, true);
+                String targetType = populateMethodExpression(methodNode, originalInstructions, generator, target, null, true, scope);
                 generator.getField(Type.getType(targetType), name, Type.getType(Descriptor.getFieldDescriptor(fieldTypeName)));
 
                 setResult(fieldTypeName);
@@ -535,7 +581,7 @@ public class MethodGenerator {
 
             @Override
             public void visitNot(ExpressionDom expression) {
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
 
                 if(reifyCondition)
                     generator.not();
@@ -547,7 +593,7 @@ public class MethodGenerator {
 
             @Override
             public void visitInstanceOf(ExpressionDom expression, String type) {
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
                 Type t = Type.getType(type);
 
                 generator.instanceOf(t);
@@ -567,13 +613,18 @@ public class MethodGenerator {
                     code.accept(new CodeDomVisitor() {
                         @Override
                         public void visitStatement(StatementDom statementDom) {
-                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope, returnLabel);
+                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope, returnLabel, scope);
                         }
 
                         @Override
                         public void visitExpression(ExpressionDom expressionDom) {
-                            String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expressionDom, null, true);
+                            String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expressionDom, null, true, scope);
                             expressionResultTypes.add(resultType);
+                        }
+
+                        @Override
+                        public void visitCatch(String type, String name, StatementDom statementDom) {
+
                         }
                     });
                 });
@@ -598,11 +649,11 @@ public class MethodGenerator {
                 Label endLabel = generator.newLabel();
                 Label testIfFalseLabel = generator.newLabel();
 
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, testIfFalseLabel, false);
-                String ifTrueResultType = populateMethodExpression(methodNode, originalInstructions, generator, ifTrue, null, true);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, testIfFalseLabel, false, scope);
+                String ifTrueResultType = populateMethodExpression(methodNode, originalInstructions, generator, ifTrue, null, true, scope);
                 generator.goTo(endLabel);
                 generator.visitLabel(testIfFalseLabel);
-                String ifFalseResultType = populateMethodExpression(methodNode, originalInstructions, generator, ifFalse, null, true);
+                String ifFalseResultType = populateMethodExpression(methodNode, originalInstructions, generator, ifFalse, null, true, scope);
                 generator.visitLabel(endLabel);
 
                 if(!ifTrueResultType.equals(ifFalseResultType))
@@ -613,13 +664,13 @@ public class MethodGenerator {
 
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
-                String resultType = populateMethodInvocation(methodNode, originalInstructions, generator, methodScope, invocation, target, type, name, descriptor, arguments, CODE_LEVEL_EXPRESSION);
+                String resultType = populateMethodInvocation(methodNode, originalInstructions, generator, scope, invocation, target, type, name, descriptor, arguments, CODE_LEVEL_EXPRESSION);
                 setResult(resultType);
             }
 
             @Override
             public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-                String resultType = populateMethodNewInstance(methodNode, originalInstructions, generator, methodScope, type, parameterTypes, arguments, CODE_LEVEL_EXPRESSION);
+                String resultType = populateMethodNewInstance(methodNode, originalInstructions, generator, scope, type, parameterTypes, arguments, CODE_LEVEL_EXPRESSION);
                 setResult(resultType);
             }
 
@@ -631,11 +682,11 @@ public class MethodGenerator {
 
             @Override
             public void visitTop(ExpressionDom expression, BiFunction<ExpressionDom, ExpressionDom, ExpressionDom> usage) {
-                String topResultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, ifFalseLabel, reifyCondition);
+                String topResultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, ifFalseLabel, reifyCondition, scope);
                 ExpressionDom dup = v -> v.visitDup(topResultType);
                 ExpressionDom last = v -> v.visitLetBe(topResultType);
                 ExpressionDom usageExpression = usage.apply(dup, last);
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, usageExpression, ifFalseLabel, reifyCondition);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, usageExpression, ifFalseLabel, reifyCondition, scope);
                 setResult(resultType);
             }
 
@@ -652,7 +703,7 @@ public class MethodGenerator {
 
             @Override
             public void visitTypeCast(ExpressionDom expression, String targetType) {
-                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true);
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
                 //generator.cast(Type.getType(resultType), Type.getType(targetType));
                 generator.checkCast(Type.getType(targetType));
                 setResult(targetType);
@@ -664,7 +715,7 @@ public class MethodGenerator {
     private static final int CODE_LEVEL_EXPRESSION = 1;
 
     private String populateMethodInvocation(
-        MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, GenerateScope methodScope,
+        MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, GenerateScope scope,
         int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments,
         int codeLevel) {
         String returnType = descriptor.substring(descriptor.indexOf(")") + 1);
@@ -674,10 +725,10 @@ public class MethodGenerator {
 
         // Push target for instance invocations
         if(target != null)
-            populateMethodExpression(methodNode, originalInstructions, generator, target, null, true);
+            populateMethodExpression(methodNode, originalInstructions, generator, target, null, true, scope);
 
         arguments.forEach(a ->
-            populateMethodExpression(methodNode, originalInstructions, generator, a, null, true));
+            populateMethodExpression(methodNode, originalInstructions, generator, a, null, true, scope));
 
         switch (invocation) {
             case Invocation.INTERFACE:
@@ -701,7 +752,7 @@ public class MethodGenerator {
     }
 
     private String populateMethodNewInstance(
-        MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, GenerateScope methodScope,
+        MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, GenerateScope scope,
         String type, List<String> parameterTypes, List<ExpressionDom> arguments,
         int codeLevel) {
         String returnType = type;
@@ -709,7 +760,7 @@ public class MethodGenerator {
         generator.newInstance(Type.getType(type));
         generator.dup();
         arguments.forEach(a ->
-            populateMethodExpression(methodNode, originalInstructions, generator, a, null, true));
+            populateMethodExpression(methodNode, originalInstructions, generator, a, null, true, scope));
         generator.invokeConstructor(Type.getType(type), new Method("<init>", Descriptor.getMethodDescriptor(parameterTypes, Descriptor.VOID)));
 
         if(codeLevel == CODE_LEVEL_STATEMENT) {

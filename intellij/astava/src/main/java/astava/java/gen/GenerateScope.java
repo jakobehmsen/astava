@@ -6,8 +6,15 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import java.util.Hashtable;
 
 public class GenerateScope {
+    private GenerateScope outerScope;
     private Hashtable<String, Integer> nameToVarIdMap = new Hashtable<>();
     private Hashtable<Integer, String> varIdToTypeMap = new Hashtable<>();
+
+    public GenerateScope() { }
+
+    public GenerateScope(GenerateScope outerScope) {
+        this.outerScope = outerScope;
+    }
 
     public void declareVar(GeneratorAdapter generator, String type, String name) {
         int id = generator.newLocal(Type.getType(type));
@@ -16,7 +23,10 @@ public class GenerateScope {
     }
 
     public int getVarId(String name) {
-        return nameToVarIdMap.get(name);
+        Integer varId = nameToVarIdMap.get(name);
+        if(varId != null)
+            return varId.intValue();
+        return outerScope != null ? outerScope.getVarId(name) : null;
     }
 
     public String getVarType(String name) {
