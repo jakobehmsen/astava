@@ -88,13 +88,20 @@ public class MethodGenerator {
     private static class MethodBodyInjection {
         public int occurrences;
         public int withReturn;
+        public int returnVar = -1;
+        public Label returnLabel;
+        public GeneratorAdapter generator;
     }
 
     public void populateMethodBody(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator) {
         LabelScope labelScope = new LabelScope();
         MethodBodyInjection injectedMethodBody = new MethodBodyInjection();
+        injectedMethodBody.generator = generator;
         populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, injectedMethodBody, new GenerateScope());
-        if(injectedMethodBody.occurrences > 0) {
+        //if(injectedMethodBody.occurrences > 0) {
+        if(injectedMethodBody.returnVar != -1) {
+            //generator.returnValue();
+            generator.loadLocal(injectedMethodBody.returnVar);
             generator.returnValue();
         }
         labelScope.verify();
@@ -228,38 +235,25 @@ public class MethodGenerator {
 
                 Label returnLabel = new Label();
 
-                ListIterator it = originalInstructions.iterator();
+                //ListIterator it = originalInstructions.iterator();
 
-                /*
+
                 // Replaces returns with variable administration
-                originalInstructions.accept(new InstructionAdapter(generator) {
-                    Label returnLabel;
-                    int returnVar = -1;
-
-                    @Override
+                originalInstructions.accept(new InstructionAdapter(Opcodes.ASM5, generator) {
                     public void areturn(Type type) {
-                        if(returnVar == -1) {
-                            returnLabel = generator.newLabel();
-                            returnVar = generator.newLocal(type);
-                            generator.storeLocal(returnVar);
-                            generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
-                        } else
-                            super.areturn(type);
-                    }
-
-                    @Override
-                    public void visitEnd() {
-                        if(returnVar != -1) {
-                            generator.visitLabel(returnLabel);
-                            generator.loadLocal(returnVar);
-                            generator.returnValue();
+                        if(methodBodyInjection.returnVar == -1) {
+                            methodBodyInjection.returnLabel = generator.newLabel();
+                            methodBodyInjection.returnVar = methodBodyInjection.generator.newLocal(type);
+                            methodBodyInjection.withReturn++;
                         }
 
-                        super.visitEnd();
+                        methodBodyInjection.generator.storeLocal(methodBodyInjection.returnVar);
+                        generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
                     }
                 });
-                */
 
+
+                /*
                 // Strip away frames and store return value in a special local variable
                 // After strip away frames and beforevstore return value in a special local variable
                 // try with try catch in void method
@@ -302,7 +296,7 @@ public class MethodGenerator {
 
                         insn.accept(generator);
                     }
-                }
+                }*/
 
                 methodBodyInjection.occurrences++;
 
