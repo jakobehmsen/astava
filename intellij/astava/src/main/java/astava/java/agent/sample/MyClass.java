@@ -1,6 +1,7 @@
 package astava.java.agent.sample;
 
 import java.io.Serializable;
+import java.util.EmptyStackException;
 
 @MyAnnotation(value = 333, extra = "bla")
 public class MyClass extends MyOtherClass {
@@ -36,6 +37,10 @@ public class MyClass extends MyOtherClass {
     @MyNotNullAnnotation
     public boolean someOtherMethod3(String str1, String str2) {
         System.out.println("Within someOtherMethod3");
+        //throw new RuntimeException("ASFSD");
+        //throw new NullPointerException("ASFSD");
+        //throw new IllegalArgumentException();
+        //throw new EmptyStackException();
         return true;
     }
 
@@ -54,12 +59,19 @@ public class MyClass extends MyOtherClass {
         throw new RuntimeException("ASFSD");
     }
 
-    public void someOtherMethod5(String str1, String str2) {
+    public boolean someOtherMethod5(String str1, String str2) {
         try {
             System.out.println("Within someOtherMethod4");
-            throw new RuntimeException("ASFSD");
+            //throw new RuntimeException("ASFSD");
+            return false;
+        } catch(RuntimeException e) {
+            System.out.println("Exc1 someOtherMethod4");
+            return false;
         } catch(Exception e) {
-            System.out.println("Exc someOtherMethod4");
+            System.out.println("Exc2 someOtherMethod4");
+            return false;
+        }  finally {
+            System.out.println("Finally");
         }
     }
 }

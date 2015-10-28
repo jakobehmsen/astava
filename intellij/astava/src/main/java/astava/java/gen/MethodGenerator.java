@@ -2,11 +2,13 @@ package astava.java.gen;
 
 import astava.java.*;
 import astava.tree.*;
+import javafx.util.Pair;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -228,6 +230,36 @@ public class MethodGenerator {
 
                 ListIterator it = originalInstructions.iterator();
 
+                /*
+                // Replaces returns with variable administration
+                originalInstructions.accept(new InstructionAdapter(generator) {
+                    Label returnLabel;
+                    int returnVar = -1;
+
+                    @Override
+                    public void areturn(Type type) {
+                        if(returnVar == -1) {
+                            returnLabel = generator.newLabel();
+                            returnVar = generator.newLocal(type);
+                            generator.storeLocal(returnVar);
+                            generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
+                        } else
+                            super.areturn(type);
+                    }
+
+                    @Override
+                    public void visitEnd() {
+                        if(returnVar != -1) {
+                            generator.visitLabel(returnLabel);
+                            generator.loadLocal(returnVar);
+                            generator.returnValue();
+                        }
+
+                        super.visitEnd();
+                    }
+                });
+                */
+
                 // Strip away frames and store return value in a special local variable
                 // After strip away frames and beforevstore return value in a special local variable
                 // try with try catch in void method
@@ -285,34 +317,124 @@ public class MethodGenerator {
 
             @Override
             public void visitTryCatch(StatementDom tryBlock, List<CodeDom> catchBlocks) {
-                Label start = generator.newLabel();
-                Label end = generator.newLabel();
-                Label endAll = generator.newLabel();
+                Optional<CodeDom> finallyBlock = catchBlocks.stream().filter(cb -> Util.returnFrom(false, r -> cb.accept(new DefaultCodeDomVisitor() {
+                    @Override
+                    public void visitCatch(String type, String name, StatementDom statementDom) {
+                        if(type == null)
+                            r.accept(true);
+                    }
+                }))).findFirst();
 
-                generator.visitLabel(start);
-                populateMethodStatement(methodNode, originalInstructions, generator, tryBlock, breakLabel, labelScope, methodBodyInjection, scope);
-                generator.visitLabel(end);
+                Label tryStart = generator.newLabel();
+                Label tryEnd = generator.newLabel();
+                Label endAll = generator.newLabel();
+                InstructionAdapter instructionAdapter =
+                    finallyBlock.isPresent() ? new ReplaceReturnWithStore(generator)
+                    : new InstructionAdapter(generator);
+
+                Method m = new Method(methodNode.name, methodNode.desc);
+                GeneratorAdapter innerGenerator = new GeneratorAdapter(methodNode.access, m, instructionAdapter);
+
+                generator.visitLabel(tryStart);
+                populateMethodStatement(methodNode, originalInstructions, innerGenerator, tryBlock, breakLabel, labelScope, methodBodyInjection, scope);
+                generator.visitLabel(tryEnd);
+
+                if(finallyBlock.isPresent()) {
+                    StatementDom statementDom = Util.returnFrom(null, r -> finallyBlock.get().accept(new DefaultCodeDomVisitor() {
+                        @Override
+                        public void visitCatch(String type, String name, StatementDom statementDom) {
+                            r.accept(statementDom);
+                        }
+                    }));
+
+                    GenerateScope finallyScope = new GenerateScope(scope);
+
+                    ((ReplaceReturnWithStore)instructionAdapter).returnStart();
+                    populateMethodStatement(methodNode, originalInstructions, generator, statementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
+                    ((ReplaceReturnWithStore)instructionAdapter).returnEnd();
+                }
+
                 generator.visitJumpInsn(Opcodes.GOTO, endAll);
+
+                ArrayList<Pair<Label, Label>> attempts = new ArrayList<Pair<Label, Label>>();
+
+                attempts.add(new Pair<>(tryStart, tryEnd));
 
                 catchBlocks.forEach(cb -> {
                     cb.accept(new DefaultCodeDomVisitor() {
                         @Override
                         public void visitCatch(String type, String name, StatementDom statementDom) {
-                            Label handler = generator.newLabel();
+                            if (type != null) {
+                                // A non-finally catch
+                                Label handlerStart = generator.newLabel();
+                                Label handlerEnd = generator.newLabel();
 
-                            generator.visitLabel(handler);
+                                GenerateScope catchScope = new GenerateScope(scope);
 
-                            GenerateScope catchScope = new GenerateScope(scope);
+                                catchScope.declareVar(generator, type, name);
 
-                            catchScope.declareVar(generator, type, name);
+                                InstructionAdapter instructionAdapter = finallyBlock.isPresent()
+                                    ? new ReplaceReturnWithStore(generator)
+                                    : new InstructionAdapter(generator);
 
-                            generator.storeLocal(catchScope.getVarId(name));
-                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, breakLabel, labelScope, methodBodyInjection, catchScope);
+                                Method m = new Method(methodNode.name, methodNode.desc);
+                                GeneratorAdapter innerGenerator = new GeneratorAdapter(methodNode.access, m, instructionAdapter);
 
-                            generator.visitTryCatchBlock(start, end, handler, type);
+                                generator.visitLabel(handlerStart);
+                                generator.storeLocal(catchScope.getVarId(name));
+                                populateMethodStatement(methodNode, originalInstructions, innerGenerator, statementDom, breakLabel, labelScope, methodBodyInjection, catchScope);
+                                generator.visitLabel(handlerEnd);
+
+                                generator.visitTryCatchBlock(tryStart, tryEnd, handlerStart, type);
+
+                                attempts.add(new Pair<>(handlerStart, handlerEnd));
+
+                                if (finallyBlock.isPresent()) {
+                                    StatementDom finallyStatementDom = Util.returnFrom(null, r -> finallyBlock.get().accept(new DefaultCodeDomVisitor() {
+                                        @Override
+                                        public void visitCatch(String type, String name, StatementDom statementDom) {
+                                            r.accept(statementDom);
+                                        }
+                                    }));
+
+                                    GenerateScope finallyScope = new GenerateScope(scope);
+
+                                    ((ReplaceReturnWithStore)instructionAdapter).returnStart();
+                                    populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
+                                    ((ReplaceReturnWithStore)instructionAdapter).returnEnd();
+                                }
+
+                                generator.visitJumpInsn(Opcodes.GOTO, endAll);
+                            }
                         }
                     });
                 });
+
+                if (finallyBlock.isPresent()) {
+                    // Something goes wrong in try block or a catch block
+                    attempts.forEach(x -> {
+                        StatementDom finallyStatementDom = Util.returnFrom(null, r -> finallyBlock.get().accept(new DefaultCodeDomVisitor() {
+                            @Override
+                            public void visitCatch(String type, String name, StatementDom statementDom) {
+                                r.accept(statementDom);
+                            }
+                        }));
+
+                        Label finallyHandlerStart = generator.newLabel();
+
+                        GenerateScope finallyScope = new GenerateScope(scope);
+
+                        int finallyExceptionId = generator.newLocal(Type.getType(Exception.class));
+
+                        generator.visitLabel(finallyHandlerStart);
+                        generator.storeLocal(finallyExceptionId);
+                        populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
+                        generator.loadLocal(finallyExceptionId);
+                        generator.throwException();
+
+                        generator.visitTryCatchBlock(x.getKey(), x.getValue(), finallyHandlerStart, null);
+                    });
+                }
 
                 generator.visitLabel(endAll);
             }

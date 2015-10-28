@@ -71,8 +71,8 @@ public class Main {
                     thisClass.getFields().stream().map(x -> String.format("this.%1$s.equals(otherAsThis.%1$s)", x.getName())).collect(Collectors.joining(" && "))
                 )).andThen(
                     factory
-                        //.whenMethod("public boolean")
-                        .whenMethod("public void")
+                        .whenMethod("public boolean")
+                            //.whenMethod("public void")
                         .and(factory.whenMethod("@" + MyNotNullAnnotation.class.getName()))
                         .then(
                             /*factory.modMethod((classNode, thisClass, methodNode) ->
@@ -95,16 +95,35 @@ public class Main {
                                 String.format("\njava.lang.System.out.println(\"Ending call to %1$s\");", methodNode.name))*/
 
                             /*factory.modMethod((classNode, thisClass, methodNode) ->
-                                "if(true) {\n" +
-                                "    java.lang.System.out.println(\"Accepting call to method\");\n" +
-                                "    ...\n" +
-                                "} else {\n" +
-                                "    java.lang.System.out.println(\"Rejecting call to method\");\n" +
-                                "    return false;\n" +
-                                "}"
+                                    "if(true) {\n" +
+                                    "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
+                                    "    ...\n" +
+                                    "    java.lang.System.out.println(\"Call went fine :)\");\n" +
+                                    "} else {\n" +
+                                    "    java.lang.System.out.println(\"Rejecting call to method\");\n" +
+                                    "    return false;\n" +
+                                    "}"
                             )*/
 
                             factory.modMethod((classNode, thisClass, methodNode) ->
+                                "try {\n" +
+                                "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
+                                "    ...\n" +
+                                "    java.lang.System.out.println(\"Call went fine :)\");\n" +
+                                "} catch (java.lang.NullPointerException e) {\n" +
+                                "    java.lang.System.out.println(\"Caught NullPointerException error during call to method\");\n" +
+                                "    return false;\n" +
+                                //"    throw new java.lang.IllegalArgumentException();" +
+                                "} catch (java.lang.IllegalArgumentException e) {\n" +
+                                "    java.lang.System.out.println(\"Caught RuntimeException error during call to method\");\n" +
+                                "    return false;\n" +
+                                "}"/* finally {\n" +
+                                "    java.lang.System.out.println(\"Within finally block\");\n" +
+                                //"    return false;\n" +
+                                "}"*/
+                            )
+
+                            /*factory.modMethod((classNode, thisClass, methodNode) ->
                                     "try {\n" +
                                     "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
                                     //"    return true;\n" +
@@ -114,7 +133,7 @@ public class Main {
                                     "    java.lang.System.out.println(\"Caught error during call to method\");\n" +
                                     //"    return false;\n" +
                                     "}"
-                            )
+                            )*/
 
                             /*factory.modMethod("@astava.java.agent.sample.MyAnnotation(occurrences=333, extra=\"A boolean return type!!!\")")
                             .andThen(factory.modMethod((classNode, thisClass, methodNode) ->
@@ -194,8 +213,8 @@ public class Main {
             System.out.println(mc1.equals(mc2));
 
             mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", "Second");
-            mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", null);
-            mc2.getClass().getMethod("someOtherMethod4", String.class, String.class).invoke(mc2, "First", "Second");
+            //mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", null);
+            //mc2.getClass().getMethod("someOtherMethod4", String.class, String.class).invoke(mc2, "First", "Second");
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         }

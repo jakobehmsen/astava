@@ -625,7 +625,7 @@ public class Factory {
             public CodeDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
                 StatementDom block = blockBuilder.build(classResolver, classDeclaration, classInspector, locals);
 
-                return DomFactory.catchBlock(Descriptor.get(type), name, block);
+                return DomFactory.catchBlock(type != null ? Descriptor.get(type) : null, name, block);
             }
 
             @Override
