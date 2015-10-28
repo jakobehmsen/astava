@@ -295,17 +295,7 @@ public class MethodGenerator {
                 generator.visitJumpInsn(Opcodes.GOTO, endAll);
 
                 catchBlocks.forEach(cb -> {
-                    cb.accept(new CodeDomVisitor() {
-                        @Override
-                        public void visitStatement(StatementDom statementDom) {
-
-                        }
-
-                        @Override
-                        public void visitExpression(ExpressionDom expressionDom) {
-
-                        }
-
+                    cb.accept(new DefaultCodeDomVisitor() {
                         @Override
                         public void visitCatch(String type, String name, StatementDom statementDom) {
                             Label handler = generator.newLabel();
@@ -610,7 +600,7 @@ public class MethodGenerator {
                 MethodBodyInjection returnLabel = new MethodBodyInjection();
 
                 codeList.forEach(code -> {
-                    code.accept(new CodeDomVisitor() {
+                    code.accept(new DefaultCodeDomVisitor() {
                         @Override
                         public void visitStatement(StatementDom statementDom) {
                             populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope, returnLabel, scope);
@@ -620,11 +610,6 @@ public class MethodGenerator {
                         public void visitExpression(ExpressionDom expressionDom) {
                             String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expressionDom, null, true, scope);
                             expressionResultTypes.add(resultType);
-                        }
-
-                        @Override
-                        public void visitCatch(String type, String name, StatementDom statementDom) {
-
                         }
                     });
                 });
