@@ -212,7 +212,7 @@ public class Main {
 
             System.out.println(mc1.equals(mc2));
 
-            mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", "Second");
+            System.out.println(mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", "Second"));
             //mc2.getClass().getMethod("someOtherMethod3", String.class, String.class).invoke(mc2, "First", null);
             //mc2.getClass().getMethod("someOtherMethod4", String.class, String.class).invoke(mc2, "First", "Second");
         } catch (NoSuchFieldException e) {

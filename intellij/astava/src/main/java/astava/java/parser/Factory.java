@@ -630,7 +630,8 @@ public class Factory {
 
             @Override
             public String toString() {
-                return "catch(" + type + " " + name + ") {\n" + blockBuilder + "\n}";
+                String catchName = type != null ? "catch" : "finally";
+                return catchName + "(" + type + " " + name + ") {\n" + blockBuilder + "\n}";
             }
         };
     }
