@@ -4,14 +4,12 @@ import astava.java.*;
 import astava.tree.*;
 import javafx.util.Pair;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.TableSwitchGenerator;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -99,9 +97,10 @@ public class MethodGenerator {
         injectedMethodBody.generator = generator;
         populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, injectedMethodBody, new GenerateScope());
         //if(injectedMethodBody.occurrences > 0) {
-        if(injectedMethodBody.returnVar != -1) {
+        if(injectedMethodBody.returnLabel != null) {
             //generator.returnValue();
-            generator.loadLocal(injectedMethodBody.returnVar);
+            if(!Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE)) // If method does return value
+                generator.loadLocal(injectedMethodBody.returnVar);
             generator.returnValue();
         }
         labelScope.verify();
@@ -231,6 +230,13 @@ public class MethodGenerator {
 
             @Override
             public void visitMethodBody() {
+                ReplaceReturnWithPop instructionAdapter = new ReplaceReturnWithPop(generator);
+
+                originalInstructions.accept(instructionAdapter);
+
+                instructionAdapter.visitReturn();
+
+                /*
                 //methodNode.instructions.add(originalInstructions);
 
                 Label returnLabel = new Label();
@@ -243,15 +249,17 @@ public class MethodGenerator {
                     public void areturn(Type type) {
                         if(methodBodyInjection.returnVar == -1) {
                             methodBodyInjection.returnLabel = generator.newLabel();
-                            methodBodyInjection.returnVar = methodBodyInjection.generator.newLocal(type);
+                            if(!Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE)) // If method does return value
+                                methodBodyInjection.returnVar = methodBodyInjection.generator.newLocal(type);
                             methodBodyInjection.withReturn++;
                         }
 
-                        methodBodyInjection.generator.storeLocal(methodBodyInjection.returnVar);
+                        if(!Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE)) // If method does return value
+                            methodBodyInjection.generator.storeLocal(methodBodyInjection.returnVar);
                         generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
                     }
                 });
-
+                */
 
                 /*
                 // Strip away frames and store return value in a special local variable
@@ -298,9 +306,9 @@ public class MethodGenerator {
                     }
                 }*/
 
-                methodBodyInjection.occurrences++;
+                //methodBodyInjection.occurrences++;
 
-                generator.visitLabel(returnLabel);
+                //generator.visitLabel(returnLabel);
             }
 
             @Override
@@ -343,9 +351,9 @@ public class MethodGenerator {
 
                     GenerateScope finallyScope = new GenerateScope(scope);
 
-                    ((ReplaceReturnWithStore)instructionAdapter).returnStart();
+                    ((ReplaceReturnWithStore)instructionAdapter).visitReturn();
                     populateMethodStatement(methodNode, originalInstructions, generator, statementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
-                    ((ReplaceReturnWithStore)instructionAdapter).returnEnd();
+                    ((ReplaceReturnWithStore)instructionAdapter).returnValue();
                 }
 
                 generator.visitJumpInsn(Opcodes.GOTO, endAll);
@@ -393,9 +401,9 @@ public class MethodGenerator {
 
                                     GenerateScope finallyScope = new GenerateScope(scope);
 
-                                    ((ReplaceReturnWithStore)instructionAdapter).returnStart();
+                                    ((ReplaceReturnWithStore)instructionAdapter).visitReturn();
                                     populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
-                                    ((ReplaceReturnWithStore)instructionAdapter).returnEnd();
+                                    ((ReplaceReturnWithStore)instructionAdapter).returnValue();
                                 }
 
                                 generator.visitJumpInsn(Opcodes.GOTO, endAll);

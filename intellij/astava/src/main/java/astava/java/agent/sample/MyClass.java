@@ -56,7 +56,7 @@ public class MyClass extends MyOtherClass {
     @MyNotNullAnnotation
     public void someOtherMethod4(String str1, String str2) {
         System.out.println("Within someOtherMethod4");
-        throw new RuntimeException("ASFSD");
+        //throw new RuntimeException("ASFSD");
     }
 
     public boolean someOtherMethod5(String str1, String str2) {

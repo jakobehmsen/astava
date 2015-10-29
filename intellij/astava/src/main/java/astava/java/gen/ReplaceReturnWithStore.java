@@ -13,32 +13,35 @@ public class ReplaceReturnWithStore extends InstructionAdapter {
 
     private Label returnLabel;
     private int returnVar = -1;
-
-    @Override
-    public void visitCode() {
-        returnLabel = null;
-        returnVar = -1;
-    }
+    private Type returnType;
 
     @Override
     public void areturn(Type type) {
-        if(returnVar == -1) {
+        if(returnLabel == null) {
             returnLabel = ((GeneratorAdapter)mv).newLabel();
-            returnVar = ((GeneratorAdapter)mv).newLocal(type);
+            returnType = type;
+            if(!returnType.equals(Type.VOID_TYPE))
+                returnVar = ((GeneratorAdapter)mv).newLocal(type);
         }
 
-        ((GeneratorAdapter)mv).storeLocal(returnVar);
+        if(!returnType.equals(Type.VOID_TYPE))
+            ((GeneratorAdapter)mv).storeLocal(returnVar);
         ((GeneratorAdapter)mv).visitJumpInsn(Opcodes.GOTO, returnLabel);
     }
 
-    public void returnStart() {
-        if(returnVar != -1)
+    public void visitReturn() {
+        if(returnLabel != null)
             ((GeneratorAdapter)mv).visitLabel(returnLabel);
     }
 
-    public void returnEnd() {
-        if(returnVar != -1) {
+    public void loadValue() {
+        if(!returnType.equals(Type.VOID_TYPE))
             ((GeneratorAdapter)mv).loadLocal(returnVar);
+    }
+
+    public void returnValue() {
+        if(returnLabel != null) {
+            loadValue();
             ((GeneratorAdapter)mv).returnValue();
         }
     }
