@@ -24,7 +24,20 @@ public class DefaultClassInspector implements ClassInspector {
         // Inspect virtual classes in class builders and physical classes in class loader
         try {
             System.out.println("Getting class " + name);
-            Class<?> physicalClass = classLoader.loadClass(name);
+            Class<?> physicalClass;
+
+            switch(name) {
+                case "boolean": physicalClass = boolean.class; break;
+                case "byte": physicalClass = byte.class; break;
+                case "short": physicalClass = short.class; break;
+                case "int": physicalClass = int.class; break;
+                case "long": physicalClass = long.class; break;
+                case "float": physicalClass = float.class; break;
+                case "double": physicalClass = double.class; break;
+                case "char": physicalClass = char.class; break;
+                case "void":  physicalClass = void.class; break;
+                default: physicalClass = classLoader.loadClass(name);
+            }
 
             //logln("Loaded physical class " + name);
 
