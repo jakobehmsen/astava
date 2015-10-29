@@ -586,8 +586,11 @@ public class Parser {
 
             @Override
             public StatementDomBuilder visitReturnStatement(@NotNull JavaParser.ReturnStatementContext ctx) {
-                ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
-                return Factory.ret(expression);
+                if(ctx.expression() != null) {
+                    ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), atRoot);
+                    return Factory.ret(expression);
+                } else
+                    return Factory.ret();
             }
 
             @Override

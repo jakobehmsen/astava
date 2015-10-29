@@ -32,7 +32,7 @@ singleOrMultiStatement: OPEN_BRA statement* CLOSE_BRA | statement;
 
 delimitedStatement: 
     returnStatement | variableDeclaration | throwStatement | expression;
-returnStatement: KW_RETURN expression;
+returnStatement: KW_RETURN expression?;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 
 // Expression precedence following http://www.cs.bilkent.edu.tr/~guvenir/courses/CS101/op_precedence.html
