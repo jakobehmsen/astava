@@ -817,6 +817,21 @@ public class MethodGenerator {
                 generator.checkCast(Type.getType(targetType));
                 setResult(targetType);
             }
+
+            @Override
+            public void visitMethodBody() {
+                if(Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE))
+                    throw new IllegalArgumentException("Illegal method body expression; method returns void.");
+
+                ReplaceReturnWithStore instructionAdapter = new ReplaceReturnWithStore(generator);
+
+                originalInstructions.accept(instructionAdapter);
+
+                instructionAdapter.visitReturn();
+                instructionAdapter.loadValue();
+
+                setResult(Type.getReturnType(methodNode.desc).getDescriptor());
+            }
         }.returnFrom(expression);
     }
 

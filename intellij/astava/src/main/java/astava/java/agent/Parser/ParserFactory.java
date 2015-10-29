@@ -69,9 +69,9 @@ public class ParserFactory {
 
                     @Override
                     public void visitInitializer(StatementDomBuilder statement) {
-                        setResult(MethodNodeExtenderFactory.append(DomFactory.block(Arrays.asList(
+                        setResult(MethodNodeExtenderFactory.append(methodNode -> DomFactory.block(Arrays.asList(
                             // How to add initialization after method body? Method body seems to return
-                            statement.build(classResolver1, thisClass1, classInspector1, new Hashtable<>())
+                            statement.build(classResolver1, thisClass1, classInspector1, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode))
                         ))).when((c, cr, ci, m) -> m.name.equals("<init>")));
                     }
 

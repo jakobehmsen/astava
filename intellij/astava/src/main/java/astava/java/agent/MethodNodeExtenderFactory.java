@@ -16,6 +16,7 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.ListIterator;
@@ -45,7 +46,7 @@ public class MethodNodeExtenderFactory {
         };
     }
 
-    public static DeclaringMethodNodeExtenderTransformer append(StatementDom statement) {
+    public static DeclaringMethodNodeExtenderTransformer append(Function<MethodNode, StatementDom> statementFunc) {
         return (classNode, thisClass, classResolver, classInspector, methodNode, g, originalInstructions) -> {
             /*InsnList originalInstructions = new InsnList();
             originalInstructions.add(methodNode.instructions);
@@ -70,7 +71,7 @@ public class MethodNodeExtenderFactory {
 
             methodNode.instructions.clear();*/
 
-
+            StatementDom statement = statementFunc.apply(methodNode);
 
             MethodGenerator.generate(methodNode, (mn, generator) -> {
                 System.out.println("Append:");
@@ -127,17 +128,17 @@ public class MethodNodeExtenderFactory {
         };
     }
 
-    public static DeclaringMethodNodeExtenderElement append(StatementDomBuilder statementDomBuilder, ClassInspector classInspector) {
+    /*public static DeclaringMethodNodeExtenderElement append(StatementDomBuilder statementDomBuilder, ClassInspector classInspector) {
         return new DeclaringMethodNodeExtenderElement() {
             @Override
             public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                 Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                     .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
+                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode));
                 return MethodNodeExtenderFactory.append(statement);
             }
         };
-    }
+    }*/
 
     public static DeclaringMethodNodeExtenderElement prepend(StatementDomBuilder statementDomBuilder, ClassInspector classInspector) {
         return new DeclaringMethodNodeExtenderElement() {
@@ -145,7 +146,7 @@ public class MethodNodeExtenderFactory {
             public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                 Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                     .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
+                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode));
                 return MethodNodeExtenderFactory.prepend(statement);
             }
         };

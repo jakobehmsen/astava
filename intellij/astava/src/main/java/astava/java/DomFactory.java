@@ -366,8 +366,13 @@ public class DomFactory {
         return new AbstractMap.SimpleImmutableEntry<Integer, StatementDom>(key, body);
     }
 
-    public static StatementDom methodBody() {
+    public static StatementDom methodBodyStatement() {
         return v -> v.visitMethodBody();
+    }
+
+    public static ExpressionDom methodBodyExpression() {
+        return v ->
+            v.visitMethodBody();
     }
 
     public static String arithmeticResultType(String lhsType, String rhsType) {

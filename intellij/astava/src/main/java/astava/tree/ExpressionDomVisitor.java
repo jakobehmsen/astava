@@ -62,6 +62,8 @@ public interface ExpressionDomVisitor {
 
     void visitTypeCast(ExpressionDom expression, String targetType);
 
+    void visitMethodBody();
+
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
 

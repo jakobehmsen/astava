@@ -41,7 +41,7 @@ public class MyClass extends MyOtherClass {
         //throw new NullPointerException("ASFSD");
         //throw new IllegalArgumentException();
         //throw new EmptyStackException();
-        return true;
+        return false;
     }
 
     /*@MyNotNullAnnotation

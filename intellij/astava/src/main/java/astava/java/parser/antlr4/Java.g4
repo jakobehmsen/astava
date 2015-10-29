@@ -16,7 +16,7 @@ modifiers: accessModifier? KW_ABSTRACT? KW_STATIC?;
 accessModifier: KW_PUBLIC | KW_PRIVATE | KW_PROTECTED;
 statement: nonDelimitedStatement | delimitedStatement SEMI_COLON;
 
-nonDelimitedStatement: ifElseStatement | tryCatchStatement | methodBody;
+nonDelimitedStatement: ifElseStatement | tryCatchStatement | methodBodyStatement;
 ifElseStatement: 
     KW_IF OPEN_PAR condition=expression CLOSE_PAR 
     ifTrueBlock=singleOrMultiStatement
@@ -26,7 +26,7 @@ tryCatchStatement:
 tryBlock: KW_TRY OPEN_BRA statement* CLOSE_BRA;
 catchBlock: KW_CATCH OPEN_PAR type=typeQualifier name=ID CLOSE_PAR OPEN_BRA statement* CLOSE_BRA;
 finallyBlock: KW_FINALLY OPEN_BRA statement* CLOSE_BRA;
-methodBody: ELLIPSIS;
+methodBodyStatement: ELLIPSIS;
 
 singleOrMultiStatement: OPEN_BRA statement* CLOSE_BRA | statement;
 
@@ -55,7 +55,7 @@ typeCastExpression: OPEN_PAR typeQualifier CLOSE_PAR expression;
 leafExpression: 
     (
         invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | thisLiteral |
-        trueLiteral | falseLiteral | newInstance
+        trueLiteral | falseLiteral | newInstance | methodBodyExpression
     )
     chainElement*;
 invocation: ID arguments;
@@ -71,6 +71,7 @@ trueLiteral: KW_TRUE;
 falseLiteral: KW_FALSE;
 newInstance: KW_NEW name=typeQualifier arguments;
 arguments: OPEN_PAR (expression (COMMA expression)*)? CLOSE_PAR;
+methodBodyExpression: ELLIPSIS;
 throwStatement: KW_THROW expression;
 
 annotation: AT typeQualifier

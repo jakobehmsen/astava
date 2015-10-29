@@ -518,8 +518,8 @@ public class Main {
                         };
 
                         Hashtable<String, String> locals = new Hashtable<>();
-                        StatementDom stmt = stmtBuilder.build(classResolver, exeClassBuilderDeclaration, classInspector, new Hashtable<>());
-                        String exprResultType = Parser.statementReturnType(null, exeClassBuilderDeclaration, stmt, locals);
+                        StatementDom stmt = null;//;stmtBuilder.build(classResolver, exeClassBuilderDeclaration, classInspector, new Hashtable<>(), methodContext);
+                        String exprResultType = null;//Parser.statementReturnType(null, exeClassBuilderDeclaration, stmt, locals, returnType);
                         log("exprResultType=" + exprResultType);
 
                         exeClassBuilder.addMethod(new MethodDomBuilder() {

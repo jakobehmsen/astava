@@ -47,7 +47,7 @@ public class Parser {
         parser = new JavaParser(tokenStream);
     }
 
-    public static String expressionResultType(ClassInspector classInspector, ClassDeclaration self, ExpressionDom expr, Map<String, String> locals) {
+    public static String expressionResultType(ClassInspector classInspector, ClassDeclaration self, ExpressionDom expr, Map<String, String> locals, String returnType) {
         return new ExpressionDomVisitor.Return<String>() {
             @Override
             public void visitBooleanLiteral(boolean value) {
@@ -153,7 +153,7 @@ public class Parser {
             @Override
             public void visitBlock(List<CodeDom> codeList) {
                 ExpressionDom singleExpression = (ExpressionDom)codeList.stream().filter(x -> x instanceof ExpressionDom).findFirst().get();
-                setResult(expressionResultType(classInspector, self, singleExpression, locals));
+                setResult(expressionResultType(classInspector, self, singleExpression, locals, returnType));
             }
 
             @Override
@@ -180,7 +180,7 @@ public class Parser {
 
             @Override
             public void visitTop(ExpressionDom expression, BiFunction<ExpressionDom, ExpressionDom, ExpressionDom> usage) {
-                String topResultType = expressionResultType(classInspector, self, expression, locals);
+                String topResultType = expressionResultType(classInspector, self, expression, locals, returnType);
                 ExpressionDom dup = v -> {
                     // Some checks most be made here to ensure that the stack is maintained properly?
                     v.visitDup(topResultType);
@@ -190,7 +190,7 @@ public class Parser {
                     v.visitLetBe(topResultType);
                 };
                 ExpressionDom usageExpression = usage.apply(dup, last);
-                String resultType = expressionResultType(classInspector, self, usageExpression, locals);
+                String resultType = expressionResultType(classInspector, self, usageExpression, locals, returnType);
                 setResult(resultType);
             }
 
@@ -208,10 +208,15 @@ public class Parser {
             public void visitTypeCast(ExpressionDom expression, String targetType) {
                 setResult(targetType);
             }
+
+            @Override
+            public void visitMethodBody() {
+                setResult(returnType);
+            }
         }.returnFrom(expr);
     }
 
-    public static String statementReturnType(ClassInspector classInspector, ClassDeclaration self, StatementDom stmt, Map<String, String> locals) {
+    public static String statementReturnType(ClassInspector classInspector, ClassDeclaration self, StatementDom stmt, Map<String, String> locals, String declaredReturnType) {
         String returnType = new StatementDomVisitor.Return<String>() {
             @Override
             public void visitVariableDeclaration(String type, String name) {
@@ -240,7 +245,7 @@ public class Parser {
 
             @Override
             public void visitReturnValue(ExpressionDom expression) {
-                String resultType = expressionResultType(classInspector, self, expression, locals);
+                String resultType = expressionResultType(classInspector, self, expression, locals, declaredReturnType);
                 setResult(resultType);
             }
 
@@ -568,8 +573,8 @@ public class Parser {
             }
 
             @Override
-            public StatementDomBuilder visitMethodBody(JavaParser.MethodBodyContext ctx) {
-                return Factory.methodBody();
+            public StatementDomBuilder visitMethodBodyStatement(JavaParser.MethodBodyStatementContext ctx) {
+                return Factory.methodBodyStatement();
             }
 
             @Override
@@ -607,7 +612,7 @@ public class Parser {
                     }
 
                     @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals) {
+                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
                         String type = parseTypeQualifier(classResolver, ctx.type.getText());
 
                         locals.put(name, type);
@@ -615,7 +620,7 @@ public class Parser {
                         StatementDom statement = declareVar(type, name);
 
                         if (valueBuilder != null) {
-                            statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, classInspector, locals))));
+                            statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext))));
                         }
 
                         return statement;
@@ -741,8 +746,8 @@ public class Parser {
                         public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
                             String name = ctx.ID().getText();
 
-                            return (cr, cd, ci, locals) ->
-                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals), name, locals);
+                            return (cr, cd, ci, locals, methodContext) ->
+                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext), name, locals, methodContext);
                         }
 
                         @Override
@@ -803,8 +808,8 @@ public class Parser {
                         public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
                             String name = ctx.ID().getText();
 
-                            return (cr, cd, ci, locals) ->
-                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals), name, locals);
+                            return (cr, cd, ci, locals, methodContext) ->
+                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext), name, locals, methodContext);
                         }
 
                         @Override
@@ -864,6 +869,11 @@ public class Parser {
                     .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
                 return Factory.newInstanceExpr(name, argumentBuilders);
+            }
+
+            @Override
+            public ExpressionDomBuilder visitMethodBodyExpression(JavaParser.MethodBodyExpressionContext ctx) {
+                return Factory.methodBodyExpression();
             }
 
             @Override
@@ -940,10 +950,10 @@ public class Parser {
         String name = ctx.ID().getText();
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
-        return (cr, cd, ci, locals) -> {
-            ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
-            String targetType = expressionResultType(ci, cd, target, locals);
+        return (cr, cd, ci, locals, methodContext) -> {
+            ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
+            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+            String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
             ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
             Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
@@ -955,17 +965,17 @@ public class Parser {
         String name = ctx.ID().getText();
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
-        return (cr, cd, ci, locals) -> {
-            ExpressionDom value = valueBuilder.build(cr, cd, ci, locals);
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals);
-            String targetType = expressionResultType(ci, cd, target, locals);
+        return (cr, cd, ci, locals, methodContext) -> {
+            ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
+            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+            String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
             ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
             Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
             return top(target, (newTarget, newTargetLast) -> {
                 return blockExpr(Arrays.asList(
                     assignField(newTarget, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value),
-                    fieldAccess(cr, cd, ci, newTargetLast, name, locals)
+                    fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
                 ));
             });
         };
@@ -987,8 +997,8 @@ public class Parser {
         return Factory.invocation(targetBuilder, methodName, argumentBuilders);
     }
 
-    public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals) {
-        String targetType = expressionResultType(ci, cd, target, locals);
+    public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals, MethodDeclaration methodContext) {
+        String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
         ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
 
         // Should investigate hierarchy
@@ -1387,7 +1397,7 @@ public class Parser {
                                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                                     Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                                         .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                                    StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals);
+                                    StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode));
 
                                     MethodGenerator methodGenerator = new MethodGenerator(
                                         classNode.name,

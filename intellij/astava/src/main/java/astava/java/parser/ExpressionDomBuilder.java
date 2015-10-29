@@ -9,5 +9,5 @@ public interface ExpressionDomBuilder extends DomBuilder {
     default void accept(DomBuilderVisitor visitor) {
         visitor.visitExpressionBuilder(this);
     }
-    ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals);
+    ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext);
 }
