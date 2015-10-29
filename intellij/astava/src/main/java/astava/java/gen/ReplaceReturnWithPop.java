@@ -6,6 +6,9 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.InstructionAdapter;
 
+import java.util.Hashtable;
+import java.util.Map;
+
 public class ReplaceReturnWithPop extends InstructionAdapter {
     public ReplaceReturnWithPop(GeneratorAdapter generator) {
         super(Opcodes.ASM5, generator);
@@ -27,5 +30,23 @@ public class ReplaceReturnWithPop extends InstructionAdapter {
     public void visitReturn() {
         if(returnLabel != null)
             ((GeneratorAdapter)mv).visitLabel(returnLabel);
+    }
+
+    private Map<Label, Label> origToNewLabelMap = new Hashtable<>();
+
+    private Label getNewLabel(Label origLabel) {
+        return origToNewLabelMap.computeIfAbsent(origLabel, k -> new Label());
+    }
+
+    @Override
+    public void visitLabel(Label label) {
+        Label newLabel = getNewLabel(label);
+        super.visitLabel(newLabel);
+    }
+
+    @Override
+    public void visitJumpInsn(int i, Label label) {
+        Label newLabel = getNewLabel(label);
+        super.visitJumpInsn(i, newLabel);
     }
 }

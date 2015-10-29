@@ -61,10 +61,10 @@ public class Main {
             .then(
                 factory.modClass((classNode, thisClass) -> String.format(
                     "public boolean equals(Object other) {\n" +
-                        "   if(other instanceof %1$s) {\n" +
+                        /*"   if(other instanceof %1$s) {\n" +
                         "       %1$s otherAsThis = (%1$s)other;\n" +
                         "       return %2$s;\n" +
-                        "   }\n" +
+                        "   }\n" +*/
                         "   return false;\n" +
                         "}",
                     thisClass.getName(),
@@ -72,7 +72,7 @@ public class Main {
                 )).andThen(
                     factory
                         .whenMethod("public boolean")
-                        //.whenMethod("public void")
+                            //.whenMethod("public void")
                         .and(factory.whenMethod("@" + MyNotNullAnnotation.class.getName()))
                         .then(
                             /*factory.modMethod((classNode, thisClass, methodNode) ->
@@ -144,7 +144,10 @@ public class Main {
 
                             factory.modMethod((classNode, thisClass, methodNode) ->
                                     "    java.lang.System.out.println(\"Attempting call to method...\");\n" +
+                                    "    ...\n" +
                                     "    boolean result = ...;\n" +
+                                    "    ...\n" +
+                                    "    ...\n" +
                                     "    java.lang.System.out.println(\"Call went fine :)\");\n" +
                                     "    return result;\n"
                             )

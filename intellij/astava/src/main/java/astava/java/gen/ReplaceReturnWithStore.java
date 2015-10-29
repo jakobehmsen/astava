@@ -6,6 +6,9 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.InstructionAdapter;
 
+import java.util.Hashtable;
+import java.util.Map;
+
 public class ReplaceReturnWithStore extends InstructionAdapter {
     public ReplaceReturnWithStore(GeneratorAdapter generator) {
         super(Opcodes.ASM5, generator);
@@ -44,5 +47,23 @@ public class ReplaceReturnWithStore extends InstructionAdapter {
             loadValue();
             ((GeneratorAdapter)mv).returnValue();
         }
+    }
+
+    private Map<Label, Label> origToNewLabelMap = new Hashtable<>();
+
+    private Label getNewLabel(Label origLabel) {
+        return origToNewLabelMap.computeIfAbsent(origLabel, k -> new Label());
+    }
+
+    @Override
+    public void visitLabel(Label label) {
+        Label newLabel = getNewLabel(label);
+        super.visitLabel(newLabel);
+    }
+
+    @Override
+    public void visitJumpInsn(int i, Label label) {
+        Label newLabel = getNewLabel(label);
+        super.visitJumpInsn(i, newLabel);
     }
 }

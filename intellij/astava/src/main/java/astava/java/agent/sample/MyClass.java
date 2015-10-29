@@ -34,14 +34,18 @@ public class MyClass extends MyOtherClass {
         return false;
     }
 
+    //private int i;
+
     @MyNotNullAnnotation
     public boolean someOtherMethod3(String str1, String str2) {
+        //i++;
         System.out.println("Within someOtherMethod3");
         //throw new RuntimeException("ASFSD");
         //throw new NullPointerException("ASFSD");
         //throw new IllegalArgumentException();
         //throw new EmptyStackException();
-        return false;
+        //return i % 2 == 0;
+        return true;
     }
 
     /*@MyNotNullAnnotation
