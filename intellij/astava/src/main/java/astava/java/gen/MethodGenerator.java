@@ -83,30 +83,13 @@ public class MethodGenerator {
         //labelScope.verify();
     }
 
-    private static class MethodBodyInjection {
-        public int occurrences;
-        public int withReturn;
-        public int returnVar = -1;
-        public Label returnLabel;
-        public GeneratorAdapter generator;
-    }
-
     public void populateMethodBody(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator) {
         LabelScope labelScope = new LabelScope();
-        MethodBodyInjection injectedMethodBody = new MethodBodyInjection();
-        injectedMethodBody.generator = generator;
-        populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, injectedMethodBody, new GenerateScope());
-        //if(injectedMethodBody.occurrences > 0) {
-        if(injectedMethodBody.returnLabel != null) {
-            //generator.returnValue();
-            if(!Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE)) // If method does return value
-                generator.loadLocal(injectedMethodBody.returnVar);
-            generator.returnValue();
-        }
+        populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, new GenerateScope());
         labelScope.verify();
     }
 
-    public String populateMethodStatement(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, StatementDom statement, Label breakLabel, LabelScope labelScope, MethodBodyInjection methodBodyInjection, GenerateScope scope) {
+    public String populateMethodStatement(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator, StatementDom statement, Label breakLabel, LabelScope labelScope, GenerateScope scope) {
         statement.accept(new StatementDomVisitor() {
             @Override
             public void visitVariableDeclaration(String type, String name) {
@@ -152,7 +135,7 @@ public class MethodGenerator {
             @Override
             public void visitBlock(List<StatementDom> statements) {
                 statements.forEach(s ->
-                    populateMethodStatement(methodNode, originalInstructions, generator, s, breakLabel, labelScope, methodBodyInjection, scope));
+                    populateMethodStatement(methodNode, originalInstructions, generator, s, breakLabel, labelScope, scope));
             }
 
             @Override
@@ -161,10 +144,10 @@ public class MethodGenerator {
                 Label ifFalseLabel = generator.newLabel();
 
                 String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, ifFalseLabel, false, scope);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope, methodBodyInjection, scope);
+                populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope, scope);
                 generator.goTo(endLabel);
                 generator.visitLabel(ifFalseLabel);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, methodBodyInjection, scope);
+                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, scope);
                 generator.visitLabel(endLabel);
             }
 
@@ -213,12 +196,12 @@ public class MethodGenerator {
                         switchEnd = end;
 
                         StatementDom body = keyToBodyMap.get(key);
-                        populateMethodStatement(methodNode, originalInstructions, generator, body, end, labelScope, methodBodyInjection, scope);
+                        populateMethodStatement(methodNode, originalInstructions, generator, body, end, labelScope, scope);
                     }
 
                     @Override
                     public void generateDefault() {
-                        populateMethodStatement(methodNode, originalInstructions, generator, defaultBody, switchEnd, labelScope, methodBodyInjection, scope);
+                        populateMethodStatement(methodNode, originalInstructions, generator, defaultBody, switchEnd, labelScope, scope);
                     }
                 });
             }
@@ -235,80 +218,6 @@ public class MethodGenerator {
                 originalInstructions.accept(instructionAdapter);
 
                 instructionAdapter.visitReturn();
-
-                /*
-                //methodNode.instructions.add(originalInstructions);
-
-                Label returnLabel = new Label();
-
-                //ListIterator it = originalInstructions.iterator();
-
-
-                // Replaces returns with variable administration
-                originalInstructions.accept(new InstructionAdapter(Opcodes.ASM5, generator) {
-                    public void areturn(Type type) {
-                        if(methodBodyInjection.returnVar == -1) {
-                            methodBodyInjection.returnLabel = generator.newLabel();
-                            if(!Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE)) // If method does return value
-                                methodBodyInjection.returnVar = methodBodyInjection.generator.newLocal(type);
-                            methodBodyInjection.withReturn++;
-                        }
-
-                        if(!Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE)) // If method does return value
-                            methodBodyInjection.generator.storeLocal(methodBodyInjection.returnVar);
-                        generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
-                    }
-                });
-                */
-
-                /*
-                // Strip away frames and store return value in a special local variable
-                // After strip away frames and beforevstore return value in a special local variable
-                // try with try catch in void method
-                boolean withReturn = false;
-                while(it.hasNext()) {
-                    AbstractInsnNode insn = (AbstractInsnNode)it.next();
-
-                    if(insn.getOpcode() == Opcodes.IRETURN
-                        || insn.getOpcode() == Opcodes.RETURN
-                        || insn.getOpcode() == Opcodes.ARETURN
-                        || insn.getOpcode() == Opcodes.LRETURN
-                        || insn.getOpcode() == Opcodes.DRETURN) {
-                        generator.visitJumpInsn(Opcodes.GOTO, returnLabel);
-                        if(!withReturn) {
-                            withReturn = true;
-                            methodBodyInjection.withReturn++;
-                        }
-                    } else if(insn.getOpcode() == Opcodes.F_NEW
-                        || insn.getOpcode() == Opcodes.F_FULL
-                        || insn.getOpcode() == Opcodes.F_APPEND
-                        || insn.getOpcode() == Opcodes.F_CHOP
-                        || insn.getOpcode() == Opcodes.F_SAME
-                        || insn.getOpcode() == Opcodes.F_SAME1) {
-                        // Do nothing?
-                        insn.toString();
-                        insn.accept(generator);
-
-                        insn.accept(new MethodVisitor(Opcodes.ASM5) {
-                            @Override
-                            public void visitFrame(int i, int i1, Object[] objects, int i2, Object[] objects1) {
-                                super.visitFrame(i, i1, objects, i2, objects1);
-                            }
-
-                            @Override
-                            public void visitLabel(Label label) {
-                                super.visitLabel(label);
-                            }
-                        });
-                    } else {
-
-                        insn.accept(generator);
-                    }
-                }*/
-
-                //methodBodyInjection.occurrences++;
-
-                //generator.visitLabel(returnLabel);
             }
 
             @Override
@@ -338,7 +247,7 @@ public class MethodGenerator {
                 GeneratorAdapter innerGenerator = new GeneratorAdapter(methodNode.access, m, instructionAdapter);
 
                 generator.visitLabel(tryStart);
-                populateMethodStatement(methodNode, originalInstructions, innerGenerator, tryBlock, breakLabel, labelScope, methodBodyInjection, scope);
+                populateMethodStatement(methodNode, originalInstructions, innerGenerator, tryBlock, breakLabel, labelScope, scope);
                 generator.visitLabel(tryEnd);
 
                 if(finallyBlock.isPresent()) {
@@ -352,7 +261,7 @@ public class MethodGenerator {
                     GenerateScope finallyScope = new GenerateScope(scope);
 
                     ((ReplaceReturnWithStore)instructionAdapter).visitReturn();
-                    populateMethodStatement(methodNode, originalInstructions, generator, statementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
+                    populateMethodStatement(methodNode, originalInstructions, generator, statementDom, breakLabel, labelScope, finallyScope);
                     ((ReplaceReturnWithStore)instructionAdapter).returnValue();
                 }
 
@@ -384,7 +293,7 @@ public class MethodGenerator {
 
                                 generator.visitLabel(handlerStart);
                                 generator.storeLocal(catchScope.getVarId(name));
-                                populateMethodStatement(methodNode, originalInstructions, innerGenerator, statementDom, breakLabel, labelScope, methodBodyInjection, catchScope);
+                                populateMethodStatement(methodNode, originalInstructions, innerGenerator, statementDom, breakLabel, labelScope, catchScope);
                                 generator.visitLabel(handlerEnd);
 
                                 generator.visitTryCatchBlock(tryStart, tryEnd, handlerStart, type);
@@ -402,7 +311,7 @@ public class MethodGenerator {
                                     GenerateScope finallyScope = new GenerateScope(scope);
 
                                     ((ReplaceReturnWithStore)instructionAdapter).visitReturn();
-                                    populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
+                                    populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, finallyScope);
                                     ((ReplaceReturnWithStore)instructionAdapter).returnValue();
                                 }
 
@@ -430,7 +339,7 @@ public class MethodGenerator {
 
                         generator.visitLabel(finallyHandlerStart);
                         generator.storeLocal(finallyExceptionId);
-                        populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, methodBodyInjection, finallyScope);
+                        populateMethodStatement(methodNode, originalInstructions, generator, finallyStatementDom, breakLabel, labelScope, finallyScope);
                         generator.loadLocal(finallyExceptionId);
                         generator.throwException();
 
@@ -721,13 +630,12 @@ public class MethodGenerator {
                 List<String> expressionResultTypes = new ArrayList<>();
 
                 LabelScope labelScope = new LabelScope();
-                MethodBodyInjection returnLabel = new MethodBodyInjection();
 
                 codeList.forEach(code -> {
                     code.accept(new DefaultCodeDomVisitor() {
                         @Override
                         public void visitStatement(StatementDom statementDom) {
-                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope, returnLabel, scope);
+                            populateMethodStatement(methodNode, originalInstructions, generator, statementDom, null, labelScope, scope);
                         }
 
                         @Override
@@ -738,16 +646,11 @@ public class MethodGenerator {
                     });
                 });
 
-                int expressionCount = 0;
-
-                expressionCount += expressionResultTypes.size();
-                expressionCount += returnLabel.withReturn; // Method body with a return counts as an expression
-
                 labelScope.verify();
 
-                if(expressionCount > 1)
+                if(expressionResultTypes.size() > 1)
                     throw new IllegalArgumentException("Expression block has multiple expressions.");
-                else if(expressionCount == 0)
+                else if(expressionResultTypes.size() == 0)
                     throw new IllegalArgumentException("Expression block has no expressions.");
 
                 setResult(expressionResultTypes.get(0));
@@ -813,6 +716,7 @@ public class MethodGenerator {
             @Override
             public void visitTypeCast(ExpressionDom expression, String targetType) {
                 String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope);
+                // What about type casting primitive values?
                 //generator.cast(Type.getType(resultType), Type.getType(targetType));
                 generator.checkCast(Type.getType(targetType));
                 setResult(targetType);
