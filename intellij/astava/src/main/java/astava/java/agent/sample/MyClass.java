@@ -36,8 +36,12 @@ public class MyClass extends MyOtherClass {
 
     //private int i;
 
+    private boolean b2;
+
     @MyNotNullAnnotation
     public boolean someOtherMethod3(String str1, String str2) {
+        boolean b = true;
+        b2 = true;
         //i++;
         System.out.println("Within someOtherMethod3");
         //throw new RuntimeException("ASFSD");
