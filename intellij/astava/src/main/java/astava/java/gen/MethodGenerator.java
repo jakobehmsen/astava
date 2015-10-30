@@ -213,7 +213,8 @@ public class MethodGenerator {
 
             @Override
             public void visitMethodBody() {
-                ReplaceReturnWithPop instructionAdapter = new ReplaceReturnWithPop(generator);
+                ReplaceReturnWithPop instructionAdapter = new ReplaceReturnWithPop(
+                    new GeneratorAdapter(methodNode.access, new Method(methodNode.name, methodNode.desc), new RemapLabel(generator)));
 
                 originalInstructions.accept(instructionAdapter);
 
@@ -727,7 +728,8 @@ public class MethodGenerator {
                 if(Type.getReturnType(methodNode.desc).equals(Type.VOID_TYPE))
                     throw new IllegalArgumentException("Illegal method body expression; method returns void.");
 
-                ReplaceReturnWithStore instructionAdapter = new ReplaceReturnWithStore(generator);
+                ReplaceReturnWithStore instructionAdapter = new ReplaceReturnWithStore(
+                    new GeneratorAdapter(methodNode.access, new Method(methodNode.name, methodNode.desc), new RemapLabel(generator)));
 
                 originalInstructions.accept(instructionAdapter);
 

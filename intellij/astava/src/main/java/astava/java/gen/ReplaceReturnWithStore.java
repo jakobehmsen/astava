@@ -29,12 +29,12 @@ public class ReplaceReturnWithStore extends InstructionAdapter {
 
         if(!returnType.equals(Type.VOID_TYPE))
             ((GeneratorAdapter)mv).storeLocal(returnVar);
-        ((GeneratorAdapter)mv).visitJumpInsn(Opcodes.GOTO, returnLabel);
+        mv.visitJumpInsn(Opcodes.GOTO, returnLabel);
     }
 
     public void visitReturn() {
         if(returnLabel != null)
-            ((GeneratorAdapter)mv).visitLabel(returnLabel);
+            mv.visitLabel(returnLabel);
     }
 
     public void loadValue() {
@@ -47,23 +47,5 @@ public class ReplaceReturnWithStore extends InstructionAdapter {
             loadValue();
             ((GeneratorAdapter)mv).returnValue();
         }
-    }
-
-    private Map<Label, Label> origToNewLabelMap = new Hashtable<>();
-
-    private Label getNewLabel(Label origLabel) {
-        return origToNewLabelMap.computeIfAbsent(origLabel, k -> new Label());
-    }
-
-    @Override
-    public void visitLabel(Label label) {
-        Label newLabel = getNewLabel(label);
-        super.visitLabel(newLabel);
-    }
-
-    @Override
-    public void visitJumpInsn(int i, Label label) {
-        Label newLabel = getNewLabel(label);
-        super.visitJumpInsn(i, newLabel);
     }
 }
