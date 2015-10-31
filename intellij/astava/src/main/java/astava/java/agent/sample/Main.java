@@ -3,8 +3,7 @@ package astava.java.agent.sample;
 import astava.java.agent.*;
 import astava.java.agent.Parser.ParserFactory;
 import astava.java.parser.*;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.FieldNode;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -172,6 +171,17 @@ public class Main {
                                     )
                             )*/
                         )
+                    .andThen(factory
+                        .whenMethod("")
+                        .then(factory
+                            .whenBody("this.? = ?")
+                            .then(factory.modBody(captures ->
+                                "java.lang.System.out.println(\"Assigning field " + ((FieldNode)captures.get(0)).name + "\");\n" +
+                                "...\n" +
+                                "java.lang.System.out.println(\"Assigned field " + ((FieldNode)captures.get(0)).name + "\");\n"
+                            ))
+                        )
+                    )
                 )
             )
             ,

@@ -5,6 +5,7 @@ import astava.java.Descriptor;
 import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;
 import astava.java.agent.*;
+import astava.java.gen.ByteCodeToTree;
 import astava.java.gen.MethodGenerator;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
@@ -19,6 +20,8 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -744,7 +747,7 @@ public class Parser {
 
                         @Override
                         public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
-                            String name = ctx.ID().getText();
+                            String name = ctx.identifier().ID().getText();
 
                             return (cr, cd, ci, locals, methodContext) ->
                                 fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext), name, locals, methodContext);
@@ -793,6 +796,13 @@ public class Parser {
     public ExpressionDomBuilder parseExpressionBuilder(ParserRuleContext ctx, boolean atRoot, boolean asStatement) {
         return ctx.accept(new JavaBaseVisitor<ExpressionDomBuilder>() {
             @Override
+            public ExpressionDomBuilder visitExpression(JavaParser.ExpressionContext ctx) {
+                return ctx.anyExpression == null
+                    ? parseExpressionBuilder((ParserRuleContext) ctx.getChild(0), atRoot, asStatement)
+                    : Factory.expressionCapture();
+            }
+
+            @Override
             public ExpressionDomBuilder visitLeafExpression(@NotNull JavaParser.LeafExpressionContext ctx) {
                 ExpressionDomBuilder expressionBuilder = parseExpressionBuilder((ParserRuleContext) ctx.getChild(0), atRoot, asStatement);
 
@@ -806,7 +816,7 @@ public class Parser {
 
                         @Override
                         public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
-                            String name = ctx.ID().getText();
+                            String name = ctx.identifier().ID().getText();
 
                             return (cr, cd, ci, locals, methodContext) ->
                                 fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext), name, locals, methodContext);
@@ -947,7 +957,7 @@ public class Parser {
 
 
     private StatementDomBuilder fieldAssignmentStatement(@NotNull JavaParser.FieldAssignmentContext ctx, boolean atRoot, boolean asStatement, ExpressionDomBuilder targetBuilder) {
-        String name = ctx.ID().getText();
+        String name = ctx.identifier().ID().getText();
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
         return (cr, cd, ci, locals, methodContext) -> {
@@ -962,22 +972,73 @@ public class Parser {
     }
 
     private ExpressionDomBuilder fieldAssignmentExpression(@NotNull JavaParser.FieldAssignmentContext ctx, boolean atRoot, boolean asStatement, ExpressionDomBuilder targetBuilder) {
-        String name = ctx.ID().getText();
+        String name = ctx.identifier().ID() != null ? ctx.identifier().ID().getText() : null;
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
-        return (cr, cd, ci, locals, methodContext) -> {
-            ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
-            String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
-            ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-            Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
+                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+                String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
+                ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+                Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
-            return top(target, (newTarget, newTargetLast) -> {
-                return blockExpr(Arrays.asList(
-                    assignField(newTarget, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value),
-                    fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
-                ));
-            });
+                return top(target, (newTarget, newTargetLast) -> {
+                    return blockExpr(Arrays.asList(
+                        assignField(newTarget, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value),
+                        fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
+                    ));
+                });
+            }
+
+            @Override
+            public String toString() {
+                String id = name != null ? name : "?";
+                return targetBuilder + "." + id + " = " + valueBuilder;
+            }
+
+            @Override
+            public boolean test(ExpressionDom expression, List<Object> captures) {
+                String nameTest = name;
+
+                return Util.returnFrom(false, r -> expression.accept(new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitBlock(List<CodeDom> codeList) {
+                        if(codeList.size() == 2) {
+                            boolean isMatch = Util.returnFrom(false, r -> codeList.get(0).accept(new DefaultCodeDomVisitor() {
+                                @Override
+                                public void visitStatement(StatementDom statementDom) {
+                                    statementDom.accept(new DefaultStatementDomVisitor() {
+                                        @Override
+                                        public void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value) {
+                                            r.accept(
+                                                targetBuilder.test(target, captures) &&
+                                                (nameTest != null ? nameTest.equals(name) : true) &&
+                                                valueBuilder.test(value, captures)
+                                            );
+                                        }
+                                    });
+                                }
+                            })) && Util.returnFrom(false, r -> codeList.get(1).accept(new DefaultCodeDomVisitor() {
+                                @Override
+                                public void visitExpression(ExpressionDom expressionDom) {
+                                    expressionDom.accept(new DefaultExpressionDomVisitor() {
+                                        @Override
+                                        public void visitFieldAccess(ExpressionDom target, String name, String fieldTypeName) {
+                                            r.accept(
+                                                targetBuilder.test(target, captures) &&
+                                                (nameTest != null ? nameTest.equals(name) : true)/* &&
+                                                valueBuilder.test(value, captures)*/
+                                            );
+                                        }
+                                    });
+                                }
+                            }));
+                        }
+                    }
+                }));
+            }
         };
     }
 
@@ -985,7 +1046,7 @@ public class Parser {
         List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
             .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
-        String methodName = ctx.ID().getText();
+        String methodName = ctx.identifier().ID().getText();
         return Factory.invocationExpr(targetBuilder, methodName, argumentBuilders);
     }
 
@@ -993,7 +1054,7 @@ public class Parser {
         List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
             .map(x -> parseExpressionBuilder(x, atRoot, false)).collect(Collectors.toList());
 
-        String methodName = ctx.ID().getText();
+        String methodName = ctx.identifier().ID().getText();
         return Factory.invocation(targetBuilder, methodName, argumentBuilders);
     }
 
@@ -1412,5 +1473,47 @@ public class Parser {
                 }
             }))
             .collect(Collectors.toList());
+    }
+
+    public DeclaringClassNodeExtenderElementBodyNodePredicate parseBodyPredicates() {
+        JavaParser.StatementOrExpressionContext body = parser.statementOrExpression();
+
+        DomBuilder bodyBuilder;
+
+        if(body.statement() != null) {
+            bodyBuilder = parseStatementBuilder(body.statement(), true);
+        } else if(body.expression() != null) {
+            bodyBuilder = parseExpressionBuilder(body.expression(), true);
+        } else
+            bodyBuilder = null;
+
+        return new DeclaringClassNodeExtenderElementBodyNodePredicate() {
+            @Override
+            public boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, List<Object> captures) {
+                Textifier textifier = new Textifier();
+                methodNode.accept(new TraceMethodVisitor(textifier));
+                textifier.getText().forEach(x -> System.out.print(x));
+
+                ByteCodeToTree byteCodeToTree = new ByteCodeToTree(methodNode);
+                methodNode.instructions.accept(byteCodeToTree);
+                StatementDom body = byteCodeToTree.getBlock();
+
+                return bodyBuilder.test(body, captures);
+            }
+        };
+    }
+
+    public List<DeclaringBodyNodeExtenderElement> parseBodyModifications(ClassInspector classInspector) {
+        JavaParser.StatementOrExpressionContext body = parser.statementOrExpression();
+
+        DomBuilder bodyBuilder = null;
+
+        if(body.statement() != null) {
+            bodyBuilder = parseStatementBuilder(body.statement(), true);
+        } else if(body.expression() != null) {
+            bodyBuilder = parseExpressionBuilder(body.statement(), true);
+        }
+
+        return null;
     }
 }

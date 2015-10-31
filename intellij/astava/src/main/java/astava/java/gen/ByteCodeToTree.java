@@ -1,32 +1,32 @@
 package astava.java.gen;
 
 import astava.java.DomFactory;
-import astava.java.parser.DefaultExpressionDomVisitor;
-import astava.java.parser.MethodDeclaration;
+import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.*;
-import com.sun.tools.corba.se.idl.constExpr.Expression;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.InstructionAdapter;
+import org.objectweb.asm.tree.MethodNode;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class ByteCodeToTree extends InstructionAdapter {
     // Multiple stacks for each branch?
+    private MethodNode methodNode;
     private Type returnType;
     private Stack<ExpressionDom> stack = new Stack<>();
     private ArrayList<StatementDom> statements = new ArrayList<>();
 
-    public ByteCodeToTree(Type returnType) {
+    public ByteCodeToTree(MethodNode methodNode) {
         super(Opcodes.ASM5, new MethodVisitor(Opcodes.ASM5, null) {
         });
-        this.returnType = returnType;
+        this.returnType = Type.getReturnType(methodNode.desc);
     }
 
     @Override
@@ -41,6 +41,15 @@ public class ByteCodeToTree extends InstructionAdapter {
             Arrays.asList(argumentTypes).stream().map(x -> stack.pop()).collect(Collectors.toList());
         ExpressionDom target = stack.pop();
         stack.push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
+    }
+
+    @Override
+    public void invokespecial(String owner, String name, String desc, boolean itf) {
+        Type[] argumentTypes = Type.getArgumentTypes(desc);
+        List<ExpressionDom> arguments =
+            Arrays.asList(argumentTypes).stream().map(x -> stack.pop()).collect(Collectors.toList());
+        ExpressionDom target = stack.pop();
+        stack.push(DomFactory.invokeSpecialExpr(owner, name, desc, target, arguments));
     }
 
     @Override
@@ -73,12 +82,32 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void putfield(String owner, String name, String desc) {
-
+        ExpressionDom value = stack.pop();
+        ExpressionDom target = stack.pop();
+        statements.add(DomFactory.assignField(target, name, desc, value));
     }
 
     @Override
     public void putstatic(String owner, String name, String desc) {
 
+    }
+
+    @Override
+    public void load(int i, Type type) {
+        if(Modifier.isStatic(methodNode.access)) {
+
+        } else {
+            if(i == 0) {
+                stack.push(DomFactory.self());
+            } else {
+
+            }
+        }
+    }
+
+    @Override
+    public void aload(Type type) {
+        super.aload(type);
     }
 
     @Override

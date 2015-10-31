@@ -6,7 +6,9 @@ import astava.java.agent.*;
 import astava.java.parser.*;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
+import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
@@ -15,6 +17,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ParserFactory {
@@ -135,6 +138,31 @@ public class ParserFactory {
             try {
                 String sourceCode = function.apply(classNode, thisClass, methodNode);
                 return modMethod(sourceCode).declare(classNode, thisClass, classResolver1, methodNode);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        };
+    }
+
+    public DeclaringClassNodeExtenderElementBodyNodePredicate whenBody(String sourceCode) throws IOException {
+        return new Parser(sourceCode).parseBodyPredicates();
+    }
+
+    public DeclaringBodyNodeExtenderElement modBody(Function<List<Object>, String> function) throws Exception {
+        return (classNode, thisClass, classResolver1, methodNode, captures) -> {
+            try {
+                String sourceCode = function.apply(captures);
+
+                DeclaringMethodNodeExtenderTransformer transformer =
+                    modMethod(sourceCode).declare(classNode, thisClass, classResolver1, methodNode);
+
+                return new DeclaringBodyNodeExtenderElementTransformer() {
+                    @Override
+                    public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions, List<Object> captures) {
+                        transformer.transform(classNode, thisClass, classResolver, classInspector, methodNode);
+                    }
+                };
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;

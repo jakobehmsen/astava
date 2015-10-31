@@ -1,4 +1,4 @@
-package astava.java.parser;
+package astava.tree;
 
 import astava.tree.CodeDom;
 import astava.tree.ExpressionDom;

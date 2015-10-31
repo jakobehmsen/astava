@@ -40,7 +40,6 @@ public class MyClass extends MyOtherClass {
 
     @MyNotNullAnnotation
     public boolean someOtherMethod3(String str1, String str2) {
-        boolean b = true;
         b2 = true;
         //i++;
         System.out.println("Within someOtherMethod3");

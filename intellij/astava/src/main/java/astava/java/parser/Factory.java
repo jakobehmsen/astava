@@ -25,6 +25,22 @@ public class Factory {
             public String toString() {
                 return statementBuilders.stream().map(x -> x.toString()).collect(Collectors.joining("\n"));
             }
+
+            @Override
+            public boolean test(StatementDom statement, List<Object> captures) {
+                return Util.returnFrom(r -> statement.accept(new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitBlock(List<StatementDom> statements) {
+                        r.accept(statementBuilders.size() == statements.size() &&
+                            IntStream.range(0, statementBuilders.size()).allMatch(i ->
+                                statementBuilders.get(i).test(statements.get(i), captures)));
+                    }
+                }), () -> {
+                    if(statementBuilders.size() == 1)
+                        return statementBuilders.get(0).test(statement, captures);
+                    return false;
+                });
+            }
         };
     }
 
@@ -157,6 +173,16 @@ public class Factory {
             public String toString() {
                 return "this";
             }
+
+            @Override
+            public boolean test(ExpressionDom expression, List<Object> captures) {
+                return Util.returnFrom(false, r -> expression.accept(new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitThis() {
+                        r.accept(true);
+                    }
+                }));
+            }
         };
     }
 
@@ -255,6 +281,27 @@ public class Factory {
             @Override
             public String toString() {
                 return targetBuilder + "." + name + " = " + valueBuilder;
+            }
+
+            @Override
+            public boolean test(StatementDom statement, List<Object> captures) {
+                return Util.returnFrom(false, r -> statement.accept(new DefaultStatementDomVisitor() {
+                    String nameTest = name;
+
+                    @Override
+                    public void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value) {
+                        if(!targetBuilder.test(target, captures))
+                            r.accept(false);
+
+                        if(nameTest != null && !nameTest.equals(name))
+                            r.accept(false);
+
+                        if(!valueBuilder.test(value, captures))
+                            r.accept(false);
+
+                        r.accept(true);
+                    }
+                }));
             }
         };
     }
@@ -666,6 +713,26 @@ public class Factory {
             public String toString() {
                 return "try {\n" + tryBlockBuilder + "\n}\n" +
                     catchBlockBuilders.stream().map(x -> x.toString()).collect(Collectors.joining("\n"));
+            }
+        };
+    }
+
+    public static ExpressionDomBuilder expressionCapture() {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+                throw new RuntimeException("Cannot build expression capture.");
+            }
+
+            @Override
+            public String toString() {
+                return "?";
+            }
+
+            @Override
+            public boolean test(ExpressionDom expression, List<Object> captures) {
+                captures.add(expression);
+                return true;
             }
         };
     }

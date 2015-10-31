@@ -340,6 +340,10 @@ public class DomFactory {
         return invokeExpr(Invocation.VIRTUAL, type, name, methodDescriptor, target, arguments);
     }
 
+    public static ExpressionDom invokeSpecialExpr(String type, String name, String methodDescriptor, ExpressionDom target, List<ExpressionDom> arguments) {
+        return invokeExpr(Invocation.SPECIAL, type, name, methodDescriptor, target, arguments);
+    }
+
     public static ExpressionDom invokeExpr(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
         return v -> v.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
     }

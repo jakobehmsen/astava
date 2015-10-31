@@ -11,10 +11,10 @@ methodDefinition:
     (SEMI_COLON | OPEN_BRA statement* CLOSE_BRA);
 parameters: OPEN_PAR (parameter (COMMA parameter)*)? CLOSE_PAR;
 parameter: type=typeQualifier name=ID;
-typeQualifier: ID (DOT ID)*;
+typeQualifier: ID (DOT ID)* | QUESTION_MARK;
 modifiers: accessModifier? KW_ABSTRACT? KW_STATIC?;
 accessModifier: KW_PUBLIC | KW_PRIVATE | KW_PROTECTED;
-statement: nonDelimitedStatement | delimitedStatement SEMI_COLON;
+statement: nonDelimitedStatement | (anyStatement=QUESTION_MARK | delimitedStatement SEMI_COLON);
 
 nonDelimitedStatement: ifElseStatement | tryCatchStatement | methodBodyStatement;
 ifElseStatement: 
@@ -36,7 +36,7 @@ returnStatement: KW_RETURN expression?;
 variableDeclaration: type=typeQualifier name=ID (OP_ASSIGN value=expression)?;
 
 // Expression precedence following http://www.cs.bilkent.edu.tr/~guvenir/courses/CS101/op_precedence.html
-expression: assignment | expression4;
+expression: assignment | expression4 | anyExpression=QUESTION_MARK;
 assignment: name=ID OP_ASSIGN value=expression;
 
 expression4: expressionLogicalAnd | expression8;
@@ -58,10 +58,11 @@ leafExpression:
         trueLiteral | falseLiteral | newInstance | methodBodyExpression
     )
     chainElement*;
-invocation: ID arguments;
+invocation: identifier arguments;
 chainElement: DOT (fieldAssignment | fieldAccess | invocation);
-fieldAssignment: ID OP_ASSIGN value=expression;
-fieldAccess: ID;
+fieldAssignment: identifier OP_ASSIGN value=expression;
+fieldAccess: identifier;
+identifier: ID | QUESTION_MARK;
 ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR && _input.LT(2).getType() != OP_ASSIGN}? DOT ID)*;
 intLiteral: INT;
 stringLiteral: STRING;
@@ -133,6 +134,9 @@ methodModificationAnnotation:
 methodModificationBody:
     statement+;
 
+statementOrExpression: statement | expression;
+
+QUESTION_MARK: '?';
 AMPERSAND: '&&';
 AT: '@';
 OP_ASSIGN: '=';

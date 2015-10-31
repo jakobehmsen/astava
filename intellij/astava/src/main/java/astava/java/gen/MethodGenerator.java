@@ -86,7 +86,7 @@ public class MethodGenerator {
     }
 
     public void populateMethodBody(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator) {
-        if(originalInstructions.size() > 0) {
+        /*if(originalInstructions.size() > 0) {
             Textifier textifier = new Textifier();
             originalInstructions.accept(new TraceMethodVisitor(textifier));
             textifier.getText().forEach(x -> System.out.print(x));
@@ -94,7 +94,7 @@ public class MethodGenerator {
             ByteCodeToTree byteCodeToTree = new ByteCodeToTree(Type.getReturnType(methodNode.desc));
             originalInstructions.accept(byteCodeToTree);
             StatementDom block = byteCodeToTree.getBlock();
-        }
+        }*/
 
         LabelScope labelScope = new LabelScope();
         populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, new GenerateScope());
