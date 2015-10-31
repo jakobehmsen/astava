@@ -3,9 +3,8 @@ package astava.java.gen;
 import astava.java.DomFactory;
 import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.*;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
+import com.sun.tools.corba.se.idl.constExpr.Expression;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -17,6 +16,13 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class ByteCodeToTree extends InstructionAdapter {
+    private AsStatementOrExpression asStatementOrExpression;
+
+    private interface AsStatementOrExpression {
+        StatementDom toStatement();
+        ExpressionDom toExpression();
+    }
+
     // Multiple stacks for each branch?
     private MethodNode methodNode;
     private Type returnType;
@@ -26,7 +32,106 @@ public class ByteCodeToTree extends InstructionAdapter {
     public ByteCodeToTree(MethodNode methodNode) {
         super(Opcodes.ASM5, new MethodVisitor(Opcodes.ASM5, null) {
         });
+        this.methodNode = methodNode;
         this.returnType = Type.getReturnType(methodNode.desc);
+    }
+
+    private void checkDecideStatementOrExpression() {
+        /*if(asStatementOrExpression != null) {
+            stack.add(asStatementOrExpression.toExpression());
+            asStatementOrExpression = null;
+        }*/
+    }
+
+    @Override
+    public void visitInsn(int i) {
+        checkDecideStatementOrExpression();
+
+        super.visitInsn(i);
+    }
+
+    @Override
+    public void visitTypeInsn(int i, String s) {
+        checkDecideStatementOrExpression();
+
+        super.visitTypeInsn(i, s);
+    }
+
+    @Override
+    public void visitIntInsn(int i, int i1) {
+        checkDecideStatementOrExpression();
+
+        super.visitIntInsn(i, i1);
+    }
+
+    @Override
+    public void visitFieldInsn(int i, String s, String s1, String s2) {
+        checkDecideStatementOrExpression();
+
+        super.visitFieldInsn(i, s, s1, s2);
+    }
+
+    @Override
+    public void visitIincInsn(int i, int i1) {
+        checkDecideStatementOrExpression();
+
+        super.visitIincInsn(i, i1);
+    }
+
+    @Override
+    public void visitInvokeDynamicInsn(String s, String s1, Handle handle, Object... objects) {
+        checkDecideStatementOrExpression();
+
+        super.visitInvokeDynamicInsn(s, s1, handle, objects);
+    }
+
+    @Override
+    public void visitJumpInsn(int i, Label label) {
+        checkDecideStatementOrExpression();
+
+        super.visitJumpInsn(i, label);
+    }
+
+    @Override
+    public void visitLdcInsn(Object o) {
+        checkDecideStatementOrExpression();
+
+        super.visitLdcInsn(o);
+    }
+
+    @Override
+    public void visitMethodInsn(int i, String s, String s1, String s2, boolean b) {
+        checkDecideStatementOrExpression();
+
+        super.visitMethodInsn(i, s, s1, s2, b);
+    }
+
+    @Override
+    public void visitVarInsn(int i, int i1) {
+        checkDecideStatementOrExpression();
+
+        super.visitVarInsn(i, i1);
+    }
+
+    @Override
+    public void visitLookupSwitchInsn(Label label, int[] ints, Label[] labels) {
+        checkDecideStatementOrExpression();
+
+        super.visitLookupSwitchInsn(label, ints, labels);
+    }
+
+    @Override
+    public void visitTableSwitchInsn(int i, int i1, Label label, Label... labels) {
+        checkDecideStatementOrExpression();
+
+        super.visitTableSwitchInsn(i, i1, label, labels);
+    }
+
+    @Override
+    public void visitMultiANewArrayInsn(String s, int i) {
+        checkDecideStatementOrExpression();
+
+        super.visitMultiANewArrayInsn(s, i);
     }
 
     @Override
@@ -40,7 +145,10 @@ public class ByteCodeToTree extends InstructionAdapter {
         List<ExpressionDom> arguments =
             Arrays.asList(argumentTypes).stream().map(x -> stack.pop()).collect(Collectors.toList());
         ExpressionDom target = stack.pop();
-        stack.push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
+        if(Type.getReturnType(desc).equals(Type.VOID_TYPE))
+            statements.add(DomFactory.invokeVirtual(owner, name, desc, target, arguments));
+        else
+            stack.push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
     }
 
     @Override
@@ -49,7 +157,11 @@ public class ByteCodeToTree extends InstructionAdapter {
         List<ExpressionDom> arguments =
             Arrays.asList(argumentTypes).stream().map(x -> stack.pop()).collect(Collectors.toList());
         ExpressionDom target = stack.pop();
-        stack.push(DomFactory.invokeSpecialExpr(owner, name, desc, target, arguments));
+
+        if(Type.getReturnType(desc).equals(Type.VOID_TYPE))
+            statements.add(DomFactory.invokeSpecial(owner, name, desc, target, arguments));
+        else
+            stack.push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
     }
 
     @Override
@@ -72,6 +184,8 @@ public class ByteCodeToTree extends InstructionAdapter {
     public void pop() {
         // An expression as statement? Always? When not?
         ExpressionDom expression = stack.pop();
+
+        // E.g. invocation expressions are translated into their statement counterpart
         statements.add(expressionToStatement(expression));
     }
 
@@ -82,6 +196,7 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void putfield(String owner, String name, String desc) {
+        // If getfield rightafter (i.e. last statement is putfield), then convert into putfield expression
         ExpressionDom value = stack.pop();
         ExpressionDom target = stack.pop();
         statements.add(DomFactory.assignField(target, name, desc, value));
@@ -136,11 +251,15 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void areturn(Type type) {
-        ExpressionDom expression = stack.pop();
+        if(type.equals(Type.VOID_TYPE)) {
+            statements.add(DomFactory.ret());
+        } else {
+            ExpressionDom expression = stack.pop();
 
-        expression = ensureType(returnType, expression);
+            expression = ensureType(returnType, expression);
 
-        statements.add(DomFactory.ret(expression));
+            statements.add(DomFactory.ret(expression));
+        }
     }
 
     private ExpressionDom ensureType(Type type, ExpressionDom expression) {

@@ -27,6 +27,11 @@ public class Factory {
             }
 
             @Override
+            public boolean test(CodeDom code, List<Object> captures) {
+                return false;
+            }
+
+            @Override
             public boolean test(StatementDom statement, List<Object> captures) {
                 return Util.returnFrom(r -> statement.accept(new DefaultStatementDomVisitor() {
                     @Override

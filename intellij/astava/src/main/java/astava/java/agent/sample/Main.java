@@ -172,9 +172,10 @@ public class Main {
                             )*/
                         )
                     .andThen(factory
-                        .whenMethod("")
+                        //.whenMethod("")
+                        .whenMethod("public boolean someOtherMethod3")
                         .then(factory
-                            .whenBody("this.? = ?")
+                            .whenBody("this.? = ?;")
                             .then(factory.modBody(captures ->
                                 "java.lang.System.out.println(\"Assigning field " + ((FieldNode)captures.get(0)).name + "\");\n" +
                                 "...\n" +

@@ -957,17 +957,58 @@ public class Parser {
 
 
     private StatementDomBuilder fieldAssignmentStatement(@NotNull JavaParser.FieldAssignmentContext ctx, boolean atRoot, boolean asStatement, ExpressionDomBuilder targetBuilder) {
-        String name = ctx.identifier().ID().getText();
+        String name = ctx.identifier().ID() != null ? ctx.identifier().ID().getText() : null;
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
-        return (cr, cd, ci, locals, methodContext) -> {
-            ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
-            ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
-            String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
-            ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-            Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+        return new StatementDomBuilder() {
+            @Override
+            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
+                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+                String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
+                ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+                Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
-            return assignField(target, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+                return assignField(target, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+            }
+
+            @Override
+            public String toString() {
+                String id = name != null ? name : "?";
+                return targetBuilder + "." + id + " = " + valueBuilder + ";";
+            }
+
+            @Override
+            public boolean test(StatementDom statement, List<Object> captures) {
+                String nameTest = name;
+
+                return Util.returnFrom(true, r -> statement.accept(new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitBlock(List<StatementDom> statements) {
+                        statements.forEach(x -> x.accept(this));
+                    }
+
+                    private boolean testName(String name) {
+                        if(nameTest == null) {
+                            captures.add(name);
+                            return true;
+                        }
+
+                        return nameTest.equals(name);
+                    }
+
+                    @Override
+                    public void visitFieldAssignment(ExpressionDom target, String name, String type, ExpressionDom value) {
+                        if(targetBuilder.test(target, captures) &&
+                            testName(name) &&
+                            valueBuilder.test(value, captures)) {
+                            // For each match, the replacement code should be injected and should only replace the matched
+                            // code
+                            r.accept(true);
+                        }
+                    }
+                }));
+            }
         };
     }
 
