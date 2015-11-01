@@ -1,12 +1,18 @@
 package astava.java.agent;
 
+import astava.java.gen.ByteCodeToTree;
 import astava.java.parser.ClassInspector;
 import astava.java.parser.ClassResolver;
 import astava.java.parser.MutableClassDeclaration;
+import astava.tree.CodeDom;
+import astava.tree.StatementDom;
+import astava.tree.Util;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +21,32 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
     default DeclaringMethodNodeExtenderElement then(DeclaringBodyNodeExtenderElement element) {
         return (classNode, thisClass, classResolver, methodNode) -> {
             ArrayList<Object> captures = new ArrayList<>();
+
+            Textifier textifier = new Textifier();
+            methodNode.accept(new TraceMethodVisitor(textifier));
+            textifier.getText().forEach(x -> System.out.print(x));
+
+            ByteCodeToTree byteCodeToTree = new ByteCodeToTree(methodNode);
+            methodNode.instructions.accept(byteCodeToTree);
+            StatementDom body = byteCodeToTree.getBlock();
+
+            return new DeclaringMethodNodeExtenderTransformer() {
+                @Override
+                public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
+                    CodeDom replacement = Util.<CodeDom>map(body, (traverser, dom) -> {
+                        //return map((BiFunction<Function<CodeDom, CodeDom>, CodeDom, CodeDom>)traverser, dom, captures);
+                        if (test(classNode, thisClass, classResolver, methodNode, dom, captures)) {
+                            return element.map(dom, captures);
+                        } else
+                            return traverser.apply(dom);
+                    });
+
+
+                }
+            };
+
+            /*return bodyBuilder.test(body, captures);
+
             if(this.test(classNode, thisClass, classResolver, methodNode, captures)) {
                 DeclaringBodyNodeExtenderElementTransformer transformer = element.declare(classNode, thisClass, classResolver, methodNode, captures);
 
@@ -28,8 +60,9 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
 
             return (classNode1, thisClass1, classResolver1, classInspector, methodNode1, generator, originalInstructions) -> {
 
-            };
+            };*/
         };
     }
-    boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, List<Object> captures);
+    boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures);
+    //CodeDom map(BiFunction<Function<CodeDom, CodeDom>, CodeDom, CodeDom> traverser, CodeDom dom, List<Object> captures);
 }

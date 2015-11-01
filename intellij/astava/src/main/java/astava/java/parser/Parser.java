@@ -982,12 +982,7 @@ public class Parser {
             public boolean test(StatementDom statement, List<Object> captures) {
                 String nameTest = name;
 
-                return Util.returnFrom(true, r -> statement.accept(new DefaultStatementDomVisitor() {
-                    @Override
-                    public void visitBlock(List<StatementDom> statements) {
-                        statements.forEach(x -> x.accept(this));
-                    }
-
+                return Util.returnFrom(false, r -> statement.accept(new DefaultStatementDomVisitor() {
                     private boolean testName(String name) {
                         if(nameTest == null) {
                             captures.add(name);
@@ -1517,18 +1512,27 @@ public class Parser {
     }
 
     public DeclaringClassNodeExtenderElementBodyNodePredicate parseBodyPredicates() {
-        JavaParser.StatementOrExpressionContext body = parser.statementOrExpression();
+        JavaParser.StatementsOrExpressionContext body = parser.statementsOrExpression();
 
         DomBuilder bodyBuilder;
 
-        if(body.statement() != null) {
-            bodyBuilder = parseStatementBuilder(body.statement(), true);
+        if(body.statement() != null && body.statement().size() == 1) {
+            bodyBuilder = parseStatementBuilder(body.statement().get(0), true);
+        } else if(body.statement() != null && body.statement().size() > 1) {
+            bodyBuilder = parseBlock(body.statement());
         } else if(body.expression() != null) {
             bodyBuilder = parseExpressionBuilder(body.expression(), true);
         } else
             bodyBuilder = null;
 
         return new DeclaringClassNodeExtenderElementBodyNodePredicate() {
+            @Override
+            public boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures) {
+                return bodyBuilder.test(dom, captures);
+            }
+        };
+
+        /*return new DeclaringClassNodeExtenderElementBodyNodePredicate() {
             @Override
             public boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, List<Object> captures) {
                 Textifier textifier = new Textifier();
@@ -1539,22 +1543,37 @@ public class Parser {
                 methodNode.instructions.accept(byteCodeToTree);
                 StatementDom body = byteCodeToTree.getBlock();
 
+                Util.<CodeDom>map(body, (traverser, dom) -> {
+                    if(bodyBuilder.test(dom, captures)) {
+
+                    } else
+                        return dom;
+                });
+
                 return bodyBuilder.test(body, captures);
             }
-        };
+        };*/
     }
 
-    public List<DeclaringBodyNodeExtenderElement> parseBodyModifications(ClassInspector classInspector) {
-        JavaParser.StatementOrExpressionContext body = parser.statementOrExpression();
+    public DeclaringBodyNodeExtenderElement parseBodyModifications(ClassInspector classInspector, List<Object> captures) {
+        JavaParser.StatementsOrExpressionContext body = parser.statementsOrExpression();
 
-        DomBuilder bodyBuilder = null;
+        DomBuilder bodyBuilder;
 
-        if(body.statement() != null) {
-            bodyBuilder = parseStatementBuilder(body.statement(), true);
+        if(body.statement() != null && body.statement().size() == 1) {
+            bodyBuilder = parseStatementBuilder(body.statement().get(0), true);
+        } else if(body.statement() != null && body.statement().size() > 0) {
+            bodyBuilder = parseBlock(body.statement());
         } else if(body.expression() != null) {
-            bodyBuilder = parseExpressionBuilder(body.statement(), true);
-        }
+            bodyBuilder = parseExpressionBuilder(body.expression(), true);
+        } else
+            bodyBuilder = null;
 
-        return null;
+        return new DeclaringBodyNodeExtenderElement() {
+            @Override
+            public CodeDom map(CodeDom dom, List<Object> captures) {
+                return bodyBuilder.map(dom, captures);
+            }
+        };
     }
 }

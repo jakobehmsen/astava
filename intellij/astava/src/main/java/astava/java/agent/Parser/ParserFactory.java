@@ -4,6 +4,7 @@ import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.agent.*;
 import astava.java.parser.*;
+import astava.tree.CodeDom;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
 import org.objectweb.asm.commons.GeneratorAdapter;
@@ -149,22 +150,31 @@ public class ParserFactory {
         return new Parser(sourceCode).parseBodyPredicates();
     }
 
-    public DeclaringBodyNodeExtenderElement modBody(Function<List<Object>, String> function) throws Exception {
-        return (classNode, thisClass, classResolver1, methodNode, captures) -> {
-            try {
-                String sourceCode = function.apply(captures);
+    public DeclaringBodyNodeExtenderElement modBody(String sourceCode) throws IOException {
+        //return new Parser(sourceCode).parseBodyModifications(classInspector);
+        return null;
+    }
 
-                DeclaringMethodNodeExtenderTransformer transformer =
-                    modMethod(sourceCode).declare(classNode, thisClass, classResolver1, methodNode);
+    public DeclaringBodyNodeExtenderElement modBody(Function<List<Object>, SourceCode> function) throws IOException {
+        return new DeclaringBodyNodeExtenderElement() {
+            @Override
+            public CodeDom map(CodeDom dom, List<Object> captures) {
+                SourceCode sourceCode = function.apply(captures);
 
-                return new DeclaringBodyNodeExtenderElementTransformer() {
-                    @Override
-                    public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions, List<Object> captures) {
-                        transformer.transform(classNode, thisClass, classResolver, classInspector, methodNode);
-                    }
-                };
-            } catch (Exception e) {
-                e.printStackTrace();
+                try {
+                    return new Parser(sourceCode.text)
+                        .parseBodyModifications(classInspector, sourceCode.captures)
+                        .map(dom, captures);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                /*try {
+                    return modBody(sourceCode).map(dom, captures);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }*/
+
                 return null;
             }
         };

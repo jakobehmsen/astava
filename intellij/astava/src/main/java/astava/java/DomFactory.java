@@ -274,7 +274,24 @@ public class DomFactory {
     }
 
     public static StatementDom block(List<StatementDom> statements) {
-        return v -> v.visitBlock(statements);
+        return new StatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitBlock(statements);
+            }
+
+            @Override
+            public List<? extends Dom> getChildren() {
+                return statements;
+            }
+
+            @Override
+            public Dom setChildren(List<? extends Dom> children) {
+                return block((List<StatementDom>)children);
+            }
+        };
+
+        //return v -> v.visitBlock(statements);
     }
 
     // At most one expression dom

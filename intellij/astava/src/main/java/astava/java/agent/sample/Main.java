@@ -2,6 +2,7 @@ package astava.java.agent.sample;
 
 import astava.java.agent.*;
 import astava.java.agent.Parser.ParserFactory;
+import astava.java.agent.Parser.SourceCode;
 import astava.java.parser.*;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -176,11 +177,11 @@ public class Main {
                         .whenMethod("public boolean someOtherMethod3")
                         .then(factory
                             .whenBody("this.? = ?;")
-                            .then(factory.modBody(captures ->
-                                "java.lang.System.out.println(\"Assigning field " + ((FieldNode)captures.get(0)).name + "\");\n" +
-                                "...\n" +
-                                "java.lang.System.out.println(\"Assigned field " + ((FieldNode)captures.get(0)).name + "\");\n"
-                            ))
+                            .then(factory.modBody(captures -> new SourceCode(
+                                "java.lang.System.out.println(\"Assigning field " + captures.get(0) + "\");\n" +
+                                "this." + captures.get(0) + " = ?;\n" +
+                                "java.lang.System.out.println(\"Assigned field " + captures.get(0) + "\");\n"
+                            , captures.get(1))))
                         )
                     )
                 )

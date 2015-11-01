@@ -134,7 +134,7 @@ methodModificationAnnotation:
 methodModificationBody:
     statement+;
 
-statementOrExpression: statement | expression;
+statementsOrExpression: statement* | expression;
 
 QUESTION_MARK: '?';
 AMPERSAND: '&&';

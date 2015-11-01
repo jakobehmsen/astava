@@ -12,4 +12,8 @@ public interface DomBuilder extends Serializable {
     default boolean test(CodeDom code, List<Object> captures) {
         return false;
     }
+
+    default CodeDom map(CodeDom dom, List<Object> captures) {
+        return dom;
+    }
 }
