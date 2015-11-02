@@ -7,16 +7,11 @@ import astava.java.parser.*;
 import astava.tree.CodeDom;
 import astava.tree.FieldDom;
 import astava.tree.MethodDom;
-import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -73,9 +68,10 @@ public class ParserFactory {
 
                     @Override
                     public void visitInitializer(StatementDomBuilder statement) {
+                        List<Object> captures = Collections.emptyList();
                         setResult(MethodNodeExtenderFactory.append(methodNode -> DomFactory.block(Arrays.asList(
                             // How to add initialization after method body? Method body seems to return
-                            statement.build(classResolver1, thisClass1, classInspector1, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode))
+                            statement.build(classResolver1, thisClass1, classInspector1, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode), captures)
                         ))).when((c, cr, ci, m) -> m.name.equals("<init>")));
                     }
 
@@ -158,13 +154,13 @@ public class ParserFactory {
     public DeclaringBodyNodeExtenderElement modBody(Function<List<Object>, SourceCode> function) throws IOException {
         return new DeclaringBodyNodeExtenderElement() {
             @Override
-            public CodeDom map(CodeDom dom, List<Object> captures) {
+            public CodeDom map(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures) {
                 SourceCode sourceCode = function.apply(captures);
 
                 try {
                     return new Parser(sourceCode.text)
                         .parseBodyModifications(classInspector, sourceCode.captures)
-                        .map(dom, captures);
+                        .map(classNode, thisClass, classResolver, methodNode, dom, sourceCode.captures);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

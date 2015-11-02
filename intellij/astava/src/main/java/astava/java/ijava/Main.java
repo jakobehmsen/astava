@@ -397,7 +397,7 @@ public class Main {
 
         Hashtable<String, String> locals = new Hashtable<>();
         locals.put("self", rootClassDeclaration.getName());
-        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, ijavaClassLoader, locals, null);
+        StatementDom stmt = statementDomBuilder.build(classResolver, rootClassDeclaration, ijavaClassLoader, locals, null, null);
 
         String exprResultType = Parser.statementReturnType(ijavaClassLoader, rootClassDeclaration, stmt, locals, null);
 

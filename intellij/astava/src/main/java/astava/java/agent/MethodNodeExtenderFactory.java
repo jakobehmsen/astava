@@ -13,13 +13,10 @@ import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.ListIterator;
 
 public class MethodNodeExtenderFactory {
     public static DeclaringMethodNodeExtenderTransformer sequence(DeclaringMethodNodeExtenderTransformer... extenders) {
@@ -146,7 +143,8 @@ public class MethodNodeExtenderFactory {
             public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                 Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                     .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode));
+                List<Object> captures = Collections.emptyList();
+                StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode), captures);
                 return MethodNodeExtenderFactory.prepend(statement);
             }
         };

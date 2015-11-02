@@ -5,7 +5,6 @@ import astava.java.Descriptor;
 import astava.java.LogicalOperator;
 import astava.java.RelationalOperator;
 import astava.java.agent.*;
-import astava.java.gen.ByteCodeToTree;
 import astava.java.gen.MethodGenerator;
 import astava.java.parser.antlr4.JavaBaseVisitor;
 import astava.java.parser.antlr4.JavaLexer;
@@ -20,8 +19,6 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -615,7 +612,7 @@ public class Parser {
                     }
 
                     @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                         String type = parseTypeQualifier(classResolver, ctx.type.getText());
 
                         locals.put(name, type);
@@ -623,7 +620,7 @@ public class Parser {
                         StatementDom statement = declareVar(type, name);
 
                         if (valueBuilder != null) {
-                            statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext))));
+                            statement = block(Arrays.asList(statement, assignVar(name, valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures))));
                         }
 
                         return statement;
@@ -749,8 +746,8 @@ public class Parser {
                         public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
                             String name = ctx.identifier().ID().getText();
 
-                            return (cr, cd, ci, locals, methodContext) ->
-                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext), name, locals, methodContext);
+                            return (cr, cd, ci, locals, methodContext, captures) ->
+                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext, captures), name, locals, methodContext);
                         }
 
                         @Override
@@ -818,8 +815,8 @@ public class Parser {
                         public ExpressionDomBuilder visitFieldAccess(@NotNull JavaParser.FieldAccessContext ctx) {
                             String name = ctx.identifier().ID().getText();
 
-                            return (cr, cd, ci, locals, methodContext) ->
-                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext), name, locals, methodContext);
+                            return (cr, cd, ci, locals, methodContext, captures) ->
+                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext, captures), name, locals, methodContext);
                         }
 
                         @Override
@@ -962,14 +959,14 @@ public class Parser {
 
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
-                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext, captures);
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
                 Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
 
-                return assignField(target, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value);
+                return assignField(target, fieldDeclaration.get().getName(), Descriptor.get(fieldDeclaration.get().getTypeName()), value);
             }
 
             @Override
@@ -1013,9 +1010,9 @@ public class Parser {
 
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
-                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext, captures);
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
                 Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
@@ -1494,7 +1491,8 @@ public class Parser {
                                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                                     Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                                         .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                                    StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode));
+                                    List<Object> captures = Collections.emptyList();
+                                    StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode), captures);
 
                                     MethodGenerator methodGenerator = new MethodGenerator(
                                         classNode.name,
@@ -1558,22 +1556,28 @@ public class Parser {
     public DeclaringBodyNodeExtenderElement parseBodyModifications(ClassInspector classInspector, List<Object> captures) {
         JavaParser.StatementsOrExpressionContext body = parser.statementsOrExpression();
 
-        DomBuilder bodyBuilder;
+        //DomBuilder bodyBuilder;
 
         if(body.statement() != null && body.statement().size() == 1) {
-            bodyBuilder = parseStatementBuilder(body.statement().get(0), true);
-        } else if(body.statement() != null && body.statement().size() > 0) {
-            bodyBuilder = parseBlock(body.statement());
-        } else if(body.expression() != null) {
-            bodyBuilder = parseExpressionBuilder(body.expression(), true);
-        } else
-            bodyBuilder = null;
+            StatementDomBuilder bodyBuilder = parseStatementBuilder(body.statement().get(0), true);
 
-        return new DeclaringBodyNodeExtenderElement() {
-            @Override
-            public CodeDom map(CodeDom dom, List<Object> captures) {
-                return bodyBuilder.map(dom, captures);
-            }
-        };
+            return (classNode, thisClass, classResolver, methodNode, dom, captures1) -> {
+                return bodyBuilder.build(classResolver, thisClass, classInspector, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode), captures1);
+            };
+        } else if(body.statement() != null && body.statement().size() > 0) {
+            StatementDomBuilder bodyBuilder = parseBlock(body.statement());
+
+            return (classNode, thisClass, classResolver, methodNode, dom, captures1) -> {
+                return bodyBuilder.build(classResolver, thisClass, classInspector, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode), captures1);
+            };
+        } else if(body.expression() != null) {
+            ExpressionDomBuilder bodyBuilder = parseExpressionBuilder(body.expression(), true);
+
+            return (classNode, thisClass, classResolver, methodNode, dom, captures1) -> {
+                return bodyBuilder.build(classResolver, thisClass, classInspector, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode), captures1);
+            };
+        }
+
+        return null;
     }
 }

@@ -20,6 +20,6 @@ public interface DeclaringBodyNodeExtenderElement {
     }
 
     //DeclaringBodyNodeExtenderElementTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, List<Object> captures);
-    CodeDom map(CodeDom dom, List<Object> captures);
+    CodeDom map(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures);
     //void transform();
 }

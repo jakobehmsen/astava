@@ -15,9 +15,9 @@ public class Factory {
     public static StatementDomBuilder block(List<StatementDomBuilder> statementBuilders) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 List<StatementDom> statements =
-                    statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals, methodContext)).collect(Collectors.toList());
+                    statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures)).collect(Collectors.toList());
                 return DomFactory.block(statements);
             }
 
@@ -46,13 +46,21 @@ public class Factory {
                     return false;
                 });
             }
+
+            /*@Override
+            public CodeDom map(List<Object> captures) {
+                return DomFactory.block(statementBuilders.stream()
+                    .map(x ->
+                        (StatementDom) x.map(captures))
+                    .collect(Collectors.toList()));
+            }*/
         };
     }
 
     public static StatementDomBuilder ret() {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.ret();
             }
 
@@ -66,8 +74,8 @@ public class Factory {
     public static StatementDomBuilder ret(ExpressionDomBuilder expression) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                return DomFactory.ret(expression.build(classResolver, classDeclaration, classInspector, locals, methodContext));
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                return DomFactory.ret(expression.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures));
             }
 
             @Override
@@ -80,7 +88,7 @@ public class Factory {
     public static ExpressionDomBuilder literal(int value) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.literal(value);
             }
 
@@ -94,7 +102,7 @@ public class Factory {
     public static ExpressionDomBuilder literal(String value) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.literal(value);
             }
 
@@ -108,7 +116,7 @@ public class Factory {
     public static ExpressionDomBuilder literal(boolean value) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.literal(value);
             }
 
@@ -156,7 +164,7 @@ public class Factory {
     public static ExpressionDomBuilder nil() {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.nil();
             }
 
@@ -170,7 +178,7 @@ public class Factory {
     public static ExpressionDomBuilder self() {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.self();
             }
 
@@ -194,7 +202,7 @@ public class Factory {
     public static MethodDomBuilder method(int modifier, String name, List<ParameterInfo> tmpParameters, String returnTypeName, StatementDom body) {
         return method(modifier, name, tmpParameters, returnTypeName, Arrays.asList(new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return body;
             }
         }));
@@ -239,8 +247,9 @@ public class Factory {
                         locals.putAll(parameters.stream().collect(Collectors.toMap(x -> x.name, x -> x.descriptor)));
                         //locals.addAll(parameters.stream().map(x -> x.name).collect(Collectors.toList()));
                         //List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
+                        ArrayList<Object> captures = new ArrayList<>();
                         statementBuilders.forEach(x -> x.appendLocals(locals));
-                        List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals, this)).collect(Collectors.toList());
+                        List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals, this, captures)).collect(Collectors.toList());
                         StatementDom body = DomFactory.block(statements);
 
                         String returnType = Descriptor.get(returnTypeName);
@@ -274,9 +283,9 @@ public class Factory {
     public static StatementDomBuilder assignField(ExpressionDomBuilder targetBuilder, String name, ExpressionDomBuilder valueBuilder) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
-                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
+                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                 String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
@@ -314,7 +323,7 @@ public class Factory {
     public static ExpressionDomBuilder ambiguousName(List<String> nameParts) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return Parser.parseAmbiguousName(nameParts, cr, cd,
                     name -> {
                         if(locals.containsKey(name)) {
@@ -371,8 +380,8 @@ public class Factory {
             }
 
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom value = valueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 Optional<FieldDeclaration> fieldDeclaration = classDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                 if (fieldDeclaration.isPresent()) {
@@ -397,8 +406,8 @@ public class Factory {
     public static ExpressionDomBuilder assignExpr(String name, ExpressionDomBuilder valueBuilder) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext);
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext, captures);
 
                 Optional<FieldDeclaration> fieldDeclaration = cd.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
                 if (fieldDeclaration.isPresent()) {
@@ -436,9 +445,9 @@ public class Factory {
     public static ExpressionDomBuilder newInstanceExpr(String name, List<ExpressionDomBuilder> argumentBuilders) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 List<ExpressionDom> arguments = argumentBuilders.stream()
-                    .map(x -> x.build(cr, cd, ci, locals, methodContext)).collect(Collectors.toList());
+                    .map(x -> x.build(cr, cd, ci, locals, methodContext, captures)).collect(Collectors.toList());
 
                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(name);
 
@@ -477,10 +486,10 @@ public class Factory {
     public static StatementDomBuilder invocation(ExpressionDomBuilder targetBuilder, String methodName, List<ExpressionDomBuilder> argumentBuilders) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 List<ExpressionDom> arguments = argumentBuilders.stream()
-                    .map(x -> x.build(cr, cd, ci, locals, methodContext)).collect(Collectors.toList());
+                    .map(x -> x.build(cr, cd, ci, locals, methodContext, captures)).collect(Collectors.toList());
 
                 String targetType = Parser.expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
@@ -511,16 +520,21 @@ public class Factory {
             public String toString() {
                 return targetBuilder + "." + methodName + "(" + argumentBuilders.stream().map(x -> x.toString()).collect(Collectors.joining(", ")) + ")";
             }
+
+            /*@Override
+            public CodeDom map(List<Object> captures) {
+                return DomFactory.invoke(invok)
+            }*/
         };
     }
 
     public static ExpressionDomBuilder invocationExpr(ExpressionDomBuilder targetBuilder, String methodName, List<ExpressionDomBuilder> argumentBuilders) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext);
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 List<ExpressionDom> arguments = argumentBuilders.stream()
-                    .map(x -> x.build(cr, cd, ci, locals, methodContext)).collect(Collectors.toList());
+                    .map(x -> x.build(cr, cd, ci, locals, methodContext, captures)).collect(Collectors.toList());
 
                 String targetType = Parser.expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
@@ -575,10 +589,10 @@ public class Factory {
     public static StatementDomBuilder ifElse(ExpressionDomBuilder conditionBuilder, StatementDomBuilder ifTrueBuilder, StatementDomBuilder ifFalseBuilder) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom condition = conditionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
-                StatementDom ifTrue = ifTrueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
-                StatementDom ifFalse = ifFalseBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom condition = conditionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
+                StatementDom ifTrue = ifTrueBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
+                StatementDom ifFalse = ifFalseBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.ifElse(condition, ifTrue, ifFalse);
             }
@@ -588,8 +602,8 @@ public class Factory {
     public static ExpressionDomBuilder instanceOf(ExpressionDomBuilder targetBuilder, String typeName) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.instanceOf(target, Descriptor.get(typeName));
             }
@@ -604,9 +618,9 @@ public class Factory {
     public static ExpressionDomBuilder logicalAnd(ExpressionDomBuilder lhsBuilder, ExpressionDomBuilder rhsBuilder, int operator) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom lhs = lhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
-                ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom lhs = lhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
+                ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.logical(lhs, rhs, operator);
             }
@@ -616,9 +630,9 @@ public class Factory {
     public static ExpressionDomBuilder compare(ExpressionDomBuilder lhsBuilder, ExpressionDomBuilder rhsBuilder, int operator) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom lhs = lhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
-                ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom lhs = lhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
+                ExpressionDom rhs = rhsBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.compare(lhs, rhs, operator);
             }
@@ -628,8 +642,8 @@ public class Factory {
     public static ExpressionDomBuilder typeCast(ExpressionDomBuilder expressionBuilder, String targetTypeName) {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.typeCast(expression, Descriptor.get(targetTypeName));
             }
@@ -644,8 +658,8 @@ public class Factory {
     public static StatementDomBuilder throwStatement(ExpressionDomBuilder expressionBuilder) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.throwStatement(expression);
             }
@@ -660,7 +674,7 @@ public class Factory {
     public static StatementDomBuilder methodBodyStatement() {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.methodBodyStatement();
             }
 
@@ -674,7 +688,7 @@ public class Factory {
     public static ExpressionDomBuilder methodBodyExpression() {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return DomFactory.methodBodyExpression();
             }
 
@@ -688,8 +702,8 @@ public class Factory {
     public static CodeDomBuilder catchBlock(String type, String name, StatementDomBuilder blockBuilder) {
         return new CodeDomBuilder() {
             @Override
-            public CodeDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                StatementDom block = blockBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public CodeDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                StatementDom block = blockBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
                 return DomFactory.catchBlock(type != null ? Descriptor.get(type) : null, name, block);
             }
@@ -705,10 +719,10 @@ public class Factory {
     public static StatementDomBuilder tryCatch(StatementDomBuilder tryBlockBuilder, ArrayList<CodeDomBuilder> catchBlockBuilders) {
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                StatementDom tryBlock = tryBlockBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext);
+            public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                StatementDom tryBlock = tryBlockBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
                 List<CodeDom> catchBlocks = catchBlockBuilders.stream()
-                    .map(x -> x.build(classResolver, classDeclaration, classInspector, locals, methodContext))
+                    .map(x -> x.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures))
                     .collect(Collectors.toList());
 
                 return DomFactory.tryCatchStatement(tryBlock, catchBlocks);
@@ -725,8 +739,11 @@ public class Factory {
     public static ExpressionDomBuilder expressionCapture() {
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext) {
-                throw new RuntimeException("Cannot build expression capture.");
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                //throw new RuntimeException("Cannot build expression capture.");
+                ExpressionDom dom = (ExpressionDom)captures.get(0);
+                captures.remove(0);
+                return dom;
             }
 
             @Override

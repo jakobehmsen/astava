@@ -1,5 +1,6 @@
 package astava.java.agent.Parser;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -9,8 +10,6 @@ public class SourceCode {
 
     public SourceCode(String text, Object... captures) {
         this.text = text;
-        this.captures = Arrays.asList(captures);
+        this.captures = new ArrayList<>(Arrays.asList(captures));
     }
-
-
 }

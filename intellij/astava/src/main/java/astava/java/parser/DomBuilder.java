@@ -13,7 +13,7 @@ public interface DomBuilder extends Serializable {
         return false;
     }
 
-    default CodeDom map(CodeDom dom, List<Object> captures) {
-        return dom;
+    default CodeDom map(List<Object> captures) {
+        throw new UnsupportedOperationException("Cannot do map (yet?).");
     }
 }

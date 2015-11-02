@@ -30,8 +30,11 @@ public class Util {
         return mapper.apply(new Function<T, T>() {
             @Override
             public T apply(T d) {
-                List<Dom> newChildren = d.getChildren().stream().map(c -> mapper.apply(this, (T)c)).collect(Collectors.toList());
-                return (T)dom.setChildren(newChildren);
+                List<Dom> newChildren = d.getChildren().stream()
+                    .map(c ->
+                        mapper.apply(this, (T)c))
+                    .collect(Collectors.toList());
+                return (T)d.setChildren(newChildren);
             }
         }, dom);
     }

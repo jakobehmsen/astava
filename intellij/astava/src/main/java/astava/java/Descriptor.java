@@ -159,4 +159,20 @@ public class Descriptor {
         String typeName = Type.getReturnType(methodDescriptor).getClassName();
         return get(typeName);
     }
+
+    public static String getFieldDescriptorTypeDescriptor(String descriptor) {
+        switch(descriptor) {
+            case Descriptor.BOOLEAN:
+            case Descriptor.CHAR:
+            case Descriptor.BYTE:
+            case Descriptor.SHORT:
+            case Descriptor.INT:
+            case Descriptor.FLOAT:
+            case Descriptor.LONG:
+            case Descriptor.DOUBLE:
+                return descriptor;
+        }
+
+        return descriptor.substring(1, descriptor.length() - 1);
+    }
 }

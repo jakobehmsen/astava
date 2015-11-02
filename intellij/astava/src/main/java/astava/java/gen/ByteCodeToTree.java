@@ -1,5 +1,6 @@
 package astava.java.gen;
 
+import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.*;
@@ -191,7 +192,11 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void getstatic(String owner, String name, String desc) {
-        stack.push(DomFactory.accessStaticField(owner, name, desc));
+        // desc: LClassName; or primitive
+
+        String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
+
+        stack.push(DomFactory.accessStaticField(owner, name, Type.getType(typeDescriptor).getDescriptor()));
     }
 
     @Override
@@ -200,6 +205,16 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom value = stack.pop();
         ExpressionDom target = stack.pop();
         statements.add(DomFactory.assignField(target, name, desc, value));
+    }
+
+    @Override
+    public void getfield(String owner, String name, String desc) {
+        // desc: LClassName; or primitive
+
+        ExpressionDom target = stack.pop();
+        String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
+
+        stack.push(DomFactory.accessField(target, name, Type.getType(typeDescriptor).getDescriptor()));
     }
 
     @Override

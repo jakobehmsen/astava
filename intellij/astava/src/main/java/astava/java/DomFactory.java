@@ -265,8 +265,8 @@ public class DomFactory {
         return v -> v.visitFieldAccess(target, name, fieldTypeName);
     }
 
-    public static ExpressionDom accessStaticField(String targetTypeName, String name, String fieldTypeName) {
-        return v -> v.visitStaticFieldAccess(targetTypeName, name, fieldTypeName);
+    public static ExpressionDom accessStaticField(String targetTypeName, String name, String typeName) {
+        return v -> v.visitStaticFieldAccess(targetTypeName, name, typeName);
     }
 
     public static ExpressionDom self() {
