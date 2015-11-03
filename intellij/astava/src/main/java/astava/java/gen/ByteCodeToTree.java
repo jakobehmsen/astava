@@ -4,7 +4,6 @@ import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.*;
-import com.sun.tools.corba.se.idl.constExpr.Expression;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodNode;
@@ -234,14 +233,17 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     }
 
-    private String getVarName(int var) {
+    private String getVarName(int var, String type) {
         return varToName.computeIfAbsent(var, v -> {
             // Use consistent strategies to derive argument- and variable names
             int parameterCount = Type.getArgumentTypes(methodNode.desc).length;
             if((var - 1) < parameterCount)
                 return methodNode.parameters != null ? (String)methodNode.parameters.get(var - 1) : "arg" + (var - 1);
-            else
-                return "var" + (var - parameterCount - 1);
+            else {
+                String name = "var" + (var - parameterCount - 1);
+                statements.add(DomFactory.declareVar(type, name));
+                return name;
+            }
         });
     }
 
@@ -253,7 +255,7 @@ public class ByteCodeToTree extends InstructionAdapter {
             if(var == 0) {
                 stack.push(DomFactory.self());
             } else {
-                String name = getVarName(var);
+                String name = getVarName(var, type.getDescriptor());
                 stack.push(DomFactory.accessVar(name));
             }
         }
@@ -272,7 +274,7 @@ public class ByteCodeToTree extends InstructionAdapter {
             if(var == 0) {
                 //stack.push(DomFactory.self());
             } else {
-                String name = getVarName(var);
+                String name = getVarName(var, type.getDescriptor());
                 ExpressionDom value = stack.pop();
                 statements.add(DomFactory.assignVar(name, value));
             }

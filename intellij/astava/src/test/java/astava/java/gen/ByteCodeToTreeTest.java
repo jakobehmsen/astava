@@ -2,34 +2,28 @@ package astava.java.gen;
 
 import astava.java.Descriptor;
 import astava.java.DomFactory;
-import astava.java.parser.Parser;
 import astava.tree.StatementDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class ByteCodeToTreeTest {
     public static class CaseClass {
-        /*private int i = 0;
+        private int i = 0;
 
         public void test1() {
             this.i = 10;
@@ -63,6 +57,12 @@ public class ByteCodeToTreeTest {
             ));
         }
 
+        public static StatementDom fortest3unpreparedexpect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ret(DomFactory.accessVar("arg0"))
+            ));
+        }
+
         public int test4() {
             return 11;
         }
@@ -84,7 +84,15 @@ public class ByteCodeToTreeTest {
                 DomFactory.assignVar("x", DomFactory.literal(5)),
                 DomFactory.ret(DomFactory.accessVar("x"))
             ));
-        }*/
+        }
+
+        public static StatementDom fortest5unpreparedexpect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "var0"),
+                DomFactory.assignVar("var0", DomFactory.literal(5)),
+                DomFactory.ret(DomFactory.accessVar("var0"))
+            ));
+        }
 
         public int test6() {
             int x = 5;
@@ -109,6 +117,22 @@ public class ByteCodeToTreeTest {
                 DomFactory.declareVar(Descriptor.INT, "var1"),
                 DomFactory.assignVar("var1", DomFactory.literal(8)),
                 DomFactory.ret(DomFactory.add(DomFactory.accessVar("var0"), DomFactory.accessVar("var1")))
+            ));
+        }
+
+        public int test7(int i, int x) {
+            return i + x;
+        }
+
+        public static StatementDom fortest7expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ret(DomFactory.add(DomFactory.accessVar("i"), DomFactory.accessVar("x")))
+            ));
+        }
+
+        public static StatementDom fortest7unpreparedexpect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ret(DomFactory.add(DomFactory.accessVar("arg0"), DomFactory.accessVar("arg1")))
             ));
         }
     }
@@ -141,11 +165,11 @@ public class ByteCodeToTreeTest {
                     try {
                         unpreparedExpectedStatement = (StatementDom)c.getMethod("for" + x.getName() + "unpreparedexpect").invoke(null);
                     } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+
                     } catch (InvocationTargetException e) {
-                        e.printStackTrace();
+
                     } catch (NoSuchMethodException e) {
-                        e.printStackTrace();
+
                     }
 
                     try {
@@ -189,11 +213,11 @@ public class ByteCodeToTreeTest {
         StatementDom actualStatement = byteCodeToTree.getBlock();
         assertEquals(expectedStatement, actualStatement);
 
-        /*if(expectedUnpreparedStatement != null) {
+        if(expectedUnpreparedStatement != null) {
             byteCodeToTree = new ByteCodeToTree(methodNode);
             methodNode.accept(byteCodeToTree);
             actualStatement = byteCodeToTree.getBlock();
             assertEquals(expectedUnpreparedStatement, actualStatement);
-        }*/
+        }
     }
 }
