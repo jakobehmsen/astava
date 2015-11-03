@@ -1,12 +1,14 @@
 package astava.java;
 
 import astava.tree.*;
+import com.sun.tools.corba.se.idl.constExpr.Expression;
 import sun.tools.tree.Statement;
 
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class DomFactory {
@@ -93,13 +95,41 @@ public class DomFactory {
     }
 
     public static StatementDom ret() {
-        return v -> v.visitReturn();
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitReturn();
+            }
+
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitReturn() {
+                        r.accept(true);
+                    }
+                };
+            }
+        };
     }
 
     public static StatementDom ret(ExpressionDom expression) {
-        if(expression == null)
-            new String();
-        return v -> v.visitReturnValue(expression);
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitReturnValue(expression);
+            }
+
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitReturnValue(ExpressionDom otherExpression) {
+                        r.accept(expression.equals(otherExpression));
+                    }
+                };
+            }
+        };
     }
 
     public static ExpressionDom literal(boolean value) {
@@ -115,7 +145,22 @@ public class DomFactory {
     }
 
     public static ExpressionDom literal(int value) {
-        return v -> v.visitIntLiteral(value);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitIntLiteral(value);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitIntLiteral(int otherValue) {
+                        r.accept(value == otherValue);
+                    }
+                };
+            }
+        };
     }
 
     public static ExpressionDom literal(long value) {
@@ -163,7 +208,26 @@ public class DomFactory {
     }
 
     public static ExpressionDom arithmetic(ExpressionDom lhs, ExpressionDom rhs, int operator) {
-        return v -> v.visitArithmetic(operator, lhs, rhs);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitArithmetic(operator, lhs, rhs);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitArithmetic(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
+                        r.accept(
+                            operator == otherOperator &&
+                            lhs.equals(otherLhs) &&
+                            rhs.equals(otherRhs)
+                        );
+                    }
+                };
+            }
+        };
     }
 
     public static ExpressionDom shl(ExpressionDom lhs, ExpressionDom rhs) {
@@ -241,16 +305,66 @@ public class DomFactory {
     }
 
     public static StatementDom declareVar(String type, String name) {
-        return v -> v.visitVariableDeclaration(type, name);
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitVariableDeclaration(type, name);
+            }
+
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitVariableDeclaration(String otherType, String otherName) {
+                        r.accept(type.equals(otherType) && name.equals(otherName));
+                    }
+                };
+            }
+        };
     }
 
     // Assign variable as statement (not expression)
     public static StatementDom assignVar(String name, ExpressionDom expression) {
-        return v -> v.visitVariableAssignment(name, expression);
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitVariableAssignment(name, expression);
+            }
+
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitVariableAssignment(String otherName, ExpressionDom otherValue) {
+                        r.accept(name.equals(otherName) && expression.equals(otherValue));
+                    }
+                };
+            }
+        };
     }
 
     public static StatementDom assignField(ExpressionDom target, String name, String type, ExpressionDom expression) {
-        return v -> v.visitFieldAssignment(target, name, type, expression);
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitFieldAssignment(target, name, type, expression);
+            }
+
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitFieldAssignment(ExpressionDom otherTarget, String otherName, String otherType, ExpressionDom otherValue) {
+                        r.accept(
+                            target.equals(otherTarget) &&
+                            name.equals(otherName) &&
+                            type.equals(otherType) &&
+                            expression.equals(otherValue)
+                        );
+                    }
+                };
+            }
+        };
     }
 
     public static StatementDom assignStaticField(String targetTypeName, String name, String type, ExpressionDom expression) {
@@ -258,7 +372,22 @@ public class DomFactory {
     }
 
     public static ExpressionDom accessVar(String name) {
-        return v -> v.visitVariableAccess(name);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitVariableAccess(name);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitVariableAccess(String otherName) {
+                        r.accept(name.equals(otherName));
+                    }
+                };
+            }
+        };
     }
 
     public static ExpressionDom accessField(ExpressionDom target, String name, String fieldTypeName) {
@@ -270,11 +399,26 @@ public class DomFactory {
     }
 
     public static ExpressionDom self() {
-        return v -> v.visitThis();
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitThis();
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitThis() {
+                        r.accept(true);
+                    }
+                };
+            }
+        };
     }
 
     public static StatementDom block(List<StatementDom> statements) {
-        return new StatementDom() {
+        return new AbstractStatementDom() {
             @Override
             public void accept(StatementDomVisitor visitor) {
                 visitor.visitBlock(statements);
@@ -289,9 +433,17 @@ public class DomFactory {
             public Dom setChildren(List<? extends Dom> children) {
                 return block((List<StatementDom>)children);
             }
-        };
 
-        //return v -> v.visitBlock(statements);
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitBlock(List<StatementDom> otherStatements) {
+                        r.accept(statements.equals(otherStatements));
+                    }
+                };
+            }
+        };
     }
 
     // At most one expression dom

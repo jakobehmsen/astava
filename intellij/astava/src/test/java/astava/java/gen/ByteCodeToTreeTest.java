@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class ByteCodeToTreeTest {
     public static class CaseClass {
-        private int i = 0;
+        /*private int i = 0;
 
         public void test1() {
             this.i = 10;
@@ -37,17 +37,90 @@ public class ByteCodeToTreeTest {
 
         public static StatementDom fortest1expect() {
             return DomFactory.block(Arrays.asList(
-                DomFactory.assignField(DomFactory.self(), "i", Descriptor.INT, DomFactory.literal(10))
+                DomFactory.assignField(DomFactory.self(), "i", Descriptor.INT, DomFactory.literal(10)),
+                DomFactory.ret()
+            ));
+        }
+
+        public void test2(int a) {
+            this.i = a;
+        }
+
+        public static StatementDom fortest2expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.assignField(DomFactory.self(), "i", Descriptor.INT, DomFactory.accessVar("a")),
+                DomFactory.ret()
+            ));
+        }
+
+        public int test3(int i) {
+            return i;
+        }
+
+        public static StatementDom fortest3expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ret(DomFactory.accessVar("i"))
+            ));
+        }
+
+        public int test4() {
+            return 11;
+        }
+
+        public static StatementDom fortest4expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ret(DomFactory.literal(11))
+            ));
+        }
+
+        public int test5() {
+            int x = 5;
+            return x;
+        }
+
+        public static StatementDom fortest5expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "x"),
+                DomFactory.assignVar("x", DomFactory.literal(5)),
+                DomFactory.ret(DomFactory.accessVar("x"))
+            ));
+        }*/
+
+        public int test6() {
+            int x = 5;
+            int y = 8;
+            return x + y;
+        }
+
+        public static StatementDom fortest6expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "x"),
+                DomFactory.declareVar(Descriptor.INT, "y"),
+                DomFactory.assignVar("x", DomFactory.literal(5)),
+                DomFactory.assignVar("y", DomFactory.literal(8)),
+                DomFactory.ret(DomFactory.add(DomFactory.accessVar("x"), DomFactory.accessVar("y")))
+            ));
+        }
+
+        public static StatementDom fortest6unpreparedexpect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "var0"),
+                DomFactory.assignVar("var0", DomFactory.literal(5)),
+                DomFactory.declareVar(Descriptor.INT, "var1"),
+                DomFactory.assignVar("var1", DomFactory.literal(8)),
+                DomFactory.ret(DomFactory.add(DomFactory.accessVar("var0"), DomFactory.accessVar("var1")))
             ));
         }
     }
 
     private MethodNode methodNode;
     private StatementDom expectedStatement;
+    private StatementDom expectedUnpreparedStatement;
 
-    public ByteCodeToTreeTest(MethodNode methodNode, StatementDom expectedStatement) {
+    public ByteCodeToTreeTest(MethodNode methodNode, StatementDom expectedStatement, StatementDom expectedUnpreparedStatement) {
         this.methodNode = methodNode;
         this.expectedStatement = expectedStatement;
+        this.expectedUnpreparedStatement = expectedUnpreparedStatement;
     }
 
     private static List<Object[]> load(Class<?> c) {
@@ -63,9 +136,22 @@ public class ByteCodeToTreeTest {
                 .filter(x -> x.getName().startsWith("test"))
                 .map(x -> {
                     MethodNode methodNode = ((List<MethodNode>)classNode.methods).stream().filter(y -> y.name.equals(x.getName())).findFirst().get();
+
+                    StatementDom unpreparedExpectedStatement = null;
+                    try {
+                        unpreparedExpectedStatement = (StatementDom)c.getMethod("for" + x.getName() + "unpreparedexpect").invoke(null);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                    }
+
                     try {
                         StatementDom expectedStatement = (StatementDom)c.getMethod("for" + x.getName() + "expect").invoke(null);
-                        return new Object[]{methodNode, expectedStatement};
+
+                        return new Object[]{methodNode, expectedStatement, unpreparedExpectedStatement};
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     } catch (InvocationTargetException e) {
@@ -98,8 +184,16 @@ public class ByteCodeToTreeTest {
     @Test
     public void test() {
         ByteCodeToTree byteCodeToTree = new ByteCodeToTree(methodNode);
+        byteCodeToTree.prepareVariables(mv -> methodNode.accept(mv));
         methodNode.accept(byteCodeToTree);
         StatementDom actualStatement = byteCodeToTree.getBlock();
         assertEquals(expectedStatement, actualStatement);
+
+        /*if(expectedUnpreparedStatement != null) {
+            byteCodeToTree = new ByteCodeToTree(methodNode);
+            methodNode.accept(byteCodeToTree);
+            actualStatement = byteCodeToTree.getBlock();
+            assertEquals(expectedUnpreparedStatement, actualStatement);
+        }*/
     }
 }

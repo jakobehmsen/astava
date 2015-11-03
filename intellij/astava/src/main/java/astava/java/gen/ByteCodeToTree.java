@@ -10,10 +10,8 @@ import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ByteCodeToTree extends InstructionAdapter {
@@ -29,6 +27,7 @@ public class ByteCodeToTree extends InstructionAdapter {
     private Type returnType;
     private Stack<ExpressionDom> stack = new Stack<>();
     private ArrayList<StatementDom> statements = new ArrayList<>();
+    private Hashtable<Integer, String> varToName = new Hashtable<>();
 
     public ByteCodeToTree(MethodNode methodNode) {
         super(Opcodes.ASM5, new MethodVisitor(Opcodes.ASM5, null) {
@@ -42,6 +41,19 @@ public class ByteCodeToTree extends InstructionAdapter {
             stack.add(asStatementOrExpression.toExpression());
             asStatementOrExpression = null;
         }*/
+    }
+
+    public void prepareVariables(Consumer<MethodVisitor> accepter) {
+        accepter.accept(new MethodVisitor(Opcodes.ASM5) {
+            @Override
+            public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
+                if(index > 0) {
+                    varToName.put(index, name);
+                    if(index > Type.getArgumentTypes(methodNode.desc).length)
+                        statements.add(DomFactory.declareVar(desc, name));
+                }
+            }
+        });
     }
 
     @Override
@@ -222,15 +234,27 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     }
 
+    private String getVarName(int var) {
+        return varToName.computeIfAbsent(var, v -> {
+            // Use consistent strategies to derive argument- and variable names
+            int parameterCount = Type.getArgumentTypes(methodNode.desc).length;
+            if((var - 1) < parameterCount)
+                return methodNode.parameters != null ? (String)methodNode.parameters.get(var - 1) : "arg" + (var - 1);
+            else
+                return "var" + (var - parameterCount - 1);
+        });
+    }
+
     @Override
-    public void load(int i, Type type) {
+    public void load(int var, Type type) {
         if(Modifier.isStatic(methodNode.access)) {
 
         } else {
-            if(i == 0) {
+            if(var == 0) {
                 stack.push(DomFactory.self());
             } else {
-
+                String name = getVarName(var);
+                stack.push(DomFactory.accessVar(name));
             }
         }
     }
@@ -242,7 +266,17 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void store(int var, Type type) {
+        if(Modifier.isStatic(methodNode.access)) {
 
+        } else {
+            if(var == 0) {
+                //stack.push(DomFactory.self());
+            } else {
+                String name = getVarName(var);
+                ExpressionDom value = stack.pop();
+                statements.add(DomFactory.assignVar(name, value));
+            }
+        }
     }
 
     @Override
