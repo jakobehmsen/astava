@@ -1,5 +1,6 @@
 package astava.java.parser;
 
+import java.util.List;
 import java.util.Map;
 
 public interface DomBuilderVisitor {
@@ -10,6 +11,7 @@ public interface DomBuilderVisitor {
     void visitStatementBuilder(StatementDomBuilder statementBuilder);
     void visitInitializer(StatementDomBuilder statement);
     void visitAnnotation(String typeName, Map<String, Object> values);
+    void visitImplements(List<String> typeNames);
 
     abstract class Return<T> implements DomBuilderVisitor {
         private T result;

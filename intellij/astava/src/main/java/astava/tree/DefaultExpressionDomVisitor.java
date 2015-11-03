@@ -1,9 +1,5 @@
 package astava.tree;
 
-import astava.tree.CodeDom;
-import astava.tree.ExpressionDom;
-import astava.tree.ExpressionDomVisitor;
-
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -156,6 +152,11 @@ public abstract class DefaultExpressionDomVisitor implements ExpressionDomVisito
 
     @Override
     public void visitMethodBody() {
+
+    }
+
+    @Override
+    public void visitClassLiteral(String type) {
 
     }
 }

@@ -51,6 +51,11 @@ public class ParserFactory {
                     public void visitMethodBuilder(MethodDomBuilder methodBuilder) {
                         thisClass.addMethod(methodBuilder.declare(classResolver));
                     }
+
+                    @Override
+                    public void visitImplements(List<String> typeNames) {
+                        typeNames.forEach(x -> thisClass.addInterface(x));
+                    }
                 });
 
                 return (classNode1, thisClass1, classResolver1, classInspector1) -> new DefaultDomBuilderVisitor.Return<DeclaringClassNodeExtenderTransformer>() {
@@ -79,6 +84,13 @@ public class ParserFactory {
                     public void visitAnnotation(String typeName, Map<String, Object> values) {
                         setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName), values));
                     }
+
+                    @Override
+                    public void visitImplements(List<String> typeNames) {
+                        setResult((classNode2, thisClass2, classResolver2, classInspector2) -> {
+                            typeNames.forEach(x -> classNode2.interfaces.add(Descriptor.get(x)));
+                        });
+                    }
                 }.visit(d).transform(classNode1, thisClass1, classResolver1, classInspector1);
             }
         }).collect(Collectors.toList());
@@ -89,7 +101,8 @@ public class ParserFactory {
     public DeclaringClassNodeExtenderElementPredicate whenClass(String sourceCode) throws IOException {
         List<ClassNodePredicate> predicates = new Parser(sourceCode).parseClassPredicates(classInspector);
 
-        return (classNode, thisClass, classResolver1) -> predicates.stream().allMatch(p -> p.test(classNode));
+        return (classNode, thisClass, classResolver1) ->
+            predicates.stream().allMatch(p -> p.test(classNode));
     }
 
     public DeclaringClassNodeExtenderElement modClass(BiFunction<ClassNode, ClassDeclaration, String> function) throws IOException {

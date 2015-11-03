@@ -750,6 +750,11 @@ public class MethodGenerator {
 
                 setResult(Type.getReturnType(methodNode.desc).getDescriptor());
             }
+
+            @Override
+            public void visitClassLiteral(String type) {
+                generator.push(Type.getType(type));
+            }
         }.returnFrom(expression);
     }
 

@@ -516,4 +516,8 @@ public class DomFactory {
     public static CodeDom catchBlock(String type, String name, StatementDom block) {
         return v -> v.visitCatch(type, name, block);
     }
+
+    public static ExpressionDom classLiteral(String type) {
+        return v -> v.visitClassLiteral(type);
+    }
 }

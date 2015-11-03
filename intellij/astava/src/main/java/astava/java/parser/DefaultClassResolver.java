@@ -8,6 +8,10 @@ public class DefaultClassResolver implements ClassResolver {
     private Map<String, String> simpleNameToNameMap;
     private Set<String> nameSet;
 
+    public DefaultClassResolver(ClassLoader classLoader) {
+        this(classLoader, Arrays.asList());
+    }
+
     public DefaultClassResolver(ClassLoader classLoader, List<Class<?>> classes) {
         this(classLoader, classes.stream()
             .map(x -> new AbstractMap.SimpleImmutableEntry<>(x.getSimpleName(), x.getName()))

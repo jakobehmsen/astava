@@ -58,19 +58,24 @@ public class ClassLoaderExtender extends ClassLoader {
 
             System.out.println(classNode.name);
 
-            extender.transform(classNode, classResolver, classInspector);
+            boolean didTransform = extender.transform(classNode, classResolver, classInspector);
 
-            ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-            classNode.accept(classWriter);
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            // Only if anything was transformed, load a class from this class loader
+            if(didTransform) {
+                ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                classNode.accept(classWriter);
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-            PrintWriter ps = new PrintWriter(os);
-            //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
-            org.objectweb.asm.util.CheckClassAdapter.verify(new org.objectweb.asm.ClassReader(classWriter.toByteArray()), true, ps);
+                PrintWriter ps = new PrintWriter(os);
+                //cr.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
+                org.objectweb.asm.util.CheckClassAdapter.verify(new org.objectweb.asm.ClassReader(classWriter.toByteArray()), true, ps);
 
-            byte[] bytes = classWriter.toByteArray();
+                byte[] bytes = classWriter.toByteArray();
 
-            return defineClass(name, bytes, 0, bytes.length);
+                return defineClass(name, bytes, 0, bytes.length);
+            } else
+                //throw new ClassNotFoundException(name);
+                return null;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (SecurityException e) {

@@ -2,8 +2,9 @@ grammar Java;
 
 classFile: classDefinition;
 script: element*;
-element: classDefinition | fieldDefinition | methodDefinition | statement | expression | annotation;
-classDefinition: modifiers KW_CLASS name=typeQualifier OPEN_BRA classMember* CLOSE_BRA;
+element: classDefinition | implementsInterface | fieldDefinition | methodDefinition | statement | expression | annotation;
+classDefinition: modifiers KW_CLASS name=typeQualifier implementsInterface OPEN_BRA classMember* CLOSE_BRA;
+implementsInterface: KW_IMPLEMENTS typeQualifier (COMMA typeQualifier)*;
 classMember: fieldDefinition | methodDefinition;
 fieldDefinition: modifiers type=typeQualifier name=ID (OP_ASSIGN value=expression)? SEMI_COLON;
 methodDefinition: 
@@ -54,7 +55,7 @@ typeCastExpression: OPEN_PAR typeQualifier CLOSE_PAR expression;
 // TODO: Add support for boolean literals true and false
 leafExpression: 
     (
-        invocation | ambigousName | intLiteral | stringLiteral | nullLiteral | thisLiteral |
+        invocation | classLiteral | ambigousName | intLiteral | stringLiteral | nullLiteral | thisLiteral |
         trueLiteral | falseLiteral | newInstance | methodBodyExpression
     )
     chainElement*;
@@ -63,6 +64,7 @@ chainElement: DOT (fieldAssignment | fieldAccess | invocation);
 fieldAssignment: identifier OP_ASSIGN value=expression;
 fieldAccess: identifier;
 identifier: ID | QUESTION_MARK;
+classLiteral: typeQualifier DOT KW_CLASS;
 ambigousName: ID ({_input.LT(2).getType() != OPEN_PAR && _input.LT(2).getType() != OP_ASSIGN}? DOT ID)*;
 intLiteral: INT;
 stringLiteral: STRING;

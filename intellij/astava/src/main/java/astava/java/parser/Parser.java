@@ -213,6 +213,11 @@ public class Parser {
             public void visitMethodBody() {
                 setResult(returnType);
             }
+
+            @Override
+            public void visitClassLiteral(String type) {
+                setResult(Descriptor.get(Class.class.getName()));
+            }
         }.returnFrom(expr);
     }
 
@@ -346,6 +351,18 @@ public class Parser {
             public List<DomBuilder> visitAnnotation(JavaParser.AnnotationContext ctx) {
                 return Arrays.asList(parseAnnotationBuilder(ctx));
             }
+
+            @Override
+            public List<DomBuilder> visitImplementsInterface(JavaParser.ImplementsInterfaceContext ctx) {
+                List<String> typeNames = ctx.typeQualifier().stream().map(x -> x.getText()).collect(Collectors.toList());
+
+                return Arrays.asList(new DomBuilder() {
+                    @Override
+                    public void accept(DomBuilderVisitor visitor) {
+                        visitor.visitImplements(typeNames);
+                    }
+                });
+            }
         })).flatMap(x -> x.stream()).collect(Collectors.toList());
     }
 
@@ -359,7 +376,7 @@ public class Parser {
         Map<String, Object> values = new Hashtable<>();
         if(ctx.valueArgument != null) {
             Object value = parsePrimitive(ctx.valueArgument);
-            values.put("occurrences", value);
+            values.put("value", value);
         }
         ctx.annotationArgument().forEach(a -> {
             Object value = parsePrimitive(a.value);
@@ -378,6 +395,12 @@ public class Parser {
             @Override
             public Object visitStringLiteral(JavaParser.StringLiteralContext ctx) {
                 return parseStringValue(ctx);
+            }
+
+            @Override
+            public Object visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
+                String typeName = ctx.typeQualifier().getText();
+                return Type.getType(Descriptor.getFieldDescriptor(Descriptor.get(typeName)));
             }
         });
     }
@@ -490,9 +513,9 @@ public class Parser {
         int modifiersTmp = parseModifiers(ctx.modifiers());
 
         int modifiers;
-        if(atRoot)
+        /*if(atRoot)
             modifiers = modifiersTmp | Modifier.PUBLIC;
-        else
+        else*/
             modifiers = modifiersTmp;
 
         ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value, atRoot) : null;
@@ -870,6 +893,12 @@ public class Parser {
             }
 
             @Override
+            public ExpressionDomBuilder visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
+                String typeName = ctx.typeQualifier().getText();
+                return Factory.classLiteral(typeName);
+            }
+
+            @Override
             public ExpressionDomBuilder visitNewInstance(@NotNull JavaParser.NewInstanceContext ctx) {
                 String name = ctx.name.getText();
                 List<ExpressionDomBuilder> argumentBuilders = ctx.arguments().expression().stream()
@@ -951,7 +980,6 @@ public class Parser {
         return rawString.substring(1, rawString.length() - 1)
             .replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
     }
-
 
     private StatementDomBuilder fieldAssignmentStatement(@NotNull JavaParser.FieldAssignmentContext ctx, boolean atRoot, boolean asStatement, ExpressionDomBuilder targetBuilder) {
         String name = ctx.identifier().ID() != null ? ctx.identifier().ID().getText() : null;
@@ -1169,7 +1197,8 @@ public class Parser {
                 @Override
                 public Void visitAnnotation(JavaParser.AnnotationContext ctx) {
                     Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx);
-                    predicates.add(classNode -> hasAnnotation.test((List<AnnotationNode>)classNode.visibleAnnotations));
+                    predicates.add(classNode ->
+                        hasAnnotation.test((List<AnnotationNode>)classNode.visibleAnnotations));
 
                     return null;
                 }

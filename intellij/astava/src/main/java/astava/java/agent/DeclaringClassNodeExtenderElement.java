@@ -23,7 +23,7 @@ public interface DeclaringClassNodeExtenderElement extends ClassNodeExtender {
         };
     }
 
-    default void transform(ClassNode classNode, ClassResolver classResolver, ClassInspector classInspector) {
+    default boolean transform(ClassNode classNode, ClassResolver classResolver, ClassInspector classInspector) {
         MutableClassDeclaration thisClass = new MutableClassDeclaration();
 
         thisClass.setName(Descriptor.getName(classNode.name));
@@ -36,16 +36,23 @@ public interface DeclaringClassNodeExtenderElement extends ClassNodeExtender {
 
         DeclaringClassNodeExtenderTransformer transformer = this.declare(classNode, thisClass, classResolver);
 
-        ClassInspector classInspectorForThis = new ClassInspector() {
-            @Override
-            public ClassDeclaration getClassDeclaration(String name) {
-                if(Descriptor.get(name).equals(thisClass.getName()))
-                    return thisClass;
-                return classInspector.getClassDeclaration(name);
-            }
-        };
+        if(transformer.willTransform()) {
+            ClassInspector classInspectorForThis = new ClassInspector() {
+                @Override
+                public ClassDeclaration getClassDeclaration(String name) {
+                    //if(Descriptor.get(name).equals(thisClass.getName()))
+                    if (name.equals(thisClass.getName()))
+                        return thisClass;
+                    return classInspector.getClassDeclaration(name);
+                }
+            };
 
-        transformer.transform(classNode, thisClass, classResolver, classInspectorForThis);
+            transformer.transform(classNode, thisClass, classResolver, classInspectorForThis);
+
+            return true;
+        }
+
+        return false;
     }
 
     default DeclaringClassNodeExtenderElement when(DeclaringClassNodeExtenderElementPredicate predicate) {

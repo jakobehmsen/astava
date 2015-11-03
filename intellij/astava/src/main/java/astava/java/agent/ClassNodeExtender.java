@@ -5,5 +5,5 @@ import astava.java.parser.ClassResolver;
 import org.objectweb.asm.tree.ClassNode;
 
 public interface ClassNodeExtender {
-    void transform(ClassNode classNode, ClassResolver classResolver, ClassInspector classInspector);
+    boolean transform(ClassNode classNode, ClassResolver classResolver, ClassInspector classInspector);
 }

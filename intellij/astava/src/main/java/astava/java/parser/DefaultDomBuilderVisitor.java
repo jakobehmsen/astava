@@ -1,5 +1,6 @@
 package astava.java.parser;
 
+import java.util.List;
 import java.util.Map;
 
 public abstract class DefaultDomBuilderVisitor implements DomBuilderVisitor {
@@ -35,6 +36,11 @@ public abstract class DefaultDomBuilderVisitor implements DomBuilderVisitor {
 
     @Override
     public void visitAnnotation(String typeName, Map<String, Object> values) {
+
+    }
+
+    @Override
+    public void visitImplements(List<String> typeNames) {
 
     }
 
@@ -82,6 +88,11 @@ public abstract class DefaultDomBuilderVisitor implements DomBuilderVisitor {
 
         @Override
         public void visitAnnotation(String typeName, Map<String, Object> values) {
+
+        }
+
+        @Override
+        public void visitImplements(List<String> typeNames) {
 
         }
     }

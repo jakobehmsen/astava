@@ -64,6 +64,8 @@ public interface ExpressionDomVisitor {
 
     void visitMethodBody();
 
+    void visitClassLiteral(String type);
+
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
 

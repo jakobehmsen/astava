@@ -288,6 +288,11 @@ public class Main {
                                 public void visitAnnotation(String typeName, Map<String, Object> values) {
 
                                 }
+
+                                @Override
+                                public void visitImplements(List<String> typeNames) {
+
+                                }
                             }));
                         } catch (IOException e1) {
                             e1.printStackTrace();

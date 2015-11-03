@@ -758,4 +758,18 @@ public class Factory {
             }
         };
     }
+
+    public static ExpressionDomBuilder classLiteral(String typeName) {
+        return new ExpressionDomBuilder() {
+            @Override
+            public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                return DomFactory.classLiteral(Descriptor.get(typeName));
+            }
+
+            @Override
+            public String toString() {
+                return typeName + ".class";
+            }
+        };
+    }
 }
