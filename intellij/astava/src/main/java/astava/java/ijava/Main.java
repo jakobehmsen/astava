@@ -222,7 +222,7 @@ public class Main {
                         InputStream inputStream = new ByteArrayInputStream(code.getBytes());
 
                         try {
-                            java.util.List<DomBuilder> script = new Parser(inputStream).parse();
+                            java.util.List<DomBuilder> script = new Parser(inputStream).parse(null);
 
                             script.forEach(x -> x.accept(new DomBuilderVisitor() {
                                 @Override

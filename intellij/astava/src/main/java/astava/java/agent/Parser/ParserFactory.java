@@ -38,7 +38,7 @@ public class ParserFactory {
     }*/
 
     public DeclaringClassNodeExtenderElement modClass(String sourceCode) throws IOException {
-        List<DeclaringClassNodeExtenderElement> elements = new Parser(sourceCode).parse().stream().map(d -> new DeclaringClassNodeExtenderElement() {
+        List<DeclaringClassNodeExtenderElement> elements = new Parser(sourceCode).parse(classResolver).stream().map(d -> new DeclaringClassNodeExtenderElement() {
             @Override
             public DeclaringClassNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver) {
                 d.accept(new DefaultDomBuilderVisitor() {
@@ -99,7 +99,7 @@ public class ParserFactory {
     }
 
     public DeclaringClassNodeExtenderElementPredicate whenClass(String sourceCode) throws IOException {
-        List<ClassNodePredicate> predicates = new Parser(sourceCode).parseClassPredicates(classInspector);
+        List<ClassNodePredicate> predicates = new Parser(sourceCode).parseClassPredicates(classResolver, classInspector);
 
         return (classNode, thisClass, classResolver1) ->
             predicates.stream().allMatch(p -> p.test(classNode));
@@ -131,14 +131,14 @@ public class ParserFactory {
     }*/
 
     public DeclaringClassNodeExtenderElementMethodNodePredicate whenMethod(String sourceCode) throws IOException {
-        List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates();
+        List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates(classResolver);
 
         return (classNode, thisClass, classResolver1, methodNode) ->
             predicates.stream().allMatch(p -> p.test(classNode, thisClass, classResolver1, methodNode));
     }
 
     public DeclaringMethodNodeExtenderElement modMethod(String sourceCode) throws IOException {
-        List<DeclaringMethodNodeExtenderElement> predicates = new Parser(sourceCode).parseMethodModifications(classInspector);
+        List<DeclaringMethodNodeExtenderElement> predicates = new Parser(sourceCode).parseMethodModifications(classResolver, classInspector);
 
         return predicates.stream().reduce((x, y) -> x.andThen(y)).get();
     }

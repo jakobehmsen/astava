@@ -308,7 +308,7 @@ public class Parser {
         return returnType != null ? returnType : Descriptor.VOID;
     }
 
-    public List<DomBuilder> parse() {
+    public List<DomBuilder> parse(ClassResolver classResolver) {
         return parser.script().element().stream().map(x -> x.accept(new JavaBaseVisitor<List<DomBuilder>>() {
             @Override
             public List<DomBuilder> visitClassDefinition(@NotNull JavaParser.ClassDefinitionContext ctx) {
@@ -349,7 +349,7 @@ public class Parser {
 
             @Override
             public List<DomBuilder> visitAnnotation(JavaParser.AnnotationContext ctx) {
-                return Arrays.asList(parseAnnotationBuilder(ctx));
+                return Arrays.asList(parseAnnotationBuilder(classResolver, ctx));
             }
 
             @Override
@@ -366,26 +366,26 @@ public class Parser {
         })).flatMap(x -> x.stream()).collect(Collectors.toList());
     }
 
-    private DomBuilder parseAnnotationBuilder(JavaParser.AnnotationContext ctx) {
-        Map<String, Object> values = parseAnnotationValues(ctx);
+    private DomBuilder parseAnnotationBuilder(ClassResolver classResolver, JavaParser.AnnotationContext ctx) {
+        Map<String, Object> values = parseAnnotationValues(classResolver, ctx);
 
         return Factory.annotation(ctx.typeQualifier().getText(), values);
     }
 
-    private Map<String, Object> parseAnnotationValues(JavaParser.AnnotationContext ctx) {
+    private Map<String, Object> parseAnnotationValues(ClassResolver classResolver, JavaParser.AnnotationContext ctx) {
         Map<String, Object> values = new Hashtable<>();
         if(ctx.valueArgument != null) {
-            Object value = parsePrimitive(ctx.valueArgument);
+            Object value = parsePrimitive(classResolver, ctx.valueArgument);
             values.put("value", value);
         }
         ctx.annotationArgument().forEach(a -> {
-            Object value = parsePrimitive(a.value);
+            Object value = parsePrimitive(classResolver, a.value);
             values.put(a.name.getText(), value);
         });
         return values;
     }
 
-    private Object parsePrimitive(JavaParser.ExpressionContext context) {
+    private Object parsePrimitive(ClassResolver classResolver, JavaParser.ExpressionContext context) {
         return context.accept(new JavaBaseVisitor<Object>() {
             @Override
             public Object visitIntLiteral(JavaParser.IntLiteralContext ctx) {
@@ -399,7 +399,7 @@ public class Parser {
 
             @Override
             public Object visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
-                String typeName = ctx.typeQualifier().getText();
+                String typeName = resolveName(classResolver, ctx.typeQualifier().getText());
                 return Type.getType(Descriptor.getFieldDescriptor(Descriptor.get(typeName)));
             }
         });
@@ -1187,7 +1187,7 @@ public class Parser {
         return false;
     }
 
-    public List<ClassNodePredicate> parseClassPredicates(ClassInspector classInspector) {
+    public List<ClassNodePredicate> parseClassPredicates(ClassResolver classResolver, ClassInspector classInspector) {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
         ArrayList<ClassNodePredicate> predicates = new ArrayList<>();
@@ -1196,7 +1196,7 @@ public class Parser {
             x.accept(new JavaBaseVisitor<Void>() {
                 @Override
                 public Void visitAnnotation(JavaParser.AnnotationContext ctx) {
-                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx);
+                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(classResolver, ctx);
                     predicates.add(classNode ->
                         hasAnnotation.test((List<AnnotationNode>)classNode.visibleAnnotations));
 
@@ -1339,9 +1339,14 @@ public class Parser {
         return predicates;
     }
 
-    private Predicate<List<AnnotationNode>> hasAnnotationPredicate(JavaParser.AnnotationContext annotationContext) {
-        String typeName = annotationContext.typeQualifier().getText();
-        Map<String, Object> values = parseAnnotationValues(annotationContext);
+    private String resolveName(ClassResolver classResolver, String name) {
+        String rName = classResolver.resolveSimpleName(name);
+        return rName != null ? rName : name;
+    }
+
+    private Predicate<List<AnnotationNode>> hasAnnotationPredicate(ClassResolver classResolver, JavaParser.AnnotationContext annotationContext) {
+        String typeName = resolveName(classResolver, annotationContext.typeQualifier().getText());
+        Map<String, Object> values = parseAnnotationValues(classResolver, annotationContext);
 
         return visibleAnnotations -> {
             if(visibleAnnotations != null && visibleAnnotations.size() > 0) {
@@ -1375,14 +1380,14 @@ public class Parser {
         };
     }
 
-    public List<DeclaringClassNodeExtenderElementMethodNodePredicate> parseMethodPredicates() {
+    public List<DeclaringClassNodeExtenderElementMethodNodePredicate> parseMethodPredicates(ClassResolver classResolver) {
         JavaParser.MethodPredicateContext ctx = parser.methodPredicate();
 
         return ctx.methodPredicateElement().stream()
             .map(x -> x.accept(new JavaBaseVisitor<DeclaringClassNodeExtenderElementMethodNodePredicate>() {
                 @Override
                 public DeclaringClassNodeExtenderElementMethodNodePredicate visitMethodPredicateAnnotation(JavaParser.MethodPredicateAnnotationContext ctx) {
-                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx.annotation());
+                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(classResolver, ctx.annotation());
 
                     return (classNode, thisClass, classResolver, methodNode) ->
                         hasAnnotation.test((List<AnnotationNode>) methodNode.visibleAnnotations);
@@ -1446,7 +1451,7 @@ public class Parser {
         return -1;
     }
 
-    public List<DeclaringMethodNodeExtenderElement> parseMethodModifications(ClassInspector classInspector) {
+    public List<DeclaringMethodNodeExtenderElement> parseMethodModifications(ClassResolver classResolver, ClassInspector classInspector) {
         JavaParser.MethodModificationContext ctx = parser.methodModification();
 
         return ctx.methodModificationElement().stream()
@@ -1455,7 +1460,7 @@ public class Parser {
                 public DeclaringMethodNodeExtenderElement visitMethodModificationAnnotation(JavaParser.MethodModificationAnnotationContext ctx) {
                     String typeName = ctx.annotation().typeQualifier().getText();
                     String desc = Descriptor.getTypeDescriptor(Descriptor.get(typeName));
-                    Map<String, Object> values = parseAnnotationValues(ctx.annotation());
+                    Map<String, Object> values = parseAnnotationValues(classResolver, ctx.annotation());
 
                     return new DeclaringMethodNodeExtenderElement() {
                         @Override

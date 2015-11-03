@@ -17,22 +17,24 @@ public class Main {
     public static void main(String[] args) throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
-        ClassResolver classResolver = new DefaultClassResolver(classLoader);
+        ClassResolver classResolver = new DefaultClassResolver(classLoader, Arrays.asList(
+            Support.class, Observable.class
+        ));
 
         ClassInspector classInspector = new DefaultClassInspector(classLoader);
 
         ParserFactory factory = new ParserFactory(classResolver, classInspector);
 
         ClassLoaderExtender loader = new ClassLoaderExtender(factory
-            .whenClass("@astava.java.agent.sample.EasyObservable.Support(astava.java.agent.sample.EasyObservable.Observable.class)")
+            .whenClass("@Support(Observable.class)")
             .then(factory
                 .whenMethod("")
                 .then(factory
                     .whenBody("this.? = ?;")
                     .then(factory.modBody(captures -> new SourceCode(
                         "observer.changingField(this, \"" + captures.get(0) + "\");\n" +
-                            "this." + captures.get(0) + " = ?;\n" +
-                            "observer.changedField(this, \"" + captures.get(0) + "\");\n"
+                        "this." + captures.get(0) + " = ?;\n" +
+                        "observer.changedField(this, \"" + captures.get(0) + "\");\n"
                         , captures.get(1)
                     )))
                 )
