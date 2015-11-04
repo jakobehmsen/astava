@@ -286,12 +286,12 @@ public class Main {
                                 }
 
                                 @Override
-                                public void visitAnnotation(String typeName, Map<String, Function<ClassResolver, Object>> values) {
+                                public void visitAnnotation(UnresolvedType type, Map<String, Function<ClassResolver, Object>> values) {
 
                                 }
 
                                 @Override
-                                public void visitImplements(List<String> typeNames) {
+                                public void visitImplements(List<UnresolvedType> types) {
 
                                 }
                             }));

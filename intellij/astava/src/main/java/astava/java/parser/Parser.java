@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -355,7 +354,7 @@ public class Parser {
 
             @Override
             public List<DomBuilder> visitImplementsInterface(JavaParser.ImplementsInterfaceContext ctx) {
-                List<String> typeNames = ctx.typeQualifier().stream().map(x -> x.getText()).collect(Collectors.toList());
+                List<UnresolvedType> typeNames = ctx.typeQualifier().stream().map(x -> new UnresolvedType(x.getText())).collect(Collectors.toList());
 
                 return Arrays.asList(new DomBuilder() {
                     @Override
@@ -370,7 +369,7 @@ public class Parser {
     private DomBuilder parseAnnotationBuilder(JavaParser.AnnotationContext ctx) {
         Map<String, Function<ClassResolver, Object>> values = parseAnnotationValues2(ctx);
 
-        return Factory.annotation(ctx.typeQualifier().getText(), values);
+        return Factory.annotation(new UnresolvedType(ctx.typeQualifier().getText()), values);
     }
 
     private Map<String, Function<ClassResolver, Object>> parseAnnotationValues2(JavaParser.AnnotationContext ctx) {
@@ -402,9 +401,9 @@ public class Parser {
 
             @Override
             public Function<ClassResolver, Object> visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
-                String unresolvedTypeName = ctx.typeQualifier().getText();
+                UnresolvedType type = new UnresolvedType(ctx.typeQualifier().getText());
                 return cr -> {
-                    String typeName = resolveName(cr, unresolvedTypeName);
+                    String typeName = type.resolveName(cr);
                     return Type.getType(Descriptor.getFieldDescriptor(Descriptor.get(typeName)));
                 };
             }
@@ -526,7 +525,7 @@ public class Parser {
 
         ExpressionDomBuilder valueBuilder = ctx.value != null ? parseExpressionBuilder(ctx.value, atRoot) : null;
 
-        return Factory.field(modifiers, name, rawTypeName);
+        return Factory.field(modifiers, name, new UnresolvedType(rawTypeName));
     }
 
     public StatementDomBuilder parseFieldInitializerBuilder() {
@@ -547,13 +546,13 @@ public class Parser {
         boolean isConstructor = ctx.returnType == null;
         String name = isConstructor ? "<init>" : ctx.name.getText();
         int modifiers = parseModifiers(ctx.modifiers());
-        List<ParameterInfo> tmpParameters = ctx.parameters().parameter().stream()
-            .map(x -> new ParameterInfo(x.type.getText(), x.name.getText()))
+        List<UnresolvedParameterInfo> tmpParameters = ctx.parameters().parameter().stream()
+            .map(x -> new UnresolvedParameterInfo(x.name.getText(), new UnresolvedType(x.type.getText())))
             .collect(Collectors.toList());
-        String returnType = isConstructor ? "void" : ctx.returnType.getText();
+        String returnTypeName = isConstructor ? "void" : ctx.returnType.getText();
         List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
 
-        return Factory.method(modifiers, name, tmpParameters, returnType, statementBuilders);
+        return Factory.method(modifiers, name, tmpParameters, new UnresolvedType(returnTypeName), statementBuilders);
     }
 
     public StatementDomBuilder parseStatementBuilder() {
@@ -588,9 +587,9 @@ public class Parser {
 
                 ctx.catchBlock().forEach(c -> {
                     StatementDomBuilder blockBuilder = parseBlock(c.statement());
-                    String type = c.type.getText();
+                    String typeName = c.type.getText();
                     String name = c.name.getText();
-                    catchBlocks.add(Factory.catchBlock(type, name, blockBuilder));
+                    catchBlocks.add(Factory.catchBlock(new UnresolvedType(typeName), name, blockBuilder));
                 });
 
                 if(ctx.finallyBlock() != null) {
@@ -776,7 +775,7 @@ public class Parser {
                             String name = ctx.identifier().ID().getText();
 
                             return (cr, cd, ci, locals, methodContext, captures) ->
-                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext, captures), name, locals, methodContext);
+                                Factory.fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext, captures), name, locals, methodContext);
                         }
 
                         @Override
@@ -845,7 +844,7 @@ public class Parser {
                             String name = ctx.identifier().ID().getText();
 
                             return (cr, cd, ci, locals, methodContext, captures) ->
-                                fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext, captures), name, locals, methodContext);
+                                Factory.fieldAccess(cr, cd, ci, targetBuilder.build(cr, cd, ci, locals, methodContext, captures), name, locals, methodContext);
                         }
 
                         @Override
@@ -901,7 +900,7 @@ public class Parser {
             @Override
             public ExpressionDomBuilder visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
                 String typeName = ctx.typeQualifier().getText();
-                return Factory.classLiteral(typeName);
+                return Factory.classLiteral(new UnresolvedType(typeName));
             }
 
             @Override
@@ -949,7 +948,7 @@ public class Parser {
                 ExpressionDomBuilder target = parseExpressionBuilder(ctx.expression13(), false);
                 String typeName = ctx.typeQualifier().getText();
 
-                return Factory.instanceOf(target, typeName);
+                return Factory.instanceOf(target, new UnresolvedType(typeName));
             }
 
             @Override
@@ -957,7 +956,7 @@ public class Parser {
                 String targetTypeName = ctx.typeQualifier().getText();
                 ExpressionDomBuilder expression = parseExpressionBuilder(ctx.expression(), false);
 
-                return Factory.typeCast(expression, targetTypeName);
+                return Factory.typeCast(expression, new UnresolvedType(targetTypeName));
             }
 
             @Override
@@ -1054,7 +1053,7 @@ public class Parser {
                 return top(target, (newTarget, newTargetLast) -> {
                     return blockExpr(Arrays.asList(
                         assignField(newTarget, fieldDeclaration.get().getName(), fieldDeclaration.get().getTypeName(), value),
-                        fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
+                        Factory.fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
                     ));
                 });
             }
@@ -1123,16 +1122,6 @@ public class Parser {
 
         String methodName = ctx.identifier().ID().getText();
         return Factory.invocation(targetBuilder, methodName, argumentBuilders);
-    }
-
-    public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals, MethodDeclaration methodContext) {
-        String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
-        ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-
-        // Should investigate hierarchy
-        Optional<FieldDeclaration> field = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
-
-        return accessField(target, fieldName, Descriptor.get(field.get().getTypeName()));
     }
 
     private static <T> T resolveDeclaredMethod(ClassInspector classInspector, ClassDeclaration targetClass, String methodName, List<ClassDeclaration> argumentTypes, BiFunction<ClassDeclaration, MethodDeclaration, T> reducer) {
@@ -1351,11 +1340,12 @@ public class Parser {
     }
 
     private BiPredicate<ClassResolver, List<AnnotationNode>> hasAnnotationPredicate(JavaParser.AnnotationContext annotationContext) {
-        String unresolvedTypeName = annotationContext.typeQualifier().getText();
+        //String unresolvedTypeName = annotationContext.typeQualifier().getText();
+        UnresolvedType type = new UnresolvedType(annotationContext.typeQualifier().getText());
         Map<String, Function<ClassResolver, Object>> values = parseAnnotationValues2(annotationContext);
 
         return (cr, visibleAnnotations) -> {
-            String typeName = resolveName(cr, unresolvedTypeName);
+            String typeName = type.resolveName(cr);
             if (visibleAnnotations != null && visibleAnnotations.size() > 0) {
                 return ((List<AnnotationNode>)visibleAnnotations).stream()
                     .anyMatch(x -> {
@@ -1466,13 +1456,14 @@ public class Parser {
             .map(x -> x.accept(new JavaBaseVisitor<DeclaringMethodNodeExtenderElement>() {
                 @Override
                 public DeclaringMethodNodeExtenderElement visitMethodModificationAnnotation(JavaParser.MethodModificationAnnotationContext ctx) {
-                    String typeName = ctx.annotation().typeQualifier().getText();
-                    String desc = Descriptor.getTypeDescriptor(Descriptor.get(typeName));
+                    UnresolvedType type = new UnresolvedType(ctx.annotation().typeQualifier().getText());
                     Map<String, Function<ClassResolver, Object>> values = parseAnnotationValues2(ctx.annotation());
 
                     return new DeclaringMethodNodeExtenderElement() {
                         @Override
                         public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
+                            String desc = Descriptor.getTypeDescriptor(Descriptor.get(type.resolveName(classResolver)));
+
                             return new DeclaringMethodNodeExtenderTransformer() {
                                 @Override
                                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {

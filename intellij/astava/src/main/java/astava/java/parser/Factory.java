@@ -1,6 +1,5 @@
 package astava.java.parser;
 
-import astava.debug.Debug;
 import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.Invocation;
@@ -11,6 +10,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static astava.java.DomFactory.accessField;
 
 public class Factory {
     public static StatementDomBuilder block(List<StatementDomBuilder> statementBuilders) {
@@ -47,14 +48,6 @@ public class Factory {
                     return false;
                 });
             }
-
-            /*@Override
-            public CodeDom map(List<Object> captures) {
-                return DomFactory.block(statementBuilders.stream()
-                    .map(x ->
-                        (StatementDom) x.map(captures))
-                    .collect(Collectors.toList()));
-            }*/
         };
     }
 
@@ -128,7 +121,7 @@ public class Factory {
         };
     }
 
-    public static FieldDomBuilder field(int modifier, String name, String typeName) {
+    public static FieldDomBuilder field(int modifier, String name, UnresolvedType type) {
         return new FieldDomBuilder() {
             @Override
             public FieldDeclaration declare(ClassResolver classResolver) {
@@ -140,7 +133,7 @@ public class Factory {
 
                     @Override
                     public String getTypeName() {
-                        return typeName;
+                        return type.resolveName(classResolver);
                     }
 
                     @Override
@@ -150,7 +143,7 @@ public class Factory {
 
                     @Override
                     public FieldDom build(ClassDeclaration classDeclaration) {
-                        return DomFactory.fieldDeclaration(modifier, name, Descriptor.get(typeName));
+                        return DomFactory.fieldDeclaration(modifier, name, Descriptor.get(getTypeName()));
                     }
                 };
             }
@@ -200,8 +193,8 @@ public class Factory {
         };
     }
 
-    public static MethodDomBuilder method(int modifier, String name, List<ParameterInfo> tmpParameters, String returnTypeName, StatementDom body) {
-        return method(modifier, name, tmpParameters, returnTypeName, Arrays.asList(new StatementDomBuilder() {
+    public static MethodDomBuilder method(int modifier, String name, List<UnresolvedParameterInfo> tmpParameters, UnresolvedType returnType, StatementDom body) {
+        return method(modifier, name, tmpParameters, returnType, Arrays.asList(new StatementDomBuilder() {
             @Override
             public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 return body;
@@ -209,12 +202,12 @@ public class Factory {
         }));
     }
 
-    public static MethodDomBuilder method(int modifier, String name, List<ParameterInfo> tmpParameters, String returnTypeName, List<StatementDomBuilder> statementBuilders) {
+    public static MethodDomBuilder method(int modifier, String name, List<UnresolvedParameterInfo> tmpParameters, UnresolvedType returnType, List<StatementDomBuilder> statementBuilders) {
         return new MethodDomBuilder() {
             @Override
             public MethodDeclaration declare(ClassResolver classResolver) {
                 List<ParameterInfo> parameters = tmpParameters.stream()
-                    .map(x -> new ParameterInfo(Parser.parseTypeQualifier(classResolver, x.descriptor), x.name))
+                    .map(x -> x.resolve(classResolver))// new ParameterInfo(Parser.parseTypeQualifier(classResolver, x.descriptor), x.name))
                     .collect(Collectors.toList());
 
                 return new MethodDeclaration() {
@@ -235,7 +228,7 @@ public class Factory {
 
                     @Override
                     public String getReturnTypeName() {
-                        return returnTypeName;
+                        return returnType.resolveName(classResolver);
                     }
 
                     @Override
@@ -253,7 +246,7 @@ public class Factory {
                         List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals, this, captures)).collect(Collectors.toList());
                         StatementDom body = DomFactory.block(statements);
 
-                        String returnType = Descriptor.get(returnTypeName);
+                        String returnType = Descriptor.get(getReturnTypeName());
 
                         // Ugly hack
                         // Instead: every leaf statement should either be a ret statement or one is injected
@@ -359,7 +352,7 @@ public class Factory {
                     },
                     (target, fieldChainAccess) -> {
                         for (String fieldName : fieldChainAccess)
-                            target = Parser.fieldAccess(cr, cd, ci, target, fieldName, locals, methodContext);
+                            target = fieldAccess(cr, cd, ci, target, fieldName, locals, methodContext);
 
                         return target;
                     },
@@ -425,7 +418,7 @@ public class Factory {
                     return DomFactory.top(DomFactory.self(), (newTarget, newTargetLast) -> {
                         return DomFactory.blockExpr(Arrays.asList(
                             DomFactory.assignField(newTarget, fieldDeclaration.get().getName(), descriptor, value),
-                            Parser.fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
+                            fieldAccess(cr, cd, ci, newTargetLast, name, locals, methodContext)
                         ));
                     });
                 }
@@ -510,7 +503,7 @@ public class Factory {
                             Descriptor.get(m.getReturnTypeName())
                         );
 
-                    Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
+                    //Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
 
                     String declaringClassDescriptor = Descriptor.get(c.getName());
                     return DomFactory.invoke(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
@@ -555,7 +548,7 @@ public class Factory {
                             Descriptor.get(m.getReturnTypeName())
                         );
 
-                    Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
+                    //Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
 
                     String declaringClassDescriptor = Descriptor.get(c.getName());
                     return DomFactory.invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
@@ -578,11 +571,11 @@ public class Factory {
         };
     }
 
-    public static DomBuilder annotation(String typeName, Map<String, Function<ClassResolver, Object>> values) {
+    public static DomBuilder annotation(UnresolvedType type, Map<String, Function<ClassResolver, Object>> values) {
         return new DomBuilder() {
             @Override
             public void accept(DomBuilderVisitor visitor) {
-                visitor.visitAnnotation(typeName, values);
+                visitor.visitAnnotation(type, values);
             }
         };
     }
@@ -600,18 +593,18 @@ public class Factory {
         };
     }
 
-    public static ExpressionDomBuilder instanceOf(ExpressionDomBuilder targetBuilder, String typeName) {
+    public static ExpressionDomBuilder instanceOf(ExpressionDomBuilder targetBuilder, UnresolvedType type) {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 ExpressionDom target = targetBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
-                return DomFactory.instanceOf(target, Descriptor.get(typeName));
+                return DomFactory.instanceOf(target, Descriptor.get(type.resolveName(classResolver)));
             }
 
             @Override
             public String toString() {
-                return targetBuilder + " instanceof " + typeName;
+                return targetBuilder + " instanceof " + type;
             }
         };
     }
@@ -640,18 +633,18 @@ public class Factory {
         };
     }
 
-    public static ExpressionDomBuilder typeCast(ExpressionDomBuilder expressionBuilder, String targetTypeName) {
+    public static ExpressionDomBuilder typeCast(ExpressionDomBuilder expressionBuilder, UnresolvedType targetType) {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 ExpressionDom expression = expressionBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
-                return DomFactory.typeCast(expression, Descriptor.get(targetTypeName));
+                return DomFactory.typeCast(expression, Descriptor.get(targetType.resolveName(classResolver)));
             }
 
             @Override
             public String toString() {
-                return "(" + targetTypeName + ") " + expressionBuilder;
+                return "(" + targetType + ") " + expressionBuilder;
             }
         };
     }
@@ -700,13 +693,13 @@ public class Factory {
         };
     }
 
-    public static CodeDomBuilder catchBlock(String type, String name, StatementDomBuilder blockBuilder) {
+    public static CodeDomBuilder catchBlock(UnresolvedType type, String name, StatementDomBuilder blockBuilder) {
         return new CodeDomBuilder() {
             @Override
             public CodeDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
                 StatementDom block = blockBuilder.build(classResolver, classDeclaration, classInspector, locals, methodContext, captures);
 
-                return DomFactory.catchBlock(type != null ? Descriptor.get(type) : null, name, block);
+                return DomFactory.catchBlock(type != null ? Descriptor.get(type.resolveName(classResolver)) : null, name, block);
             }
 
             @Override
@@ -760,17 +753,27 @@ public class Factory {
         };
     }
 
-    public static ExpressionDomBuilder classLiteral(String typeName) {
+    public static ExpressionDomBuilder classLiteral(UnresolvedType type) {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
-                return DomFactory.classLiteral(Descriptor.get(typeName));
+                return DomFactory.classLiteral(Descriptor.get(type.resolveName(classResolver)));
             }
 
             @Override
             public String toString() {
-                return typeName + ".class";
+                return type + ".class";
             }
         };
+    }
+
+    public static ExpressionDom fieldAccess(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, ExpressionDom target, String fieldName, Map<String, String> locals, MethodDeclaration methodContext) {
+        String targetType = Parser.expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
+        ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
+
+        // Should investigate hierarchy
+        Optional<FieldDeclaration> field = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
+
+        return accessField(target, fieldName, Descriptor.get(field.get().getTypeName()));
     }
 }

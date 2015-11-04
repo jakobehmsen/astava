@@ -11,8 +11,8 @@ public interface DomBuilderVisitor {
     void visitMethodBuilder(MethodDomBuilder methodBuilder);
     void visitStatementBuilder(StatementDomBuilder statementBuilder);
     void visitInitializer(StatementDomBuilder statement);
-    void visitAnnotation(String typeName, Map<String, Function<ClassResolver, Object>> values);
-    void visitImplements(List<String> typeNames);
+    void visitAnnotation(UnresolvedType type, Map<String, Function<ClassResolver, Object>> values);
+    void visitImplements(List<UnresolvedType> types);
 
     abstract class Return<T> implements DomBuilderVisitor {
         private T result;

@@ -53,8 +53,8 @@ public class ParserFactory {
                     }
 
                     @Override
-                    public void visitImplements(List<String> typeNames) {
-                        typeNames.forEach(x -> thisClass.addInterface(x));
+                    public void visitImplements(List<UnresolvedType> types) {
+                        types.forEach(x -> thisClass.addInterface(x.resolveName(classResolver)));
                     }
                 });
 
@@ -81,14 +81,14 @@ public class ParserFactory {
                     }
 
                     @Override
-                    public void visitAnnotation(String typeName, Map<String, Function<ClassResolver, Object>> values) {
-                        setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName), values));
+                    public void visitAnnotation(UnresolvedType type, Map<String, Function<ClassResolver, Object>> values) {
+                        setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(type.resolveName(classResolver1)), values));
                     }
 
                     @Override
-                    public void visitImplements(List<String> typeNames) {
+                    public void visitImplements(List<UnresolvedType> types) {
                         setResult((classNode2, thisClass2, classResolver2, classInspector2) -> {
-                            typeNames.forEach(x -> classNode2.interfaces.add(Descriptor.get(x)));
+                            types.forEach(x -> classNode2.interfaces.add(Descriptor.get(x.resolveName(classResolver2))));
                         });
                     }
                 }.visit(d).transform(classNode1, thisClass1, classResolver1, classInspector1);

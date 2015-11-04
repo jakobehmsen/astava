@@ -31,7 +31,7 @@ public class ClassLoaderExtender extends ClassLoader {
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        System.out.println("Loading class " + name);
+        //System.out.println("Loading class " + name);
 
         Class<?> c = findLoadedClass(name);
 
@@ -56,7 +56,7 @@ public class ClassLoaderExtender extends ClassLoader {
             ClassNode classNode = new ClassNode(Opcodes.ASM5);
             cr.accept(classNode, org.objectweb.asm.ClassReader.EXPAND_FRAMES);
 
-            System.out.println(classNode.name);
+            //System.out.println(classNode.name);
 
             boolean didTransform = extender.transform(classNode, classResolver, classInspector);
 

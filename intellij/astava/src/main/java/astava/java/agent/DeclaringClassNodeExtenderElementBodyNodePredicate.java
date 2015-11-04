@@ -28,9 +28,9 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
         return (classNode, thisClass, classResolver, methodNode) -> {
             ArrayList<Object> captures = new ArrayList<>();
 
-            Textifier textifier = new Textifier();
+            /*Textifier textifier = new Textifier();
             methodNode.accept(new TraceMethodVisitor(textifier));
-            textifier.getText().forEach(x -> System.out.print(x));
+            textifier.getText().forEach(x -> System.out.print(x));*/
 
             ByteCodeToTree byteCodeToTree = new ByteCodeToTree(methodNode);
             methodNode.instructions.accept(byteCodeToTree);

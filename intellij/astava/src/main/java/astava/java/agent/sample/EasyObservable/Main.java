@@ -18,7 +18,7 @@ public class Main {
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
         ClassResolver classResolver = new DefaultClassResolver(classLoader, Arrays.asList(
-            Support.class, Observable.class
+            Support.class, Observable.class, Observer.class
         ));
 
         ClassInspector classInspector = new DefaultClassInspector(classLoader);
@@ -39,9 +39,9 @@ public class Main {
                     )))
                 )
                 .andThen(factory.modClass(
-                    "implements astava.java.agent.sample.EasyObservable.Observable\n" +
-                    "private astava.java.agent.sample.EasyObservable.Observer observer;\n" +
-                    "public void setObserver(astava.java.agent.sample.EasyObservable.Observer observer) {this.observer = observer;}"
+                    "implements Observable\n" +
+                    "private Observer observer;\n" +
+                    "public void setObserver(Observer observer) {this.observer = observer;}"
                 )
             )),
             classResolver, classInspector

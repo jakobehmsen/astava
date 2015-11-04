@@ -26,9 +26,9 @@ public interface DeclaringMethodNodeExtenderTransformer {
             transform(classNode, thisClass, classResolver, classInspector, methodNode, generator, originalInstructions);
         });
 
-        Printer printer = new Textifier();
+        /*Printer printer = new Textifier();
         methodNode.accept(new TraceMethodVisitor(printer));
-        printer.getText().forEach(x -> System.out.print(x.toString()));
+        printer.getText().forEach(x -> System.out.print(x.toString()));*/
     }
 
     default DeclaringClassNodeExtenderTransformer when(DeclaringClassNodeExtenderElementMethodNodePredicate condition) {
