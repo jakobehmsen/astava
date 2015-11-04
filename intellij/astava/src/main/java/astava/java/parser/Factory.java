@@ -8,6 +8,7 @@ import astava.tree.*;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -577,7 +578,7 @@ public class Factory {
         };
     }
 
-    public static DomBuilder annotation(String typeName, Map<String, Object> values) {
+    public static DomBuilder annotation(String typeName, Map<String, Function<ClassResolver, Object>> values) {
         return new DomBuilder() {
             @Override
             public void accept(DomBuilderVisitor visitor) {

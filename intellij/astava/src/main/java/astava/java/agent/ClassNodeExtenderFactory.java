@@ -2,6 +2,7 @@ package astava.java.agent;
 
 import astava.java.Descriptor;
 import astava.java.gen.MethodGenerator;
+import astava.java.parser.ClassResolver;
 import astava.tree.*;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Opcodes;
@@ -12,6 +13,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -20,14 +22,17 @@ public class ClassNodeExtenderFactory {
         return (classNode, thisClass, classResolver, classInspector) -> classNode.superName = superName;
     }
 
-    public static DeclaringClassNodeExtenderTransformer addAnnotation(String typeName, Map<String, Object> values) {
+    public static DeclaringClassNodeExtenderTransformer addAnnotation(String typeName, Map<String, Function<ClassResolver, Object>> values) {
         return (classNode, thisClass, classResolver, classInspector) -> {
             String desc = Descriptor.getTypeDescriptor(typeName);
             //new Annotation();
             //classNode.visibleTypeAnnotations.add(new AnnotationNode(desc));
             //classNode.visibleAnnotations.add(new AnnotationNode(desc));
             AnnotationVisitor annotation = classNode.visitAnnotation(desc, true);
-            values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
+            values.entrySet().stream().forEach(v -> {
+                Object value = v.getValue().apply(classResolver);
+                annotation.visit(v.getKey(), value);
+            });
         };
     }
 

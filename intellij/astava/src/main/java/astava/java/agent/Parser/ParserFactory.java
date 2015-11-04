@@ -81,7 +81,7 @@ public class ParserFactory {
                     }
 
                     @Override
-                    public void visitAnnotation(String typeName, Map<String, Object> values) {
+                    public void visitAnnotation(String typeName, Map<String, Function<ClassResolver, Object>> values) {
                         setResult(ClassNodeExtenderFactory.addAnnotation(Descriptor.get(typeName), values));
                     }
 
@@ -99,10 +99,10 @@ public class ParserFactory {
     }
 
     public DeclaringClassNodeExtenderElementPredicate whenClass(String sourceCode) throws IOException {
-        List<ClassNodePredicate> predicates = new Parser(sourceCode).parseClassPredicates(classResolver, classInspector);
+        List<ClassNodePredicate> predicates = new Parser(sourceCode).parseClassPredicates(classInspector);
 
         return (classNode, thisClass, classResolver1) ->
-            predicates.stream().allMatch(p -> p.test(classNode));
+            predicates.stream().allMatch(p -> p.test(classNode, classResolver1));
     }
 
     public DeclaringClassNodeExtenderElement modClass(BiFunction<ClassNode, ClassDeclaration, String> function) throws IOException {
@@ -131,7 +131,7 @@ public class ParserFactory {
     }*/
 
     public DeclaringClassNodeExtenderElementMethodNodePredicate whenMethod(String sourceCode) throws IOException {
-        List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates(classResolver);
+        List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates();
 
         return (classNode, thisClass, classResolver1, methodNode) ->
             predicates.stream().allMatch(p -> p.test(classNode, thisClass, classResolver1, methodNode));

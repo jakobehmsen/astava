@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -349,7 +350,7 @@ public class Parser {
 
             @Override
             public List<DomBuilder> visitAnnotation(JavaParser.AnnotationContext ctx) {
-                return Arrays.asList(parseAnnotationBuilder(classResolver, ctx));
+                return Arrays.asList(parseAnnotationBuilder(ctx));
             }
 
             @Override
@@ -366,41 +367,46 @@ public class Parser {
         })).flatMap(x -> x.stream()).collect(Collectors.toList());
     }
 
-    private DomBuilder parseAnnotationBuilder(ClassResolver classResolver, JavaParser.AnnotationContext ctx) {
-        Map<String, Object> values = parseAnnotationValues(classResolver, ctx);
+    private DomBuilder parseAnnotationBuilder(JavaParser.AnnotationContext ctx) {
+        Map<String, Function<ClassResolver, Object>> values = parseAnnotationValues2(ctx);
 
         return Factory.annotation(ctx.typeQualifier().getText(), values);
     }
 
-    private Map<String, Object> parseAnnotationValues(ClassResolver classResolver, JavaParser.AnnotationContext ctx) {
-        Map<String, Object> values = new Hashtable<>();
+    private Map<String, Function<ClassResolver, Object>> parseAnnotationValues2(JavaParser.AnnotationContext ctx) {
+        Map<String, Function<ClassResolver, Object>> values = new Hashtable<>();
         if(ctx.valueArgument != null) {
-            Object value = parsePrimitive(classResolver, ctx.valueArgument);
+            Function<ClassResolver, Object> value = parsePrimitive2(ctx.valueArgument);
             values.put("value", value);
         }
         ctx.annotationArgument().forEach(a -> {
-            Object value = parsePrimitive(classResolver, a.value);
+            Function<ClassResolver, Object> value = parsePrimitive2(a.value);
             values.put(a.name.getText(), value);
         });
         return values;
     }
 
-    private Object parsePrimitive(ClassResolver classResolver, JavaParser.ExpressionContext context) {
-        return context.accept(new JavaBaseVisitor<Object>() {
+    private Function<ClassResolver, Object> parsePrimitive2(JavaParser.ExpressionContext context) {
+        return context.accept(new JavaBaseVisitor<Function<ClassResolver, Object>>() {
             @Override
-            public Object visitIntLiteral(JavaParser.IntLiteralContext ctx) {
-                return parseIntValue(ctx);
+            public Function<ClassResolver, Object> visitIntLiteral(JavaParser.IntLiteralContext ctx) {
+                int value = parseIntValue(ctx);
+                return cr -> value;
             }
 
             @Override
-            public Object visitStringLiteral(JavaParser.StringLiteralContext ctx) {
-                return parseStringValue(ctx);
+            public Function<ClassResolver, Object> visitStringLiteral(JavaParser.StringLiteralContext ctx) {
+                String value = parseStringValue(ctx);
+                return cr -> value;
             }
 
             @Override
-            public Object visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
-                String typeName = resolveName(classResolver, ctx.typeQualifier().getText());
-                return Type.getType(Descriptor.getFieldDescriptor(Descriptor.get(typeName)));
+            public Function<ClassResolver, Object> visitClassLiteral(JavaParser.ClassLiteralContext ctx) {
+                String unresolvedTypeName = ctx.typeQualifier().getText();
+                return cr -> {
+                    String typeName = resolveName(cr, unresolvedTypeName);
+                    return Type.getType(Descriptor.getFieldDescriptor(Descriptor.get(typeName)));
+                };
             }
         });
     }
@@ -1187,7 +1193,7 @@ public class Parser {
         return false;
     }
 
-    public List<ClassNodePredicate> parseClassPredicates(ClassResolver classResolver, ClassInspector classInspector) {
+    public List<ClassNodePredicate> parseClassPredicates(ClassInspector classInspector) {
         JavaParser.ClassPredicateContext ctx = parser.classPredicate();
 
         ArrayList<ClassNodePredicate> predicates = new ArrayList<>();
@@ -1196,9 +1202,9 @@ public class Parser {
             x.accept(new JavaBaseVisitor<Void>() {
                 @Override
                 public Void visitAnnotation(JavaParser.AnnotationContext ctx) {
-                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(classResolver, ctx);
-                    predicates.add(classNode ->
-                        hasAnnotation.test((List<AnnotationNode>)classNode.visibleAnnotations));
+                    BiPredicate<ClassResolver, List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx);
+                    predicates.add((classNode, cr) ->
+                        hasAnnotation.test(cr, (List<AnnotationNode>)classNode.visibleAnnotations));
 
                     return null;
                 }
@@ -1215,7 +1221,7 @@ public class Parser {
                 @Override
                 public Void visitClassPredicateName(JavaParser.ClassPredicateNameContext ctx) {
                     String name = Descriptor.get(ctx.name.getText());
-                    predicates.add(classNode ->
+                    predicates.add((classNode, cr) ->
                         classNode.name.equals(name));
 
                     return null;
@@ -1225,7 +1231,7 @@ public class Parser {
                 public Void visitClassPredicateExtends(JavaParser.ClassPredicateExtendsContext ctx) {
                     String superClassName = Descriptor.get(ctx.superClassName.getText());
                     // What about indirect inheritance?
-                    predicates.add(classNode -> {
+                    predicates.add((classNode, cr) -> {
                         if(classNode.superName.equals(superClassName))
                             return true;
 
@@ -1254,7 +1260,7 @@ public class Parser {
                     List<String> interfaceNames =
                         ctx.classPredicateInterface().stream().map(x -> Descriptor.get(x.getText())).collect(Collectors.toList());
                     // What about indirect implementors?
-                    predicates.add(classNode -> {
+                    predicates.add((classNode, cr) -> {
                         if(interfaceNames.stream().allMatch(interfaceName -> classNode.interfaces.contains(interfaceName)))
                             return true;
 
@@ -1286,7 +1292,7 @@ public class Parser {
                     String name = ctx.name != null ? ctx.name.getText() : null;
                     String type = ctx.type != null ? Descriptor.getFieldDescriptor(Descriptor.get(ctx.type.getText())) : null;
 
-                    predicates.add(classNode -> ((List<FieldNode>)classNode.fields).stream().anyMatch(x -> {
+                    predicates.add((classNode, cr) -> ((List<FieldNode>)classNode.fields).stream().anyMatch(x -> {
                         if(modifier != 0 && x.access != modifier)
                             return false;
 
@@ -1312,7 +1318,7 @@ public class Parser {
                     List<String> parameterTypes = ctx.classPredicateMethodParameters().typeQualifier().stream()
                         .map(x -> Descriptor.getFieldDescriptor(Descriptor.get(x.getText()))).collect(Collectors.toList());
 
-                    predicates.add(classNode -> ((List<MethodNode>)classNode.methods).stream().anyMatch(x -> {
+                    predicates.add((classNode, cr) -> ((List<MethodNode>)classNode.methods).stream().anyMatch(x -> {
                         if(modifier != 0 && x.access != modifier)
                             return false;
 
@@ -1344,12 +1350,13 @@ public class Parser {
         return rName != null ? rName : name;
     }
 
-    private Predicate<List<AnnotationNode>> hasAnnotationPredicate(ClassResolver classResolver, JavaParser.AnnotationContext annotationContext) {
-        String typeName = resolveName(classResolver, annotationContext.typeQualifier().getText());
-        Map<String, Object> values = parseAnnotationValues(classResolver, annotationContext);
+    private BiPredicate<ClassResolver, List<AnnotationNode>> hasAnnotationPredicate(JavaParser.AnnotationContext annotationContext) {
+        String unresolvedTypeName = annotationContext.typeQualifier().getText();
+        Map<String, Function<ClassResolver, Object>> values = parseAnnotationValues2(annotationContext);
 
-        return visibleAnnotations -> {
-            if(visibleAnnotations != null && visibleAnnotations.size() > 0) {
+        return (cr, visibleAnnotations) -> {
+            String typeName = resolveName(cr, unresolvedTypeName);
+            if (visibleAnnotations != null && visibleAnnotations.size() > 0) {
                 return ((List<AnnotationNode>)visibleAnnotations).stream()
                     .anyMatch(x -> {
                         if(Descriptor.getDescriptorName(x.desc).equals(typeName)) {
@@ -1362,7 +1369,8 @@ public class Parser {
                                             Object value = x.values.get(i + 1);
 
                                             if(values.containsKey(name)) {
-                                                return values.get(name).equals(value);
+                                                Object expectedValue = values.get(name).apply(cr);
+                                                return expectedValue.equals(value);
                                             }
 
                                             return true;
@@ -1380,17 +1388,17 @@ public class Parser {
         };
     }
 
-    public List<DeclaringClassNodeExtenderElementMethodNodePredicate> parseMethodPredicates(ClassResolver classResolver) {
+    public List<DeclaringClassNodeExtenderElementMethodNodePredicate> parseMethodPredicates() {
         JavaParser.MethodPredicateContext ctx = parser.methodPredicate();
 
         return ctx.methodPredicateElement().stream()
             .map(x -> x.accept(new JavaBaseVisitor<DeclaringClassNodeExtenderElementMethodNodePredicate>() {
                 @Override
                 public DeclaringClassNodeExtenderElementMethodNodePredicate visitMethodPredicateAnnotation(JavaParser.MethodPredicateAnnotationContext ctx) {
-                    Predicate<List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(classResolver, ctx.annotation());
+                    BiPredicate<ClassResolver, List<AnnotationNode>> hasAnnotation = hasAnnotationPredicate(ctx.annotation());
 
                     return (classNode, thisClass, classResolver, methodNode) ->
-                        hasAnnotation.test((List<AnnotationNode>) methodNode.visibleAnnotations);
+                        hasAnnotation.test(classResolver, (List<AnnotationNode>) methodNode.visibleAnnotations);
                 }
 
                 @Override
@@ -1460,7 +1468,7 @@ public class Parser {
                 public DeclaringMethodNodeExtenderElement visitMethodModificationAnnotation(JavaParser.MethodModificationAnnotationContext ctx) {
                     String typeName = ctx.annotation().typeQualifier().getText();
                     String desc = Descriptor.getTypeDescriptor(Descriptor.get(typeName));
-                    Map<String, Object> values = parseAnnotationValues(classResolver, ctx.annotation());
+                    Map<String, Function<ClassResolver, Object>> values = parseAnnotationValues2(ctx.annotation());
 
                     return new DeclaringMethodNodeExtenderElement() {
                         @Override
@@ -1469,7 +1477,10 @@ public class Parser {
                                 @Override
                                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                                     AnnotationVisitor annotation = methodNode.visitAnnotation(desc, true);
-                                    values.entrySet().stream().forEach(v -> annotation.visit(v.getKey(), v.getValue()));
+                                    values.entrySet().stream().forEach(v -> {
+                                        Object value = v.getValue().apply(classResolver);
+                                        annotation.visit(v.getKey(), value);
+                                    });
                                 }
                             };
                         }

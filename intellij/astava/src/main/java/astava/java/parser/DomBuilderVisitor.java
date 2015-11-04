@@ -2,6 +2,7 @@ package astava.java.parser;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public interface DomBuilderVisitor {
     void visitClassBuilder(ClassDomBuilder classBuilder);
@@ -10,7 +11,7 @@ public interface DomBuilderVisitor {
     void visitMethodBuilder(MethodDomBuilder methodBuilder);
     void visitStatementBuilder(StatementDomBuilder statementBuilder);
     void visitInitializer(StatementDomBuilder statement);
-    void visitAnnotation(String typeName, Map<String, Object> values);
+    void visitAnnotation(String typeName, Map<String, Function<ClassResolver, Object>> values);
     void visitImplements(List<String> typeNames);
 
     abstract class Return<T> implements DomBuilderVisitor {
