@@ -476,16 +476,16 @@ public class DomFactory {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitBlock(List<StatementDom> otherStatements) {
-                        /*List<StatementDom> s = statements;
+                        List<StatementDom> s = statements;
                         r.accept(
                             s.size() == otherStatements.size() &&
                             IntStream.range(0, statements.size())
                             .allMatch(i ->
                                 s.get(i).equals(otherStatements.get(i))
                             )
-                        );*/
+                        );
 
-                        r.accept(statements.equals(otherStatements));
+                        //r.accept(statements.equals(otherStatements));
                     }
                 };
             }

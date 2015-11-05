@@ -4,6 +4,7 @@ import astava.java.ArithmeticOperator;
 import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.RelationalOperator;
+import astava.tree.Dom;
 import astava.tree.StatementDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,7 +29,7 @@ public class ByteCodeToTreeTest {
     public static class CaseClass {
         private int i = 0;
 
-        /*public void test1() {
+        public void test1() {
             this.i = 10;
         }
 
@@ -137,7 +138,7 @@ public class ByteCodeToTreeTest {
             return DomFactory.block(Arrays.asList(
                 DomFactory.ret(DomFactory.add(DomFactory.accessVar("arg0"), DomFactory.accessVar("arg1")))
             ));
-        }*/
+        }
 
         public int test8() {
             int i;
@@ -178,6 +179,99 @@ public class ByteCodeToTreeTest {
                     DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(1)))),
                     DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(0))))
                 )
+            ));
+        }
+
+        public int test10() {
+            if(this.i == 1) {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        public static StatementDom fortest10expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ifElse(
+                    DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
+                    DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(1)))),
+                    DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(0))))
+                )
+            ));
+        }
+
+        public int test11() {
+            int i = 1;
+
+            if(this.i == 1) {
+                return i;
+            } else {
+                i = 0;
+            }
+
+            return i;
+        }
+
+        public static StatementDom fortest11expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "i"),
+                DomFactory.assignVar("i", DomFactory.literal(1)),
+                DomFactory.ifElse(
+                    DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
+                    DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.accessVar("i")))),
+                    DomFactory.block(Arrays.asList(
+                        DomFactory.assignVar("i", DomFactory.literal(0)),
+                        DomFactory.ret(DomFactory.accessVar("i"))
+                    ))
+                )
+            ));
+        }
+
+        public int test12() {
+            int i = 1;
+
+            if(this.i == 1) {
+                i = 0;
+            } else {
+                return i;
+            }
+
+            return i;
+        }
+
+        public static StatementDom fortest12expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "i"),
+                DomFactory.assignVar("i", DomFactory.literal(1)),
+                DomFactory.ifElse(
+                    DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
+                    DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(0)))),
+                    DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.accessVar("i"))))
+                ),
+                DomFactory.ret(DomFactory.accessVar("i"))
+            ));
+        }
+
+        public int test13() {
+            int i = 0;
+
+            if(this.i == 1) {
+                i = 1;
+            }
+
+            return i;
+        }
+
+        public static StatementDom fortest13expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "i"),
+                DomFactory.assignVar("i", DomFactory.literal(0)),
+                DomFactory.ifElse(
+                    DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
+                    DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(1)))),
+                    DomFactory.block(Arrays.asList())
+                ),
+                DomFactory.ret(DomFactory.accessVar("i"))
             ));
         }
     }
