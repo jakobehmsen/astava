@@ -2,6 +2,7 @@ package astava.java.gen;
 
 import astava.java.Descriptor;
 import astava.java.DomFactory;
+import astava.java.RelationalOperator;
 import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.*;
 import org.objectweb.asm.*;
@@ -14,25 +15,38 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ByteCodeToTree extends InstructionAdapter {
-    private AsStatementOrExpression asStatementOrExpression;
+    private static class LocalFrame {
+        public static final int STATE_UNCONDITIONAL = 0;
+        public static final int STATE_IF_TRUE = 1;
+        public static final int STATE_IF_FALSE = 2;
 
-    private interface AsStatementOrExpression {
-        StatementDom toStatement();
-        ExpressionDom toExpression();
+        public int state = STATE_UNCONDITIONAL;
+        public Stack<ExpressionDom> stack = new Stack<>();
+        public ArrayList<StatementDom> statements = new ArrayList<>();
+
+        public ExpressionDom condition;
+        public Label ifFalseStart;
+        public StatementDom ifTrue;
+        public Label endOfIfElse;
     }
 
-    // Multiple stacks for each branch?
     private MethodNode methodNode;
     private Type returnType;
-    private Stack<ExpressionDom> stack = new Stack<>();
-    private ArrayList<StatementDom> statements = new ArrayList<>();
+    /*private Stack<ExpressionDom> stack = new Stack<>();
+    private ArrayList<StatementDom> statements = new ArrayList<>();*/
     private Hashtable<Integer, String> varToName = new Hashtable<>();
+    private Stack<LocalFrame> localFrames = new Stack<>();
+    private LocalFrame root;
 
     public ByteCodeToTree(MethodNode methodNode) {
         super(Opcodes.ASM5, new MethodVisitor(Opcodes.ASM5, null) {
         });
         this.methodNode = methodNode;
         this.returnType = Type.getReturnType(methodNode.desc);
+
+        root = new LocalFrame();
+        localFrames.push(root);
+        localFrames.push(new LocalFrame());
     }
 
     private void checkDecideStatementOrExpression() {
@@ -42,14 +56,24 @@ public class ByteCodeToTree extends InstructionAdapter {
         }*/
     }
 
+    public Stack<ExpressionDom> getStack() {
+        return localFrames.peek().stack;
+    }
+
+    public List<StatementDom> getStatements() {
+        return localFrames.peek().statements;
+    }
+
     public void prepareVariables(Consumer<MethodVisitor> accepter) {
         accepter.accept(new MethodVisitor(Opcodes.ASM5) {
             @Override
             public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
                 if(index > 0) {
-                    varToName.put(index, name);
-                    if(index > Type.getArgumentTypes(methodNode.desc).length)
-                        statements.add(DomFactory.declareVar(desc, name));
+                    if(!varToName.containsKey(index)) {
+                        varToName.put(index, name);
+                        if (index > Type.getArgumentTypes(methodNode.desc).length)
+                            getStatements().add(DomFactory.declareVar(desc, name));
+                    }
                 }
             }
         });
@@ -148,38 +172,38 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void iconst(int cst) {
-        stack.push(DomFactory.literal(cst));
+        getStack().push(DomFactory.literal(cst));
     }
 
     @Override
     public void invokevirtual(String owner, String name, String desc, boolean itf) {
         Type[] argumentTypes = Type.getArgumentTypes(desc);
         List<ExpressionDom> arguments =
-            Arrays.asList(argumentTypes).stream().map(x -> stack.pop()).collect(Collectors.toList());
-        ExpressionDom target = stack.pop();
+            Arrays.asList(argumentTypes).stream().map(x -> getStack().pop()).collect(Collectors.toList());
+        ExpressionDom target = getStack().pop();
         if(Type.getReturnType(desc).equals(Type.VOID_TYPE))
-            statements.add(DomFactory.invokeVirtual(owner, name, desc, target, arguments));
+            getStatements().add(DomFactory.invokeVirtual(owner, name, desc, target, arguments));
         else
-            stack.push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
+            getStack().push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
     }
 
     @Override
     public void invokespecial(String owner, String name, String desc, boolean itf) {
         Type[] argumentTypes = Type.getArgumentTypes(desc);
         List<ExpressionDom> arguments =
-            Arrays.asList(argumentTypes).stream().map(x -> stack.pop()).collect(Collectors.toList());
-        ExpressionDom target = stack.pop();
+            Arrays.asList(argumentTypes).stream().map(x -> getStack().pop()).collect(Collectors.toList());
+        ExpressionDom target = getStack().pop();
 
         if(Type.getReturnType(desc).equals(Type.VOID_TYPE))
-            statements.add(DomFactory.invokeSpecial(owner, name, desc, target, arguments));
+            getStatements().add(DomFactory.invokeSpecial(owner, name, desc, target, arguments));
         else
-            stack.push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
+            getStack().push(DomFactory.invokeVirtualExpr(owner, name, desc, target, arguments));
     }
 
     @Override
     public void aconst(Object cst) {
         if(cst instanceof String) {
-            stack.push(DomFactory.literal((String)cst));
+            getStack().push(DomFactory.literal((String) cst));
         } else {
             // What?
         }
@@ -187,18 +211,18 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void add(Type type) {
-        ExpressionDom rhs = stack.pop();
-        ExpressionDom lhs = stack.pop();
-        stack.push(DomFactory.add(lhs, rhs));
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        getStack().push(DomFactory.add(lhs, rhs));
     }
 
     @Override
     public void pop() {
         // An expression as statement? Always? When not?
-        ExpressionDom expression = stack.pop();
+        ExpressionDom expression = getStack().pop();
 
         // E.g. invocation expressions are translated into their statement counterpart
-        statements.add(expressionToStatement(expression));
+        getStatements().add(expressionToStatement(expression));
     }
 
     @Override
@@ -207,25 +231,25 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
 
-        stack.push(DomFactory.accessStaticField(owner, name, Type.getType(typeDescriptor).getDescriptor()));
+        getStack().push(DomFactory.accessStaticField(owner, name, Type.getType(typeDescriptor).getDescriptor()));
     }
 
     @Override
     public void putfield(String owner, String name, String desc) {
         // If getfield rightafter (i.e. last statement is putfield), then convert into putfield expression
-        ExpressionDom value = stack.pop();
-        ExpressionDom target = stack.pop();
-        statements.add(DomFactory.assignField(target, name, desc, value));
+        ExpressionDom value = getStack().pop();
+        ExpressionDom target = getStack().pop();
+        getStatements().add(DomFactory.assignField(target, name, desc, value));
     }
 
     @Override
     public void getfield(String owner, String name, String desc) {
         // desc: LClassName; or primitive
 
-        ExpressionDom target = stack.pop();
+        ExpressionDom target = getStack().pop();
         String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
 
-        stack.push(DomFactory.accessField(target, name, Type.getType(typeDescriptor).getDescriptor()));
+        getStack().push(DomFactory.accessField(target, name, Type.getType(typeDescriptor).getDescriptor()));
     }
 
     @Override
@@ -241,7 +265,7 @@ public class ByteCodeToTree extends InstructionAdapter {
                 return methodNode.parameters != null ? (String)methodNode.parameters.get(var - 1) : "arg" + (var - 1);
             else {
                 String name = "var" + (var - parameterCount - 1);
-                statements.add(DomFactory.declareVar(type, name));
+                getStatements().add(DomFactory.declareVar(type, name));
                 return name;
             }
         });
@@ -253,10 +277,10 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         } else {
             if(var == 0) {
-                stack.push(DomFactory.self());
+                getStack().push(DomFactory.self());
             } else {
                 String name = getVarName(var, type.getDescriptor());
-                stack.push(DomFactory.accessVar(name));
+                getStack().push(DomFactory.accessVar(name));
             }
         }
     }
@@ -275,8 +299,8 @@ public class ByteCodeToTree extends InstructionAdapter {
                 //stack.push(DomFactory.self());
             } else {
                 String name = getVarName(var, type.getDescriptor());
-                ExpressionDom value = stack.pop();
-                statements.add(DomFactory.assignVar(name, value));
+                ExpressionDom value = getStack().pop();
+                getStatements().add(DomFactory.assignVar(name, value));
             }
         }
     }
@@ -303,14 +327,147 @@ public class ByteCodeToTree extends InstructionAdapter {
     @Override
     public void areturn(Type type) {
         if(type.equals(Type.VOID_TYPE)) {
-            statements.add(DomFactory.ret());
+            getStatements().add(DomFactory.ret());
         } else {
-            ExpressionDom expression = stack.pop();
+            ExpressionDom expression = getStack().pop();
 
             expression = ensureType(returnType, expression);
 
-            statements.add(DomFactory.ret(expression));
+            getStatements().add(DomFactory.ret(expression));
         }
+
+        LocalFrame frame = localFrames.peek();
+
+        /*
+        What about
+
+        if(someCondition) {
+            trueBlock
+            return ...;
+        }
+
+        return ...;
+        */
+        switch (frame.state) {
+            case LocalFrame.STATE_IF_TRUE:
+                // Should pop?
+                break;
+            case LocalFrame.STATE_IF_FALSE: {
+               /* if(frame.ifFalseStart == label) {
+                    frame.ifTrueStatements = frame.statements;
+                    frame.statements = new ArrayList<>();
+                    frame.state = LocalFrame.STATE_IF_FALSE;
+                }*/
+                // At end of false block
+                // Construct if-else-statement?
+
+                StatementDom ifFalse = DomFactory.block(frame.statements);
+
+                // Build if-else-statement
+                getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, ifFalse));
+                LocalFrame poppedFrame = localFrames.pop();
+                localFrames.peek().statements.addAll(poppedFrame.statements);
+                break;
+        } default: {
+                LocalFrame poppedFrame = localFrames.pop();
+                localFrames.peek().statements.addAll(poppedFrame.statements);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void ifeq(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+    }
+
+    @Override
+    public void ificmpeq(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+    }
+
+    @Override
+    public void ificmpne(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+    }
+
+    private void branch(ExpressionDom condition, Label label) {
+        LocalFrame branchFrame = new LocalFrame();
+        branchFrame.state = LocalFrame.STATE_IF_TRUE;
+        branchFrame.condition = condition;
+        branchFrame.ifFalseStart = label;
+
+        localFrames.push(branchFrame);
+    }
+
+    @Override
+    public void goTo(Label label) {
+        LocalFrame frame = localFrames.peek();
+
+        switch (frame.state) {
+            case LocalFrame.STATE_IF_TRUE:
+                frame.endOfIfElse = label;
+                break;
+        }
+    }
+
+    @Override
+    public void visitLabel(Label label) {
+        if(localFrames.size() == 0)
+            return;
+
+        LocalFrame frame = localFrames.peek();
+
+        switch (frame.state) {
+            case LocalFrame.STATE_IF_TRUE:
+                if(frame.ifFalseStart == label) {
+                    frame.ifTrue = DomFactory.block(frame.statements);
+
+                    if(frame.endOfIfElse != null) {
+                        // True block of if-else-statement
+                        frame.statements = new ArrayList<>();
+                        frame.state = LocalFrame.STATE_IF_FALSE;
+                    } else {
+                        // True block of if-statement
+                        frame.statements = new ArrayList<>();
+
+                        // Build if-statement
+                        // Create special if-statement?
+                        getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, DomFactory.block(Arrays.asList())));
+
+                        LocalFrame poppedFrame = localFrames.pop();
+                        localFrames.peek().statements.addAll(poppedFrame.statements);
+                    }
+                }
+                break;
+            case LocalFrame.STATE_IF_FALSE:
+                if(frame.endOfIfElse == label) {
+                    StatementDom ifFalse = DomFactory.block(frame.statements);
+                    frame.statements = new ArrayList<>();
+
+                    // Build if-else-statement
+                    getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, ifFalse));
+
+                    LocalFrame poppedFrame = localFrames.pop();
+                    localFrames.peek().statements.addAll(poppedFrame.statements);
+                }
+                break;
+        }
+
+        // If at else block, then extract true statements into block
+        // True statements ended with an unconditional jump, that label is interpreted as the end of the if-else-statement
+        // The construction of such a statement is postponed till the label for the jump is met.
+        // If true statements didn't end with such as jump, then it is interpreted as if the true statements represents
+        // an if-statement - and such a statement can be constructed immediately.
+
+        // If at end of if-else-statement label, true statements and false statements can be constructed and an
+        // if-else-statement can then be constructed
     }
 
     private ExpressionDom ensureType(Type type, ExpressionDom expression) {
@@ -341,6 +498,6 @@ public class ByteCodeToTree extends InstructionAdapter {
     }
 
     public StatementDom getBlock() {
-        return DomFactory.block(statements);
+        return DomFactory.block(root.statements);
     }
 }

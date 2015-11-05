@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DomFactory {
     public static ClassDom classDeclaration(int modifiers, String name, String superName, List<String> interfaces, List<FieldDom> fields, List<MethodDom> methods) {
@@ -299,9 +300,26 @@ public class DomFactory {
     }
 
     public static ExpressionDom compare(ExpressionDom lhs, ExpressionDom rhs, int operator) {
-        if(lhs == null)
-            new String();
-        return v -> v.visitCompare(operator, lhs, rhs);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitCompare(operator, lhs, rhs);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitCompare(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
+                        r.accept(
+                            operator == otherOperator &&
+                            lhs.equals(otherLhs) &&
+                            rhs.equals(otherRhs)
+                        );
+                    }
+                };
+            }
+        };
     }
 
     public static StatementDom declareVar(String type, String name) {
@@ -391,7 +409,26 @@ public class DomFactory {
     }
 
     public static ExpressionDom accessField(ExpressionDom target, String name, String fieldTypeName) {
-        return v -> v.visitFieldAccess(target, name, fieldTypeName);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitFieldAccess(target, name, fieldTypeName);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitFieldAccess(ExpressionDom otherTarget, String otherName, String otherFieldTypeName) {
+                        r.accept(
+                            target.equals(otherTarget) &&
+                            name.equals(otherName) &&
+                            fieldTypeName.equals(otherFieldTypeName)
+                        );
+                    }
+                };
+            }
+        };
     }
 
     public static ExpressionDom accessStaticField(String targetTypeName, String name, String typeName) {
@@ -439,6 +476,15 @@ public class DomFactory {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitBlock(List<StatementDom> otherStatements) {
+                        /*List<StatementDom> s = statements;
+                        r.accept(
+                            s.size() == otherStatements.size() &&
+                            IntStream.range(0, statements.size())
+                            .allMatch(i ->
+                                s.get(i).equals(otherStatements.get(i))
+                            )
+                        );*/
+
                         r.accept(statements.equals(otherStatements));
                     }
                 };
@@ -465,7 +511,26 @@ public class DomFactory {
 
     // If-else-statement (not expression)
     public static StatementDom ifElse(ExpressionDom condition, StatementDom ifTrue, StatementDom ifFalse) {
-        return v -> v.visitIfElse(condition, ifTrue, ifFalse);
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitIfElse(condition, ifTrue, ifFalse);
+            }
+
+            @Override
+            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitIfElse(ExpressionDom otherCondition, StatementDom otherIfTrue, StatementDom otherIfFalse) {
+                        r.accept(
+                            condition.equals(otherCondition) &&
+                            ifTrue.equals(otherIfTrue) &&
+                            ifFalse.equals(otherIfFalse)
+                        );
+                    }
+                };
+            }
+        };
     }
 
     // If-else-expression (not statement)

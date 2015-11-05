@@ -1,7 +1,9 @@
 package astava.java.gen;
 
+import astava.java.ArithmeticOperator;
 import astava.java.Descriptor;
 import astava.java.DomFactory;
+import astava.java.RelationalOperator;
 import astava.tree.StatementDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,6 +15,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,7 +28,7 @@ public class ByteCodeToTreeTest {
     public static class CaseClass {
         private int i = 0;
 
-        public void test1() {
+        /*public void test1() {
             this.i = 10;
         }
 
@@ -133,6 +136,30 @@ public class ByteCodeToTreeTest {
         public static StatementDom fortest7unpreparedexpect() {
             return DomFactory.block(Arrays.asList(
                 DomFactory.ret(DomFactory.add(DomFactory.accessVar("arg0"), DomFactory.accessVar("arg1")))
+            ));
+        }*/
+
+        public int test8() {
+            int i;
+
+            if(this.i == 1) {
+                i = 1;
+            } else {
+                i = 0;
+            }
+
+            return i;
+        }
+
+        public static StatementDom fortest8expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.declareVar(Descriptor.INT, "i"),
+                DomFactory.ifElse(
+                    DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
+                    DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(1)))),
+                    DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(0))))
+                ),
+                DomFactory.ret(DomFactory.accessVar("i"))
             ));
         }
     }

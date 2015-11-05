@@ -81,4 +81,32 @@ public class MyClass extends MyOtherClass {
             System.out.println("Finally");
         }
     }
+
+    public int myMethod() {
+        if(b2) {
+            return 1;
+        } else
+            return 2;
+    }
+
+    public int myMethod2() {
+        int i;
+
+        if(b2) {
+            i = 1;
+        } else
+            i = 2;
+
+        return i;
+    }
+
+    public int myMethod3() {
+        int i = 0;
+
+        if(b2) {
+            i = 1;
+        }
+
+        return i;
+    }
 }
