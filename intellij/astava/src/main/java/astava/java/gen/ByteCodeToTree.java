@@ -46,7 +46,7 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         root = new LocalFrame();
         localFrames.push(root);
-        localFrames.push(new LocalFrame());
+        //localFrames.push(new LocalFrame());
     }
 
     private void checkDecideStatementOrExpression() {
@@ -350,6 +350,10 @@ public class ByteCodeToTree extends InstructionAdapter {
         */
         switch (frame.state) {
             case LocalFrame.STATE_IF_TRUE:
+                frame.ifTrue = DomFactory.block(frame.statements);
+                frame.statements = new ArrayList<>();
+                frame.state = LocalFrame.STATE_IF_FALSE;
+
                 // Should pop?
                 break;
             case LocalFrame.STATE_IF_FALSE: {
@@ -362,6 +366,7 @@ public class ByteCodeToTree extends InstructionAdapter {
                 // Construct if-else-statement?
 
                 StatementDom ifFalse = DomFactory.block(frame.statements);
+                frame.statements = new ArrayList<>();
 
                 // Build if-else-statement
                 getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, ifFalse));
@@ -369,8 +374,8 @@ public class ByteCodeToTree extends InstructionAdapter {
                 localFrames.peek().statements.addAll(poppedFrame.statements);
                 break;
         } default: {
-                LocalFrame poppedFrame = localFrames.pop();
-                localFrames.peek().statements.addAll(poppedFrame.statements);
+                /*LocalFrame poppedFrame = localFrames.pop();
+                localFrames.peek().statements.addAll(poppedFrame.statements);*/
                 break;
             }
         }

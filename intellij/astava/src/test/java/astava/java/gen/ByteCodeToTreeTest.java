@@ -162,6 +162,24 @@ public class ByteCodeToTreeTest {
                 DomFactory.ret(DomFactory.accessVar("i"))
             ));
         }
+
+        public int test9() {
+            if(this.i == 1) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        public static StatementDom fortest9expect() {
+            return DomFactory.block(Arrays.asList(
+                DomFactory.ifElse(
+                    DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
+                    DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(1)))),
+                    DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(0))))
+                )
+            ));
+        }
     }
 
     private MethodNode methodNode;
