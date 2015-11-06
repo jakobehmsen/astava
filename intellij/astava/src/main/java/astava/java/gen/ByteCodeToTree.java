@@ -382,10 +382,31 @@ public class ByteCodeToTree extends InstructionAdapter {
     }
 
     @Override
-    public void ifeq(Label label) {
+    public void ifnull(Label label) {
+        ExpressionDom rhs = DomFactory.nil();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+    }
+
+    @Override
+    public void ifnonnull(Label label) {
+        ExpressionDom rhs = DomFactory.nil();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+    }
+
+    @Override
+    public void ifacmpeq(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+    }
+
+    @Override
+    public void ifacmpne(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
@@ -400,6 +421,34 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+    }
+
+    @Override
+    public void ificmplt(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
+    }
+
+    @Override
+    public void ificmpge(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
+    }
+
+    @Override
+    public void ificmpgt(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
+    }
+
+    @Override
+    public void ificmple(Label label) {
+        ExpressionDom rhs = getStack().pop();
+        ExpressionDom lhs = getStack().pop();
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
     }
 
     private void branch(ExpressionDom condition, Label label) {
