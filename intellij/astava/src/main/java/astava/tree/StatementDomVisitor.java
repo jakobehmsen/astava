@@ -44,6 +44,10 @@ public interface StatementDomVisitor {
 
     void visitTryCatch(StatementDom tryBlock, List<CodeDom> catchBlocks);
 
+    void visitMark(Object label);
+
+    void visitGoTo(Object label);
+
     class Default implements StatementDomVisitor {
         @Override
         public void visitVariableDeclaration(String type, String name) {
@@ -137,6 +141,16 @@ public interface StatementDomVisitor {
 
         @Override
         public void visitTryCatch(StatementDom tryBlock, List<CodeDom> catchBlocks) {
+
+        }
+
+        @Override
+        public void visitMark(Object label) {
+
+        }
+
+        @Override
+        public void visitGoTo(Object label) {
 
         }
     }

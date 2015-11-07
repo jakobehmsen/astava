@@ -100,4 +100,14 @@ public abstract class DefaultStatementDomVisitor implements StatementDomVisitor 
     public void visitTryCatch(StatementDom tryBlock, List<CodeDom> catchBlocks) {
 
     }
+
+    @Override
+    public void visitMark(Object label) {
+
+    }
+
+    @Override
+    public void visitGoTo(Object label) {
+
+    }
 }

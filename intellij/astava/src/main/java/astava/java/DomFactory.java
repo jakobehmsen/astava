@@ -1,8 +1,6 @@
 package astava.java;
 
 import astava.tree.*;
-import com.sun.tools.corba.se.idl.constExpr.Expression;
-import sun.tools.tree.Statement;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -103,7 +101,7 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitReturn() {
@@ -122,11 +120,11 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitReturnValue(ExpressionDom otherExpression) {
-                        r.accept(expression.equals(otherExpression));
+                        r.accept(expression.equals(otherExpression, context));
                     }
                 };
             }
@@ -153,7 +151,7 @@ public class DomFactory {
             }
 
             @Override
-            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultExpressionDomVisitor() {
                     @Override
                     public void visitIntLiteral(int otherValue) {
@@ -185,7 +183,22 @@ public class DomFactory {
     }
 
     public static ExpressionDom nil() {
-        return v -> v.visitNull();
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitNull();
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitNull() {
+                        r.accept(true);
+                    }
+                };
+            };
+        };
     }
 
     public static ExpressionDom add(ExpressionDom lhs, ExpressionDom rhs) {
@@ -216,14 +229,14 @@ public class DomFactory {
             }
 
             @Override
-            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultExpressionDomVisitor() {
                     @Override
                     public void visitArithmetic(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
                         r.accept(
                             operator == otherOperator &&
-                            lhs.equals(otherLhs) &&
-                            rhs.equals(otherRhs)
+                            lhs.equals(otherLhs, context) &&
+                            rhs.equals(otherRhs, context)
                         );
                     }
                 };
@@ -307,14 +320,14 @@ public class DomFactory {
             }
 
             @Override
-            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultExpressionDomVisitor() {
                     @Override
                     public void visitCompare(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
                         r.accept(
                             operator == otherOperator &&
-                            lhs.equals(otherLhs) &&
-                            rhs.equals(otherRhs)
+                            lhs.equals(otherLhs, context) &&
+                            rhs.equals(otherRhs, context)
                         );
                     }
                 };
@@ -330,7 +343,7 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitVariableDeclaration(String otherType, String otherName) {
@@ -350,11 +363,11 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitVariableAssignment(String otherName, ExpressionDom otherValue) {
-                        r.accept(name.equals(otherName) && expression.equals(otherValue));
+                        r.accept(name.equals(otherName) && expression.equals(otherValue, context));
                     }
                 };
             }
@@ -369,15 +382,15 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitFieldAssignment(ExpressionDom otherTarget, String otherName, String otherType, ExpressionDom otherValue) {
                         r.accept(
-                            target.equals(otherTarget) &&
+                            target.equals(otherTarget, context) &&
                             name.equals(otherName) &&
                             type.equals(otherType) &&
-                            expression.equals(otherValue)
+                            expression.equals(otherValue, context)
                         );
                     }
                 };
@@ -397,7 +410,7 @@ public class DomFactory {
             }
 
             @Override
-            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultExpressionDomVisitor() {
                     @Override
                     public void visitVariableAccess(String otherName) {
@@ -416,12 +429,12 @@ public class DomFactory {
             }
 
             @Override
-            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultExpressionDomVisitor() {
                     @Override
                     public void visitFieldAccess(ExpressionDom otherTarget, String otherName, String otherFieldTypeName) {
                         r.accept(
-                            target.equals(otherTarget) &&
+                            target.equals(otherTarget, context) &&
                             name.equals(otherName) &&
                             fieldTypeName.equals(otherFieldTypeName)
                         );
@@ -443,7 +456,7 @@ public class DomFactory {
             }
 
             @Override
-            protected ExpressionDomVisitor compare(Consumer<Boolean> r) {
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultExpressionDomVisitor() {
                     @Override
                     public void visitThis() {
@@ -472,16 +485,17 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitBlock(List<StatementDom> otherStatements) {
                         List<StatementDom> s = statements;
+                        CodeDomComparison ctx = context;
                         r.accept(
                             s.size() == otherStatements.size() &&
                             IntStream.range(0, statements.size())
                             .allMatch(i ->
-                                s.get(i).equals(otherStatements.get(i))
+                                s.get(i).equals(otherStatements.get(i), ctx)
                             )
                         );
 
@@ -518,14 +532,14 @@ public class DomFactory {
             }
 
             @Override
-            protected StatementDomVisitor compare(Consumer<Boolean> r) {
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
                 return new DefaultStatementDomVisitor() {
                     @Override
                     public void visitIfElse(ExpressionDom otherCondition, StatementDom otherIfTrue, StatementDom otherIfFalse) {
                         r.accept(
-                            condition.equals(otherCondition) &&
-                            ifTrue.equals(otherIfTrue) &&
-                            ifFalse.equals(otherIfFalse)
+                            condition.equals(otherCondition, context) &&
+                            ifTrue.equals(otherIfTrue, context) &&
+                            ifFalse.equals(otherIfFalse, context)
                         );
                     }
                 };
@@ -736,5 +750,43 @@ public class DomFactory {
 
     public static ExpressionDom classLiteral(String type) {
         return v -> v.visitClassLiteral(type);
+    }
+
+    public static StatementDom mark(Object label) {
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitMark(Object otherLabel) {
+                        r.accept(context.isSameLabel(label, otherLabel));
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitMark(label);
+            }
+        };
+    }
+
+    public static StatementDom goTo(Object label) {
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitGoTo(Object otherLabel) {
+                        r.accept(context.isSameLabel(label, otherLabel));
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitGoTo(label);
+            }
+        };
     }
 }

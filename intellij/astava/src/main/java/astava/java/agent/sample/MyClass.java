@@ -37,6 +37,8 @@ public class MyClass extends MyOtherClass {
     //private int i;
 
     private boolean b2;
+    private boolean b3;
+    private boolean b4;
 
     @MyNotNullAnnotation
     public boolean someOtherMethod3(String str1, String str2) {
@@ -105,6 +107,69 @@ public class MyClass extends MyOtherClass {
 
         if(b2) {
             i = 1;
+        }
+
+        return i;
+    }
+
+    public int myMethodAnd() {
+        int i = 0;
+
+        if(b2 &&
+            b3 && b4) {
+            i = 1;
+        } else {
+            i = 2;
+        }
+
+        return i;
+    }
+
+    public int myMethodAnd2() {
+        int i = 0;
+
+        if(b2) {
+            if(b3)
+                if(b4)
+                    i = 1;
+        } else {
+            i = 2;
+        }
+
+        return i;
+    }
+
+    public int myMethodOr() {
+        int i = 0;
+
+        if(b2 || b3 || b4) {
+            i = 1;
+        } else {
+            i = 2;
+        }
+
+        return i;
+    }
+
+    public int myMethodAndOr() {
+        int i = 0;
+
+        if(b2 && b3 || b4) {
+            i = 1;
+        } else {
+            i = 2;
+        }
+
+        return i;
+    }
+
+    public int myMethodOrAnd() {
+        int i = 0;
+
+        if(b2 || b3 && b4) {
+            i = 1;
+        } else {
+            i = 2;
         }
 
         return i;

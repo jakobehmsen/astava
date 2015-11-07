@@ -5,4 +5,7 @@ public interface StatementDom extends CodeDom {
         visitor.visitStatement(this);
     }
     void accept(StatementDomVisitor visitor);
+    default boolean equals(StatementDom other, CodeDomComparison context) {
+        return false;
+    }
 }

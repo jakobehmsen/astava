@@ -6,8 +6,13 @@ public abstract class AbstractExpressionDom implements ExpressionDom {
     @Override
     public boolean equals(Object obj) {
         return obj instanceof ExpressionDom &&
-            Util.returnFrom(false, r -> ((ExpressionDom) obj).accept(compare((r))));
+            equals((ExpressionDom)obj, new CodeDomComparison());
     }
 
-    protected abstract ExpressionDomVisitor compare(Consumer<Boolean> r);
+    @Override
+    public boolean equals(ExpressionDom other, CodeDomComparison context) {
+        return Util.returnFrom(false, r -> other.accept(compare(context, (r))));
+    }
+
+    protected abstract ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r);
 }

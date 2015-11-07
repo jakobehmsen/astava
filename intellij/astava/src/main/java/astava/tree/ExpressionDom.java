@@ -5,4 +5,7 @@ public interface ExpressionDom extends CodeDom {
         visitor.visitExpression(this);
     }
     void accept(ExpressionDomVisitor visitor);
+    default boolean equals(ExpressionDom other, CodeDomComparison context) {
+        return false;
+    }
 }
