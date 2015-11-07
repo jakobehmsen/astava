@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ByteCodeToTree extends InstructionAdapter {
     private static class LocalFrame {
@@ -68,8 +69,8 @@ public class ByteCodeToTree extends InstructionAdapter {
         accepter.accept(new MethodVisitor(Opcodes.ASM5) {
             @Override
             public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
-                if(index > 0) {
-                    if(!varToName.containsKey(index)) {
+                if (index > 0) {
+                    if (!varToName.containsKey(index)) {
                         varToName.put(index, name);
                         if (index > Type.getArgumentTypes(methodNode.desc).length)
                             getStatements().add(DomFactory.declareVar(desc, name));
@@ -385,95 +386,150 @@ public class ByteCodeToTree extends InstructionAdapter {
     public void ifnull(Label label) {
         ExpressionDom rhs = DomFactory.nil();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
     public void ifnonnull(Label label) {
         ExpressionDom rhs = DomFactory.nil();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
     }
 
     @Override
     public void ifacmpeq(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
     public void ifacmpne(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
     }
 
     @Override
     public void ificmpeq(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
     public void ificmpne(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
     }
 
     @Override
     public void ificmplt(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
     }
 
     @Override
     public void ificmpge(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
     }
 
     @Override
     public void ificmpgt(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
     }
 
     @Override
     public void ificmple(Label label) {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
+        //branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
     }
 
+    private Hashtable<Label, Object> asmLabelToAstLabelMap = new Hashtable<>();
+
     private void branch(ExpressionDom condition, Label label) {
-        LocalFrame branchFrame = new LocalFrame();
+        /*
+        Created if statement with goto label statement for true block and empty false block
+        */
+
+        Object astLabel = asmLabelToAstLabelMap.computeIfAbsent(label, l -> new Object());
+
+        getStatements().add(DomFactory.ifElse(condition, DomFactory.goTo(astLabel), DomFactory.block(Arrays.asList())));
+        labelUsages.add(astLabel);
+
+        /*LocalFrame branchFrame = new LocalFrame();
         branchFrame.state = LocalFrame.STATE_IF_TRUE;
         branchFrame.condition = condition;
         branchFrame.ifFalseStart = label;
 
-        localFrames.push(branchFrame);
+        localFrames.push(branchFrame);*/
     }
 
     @Override
     public void goTo(Label label) {
-        LocalFrame frame = localFrames.peek();
+        /*
+        Create goto statement
+        */
+
+        Object astLabel = asmLabelToAstLabelMap.computeIfAbsent(label, l -> new Object());
+
+        getStatements().add(DomFactory.goTo(astLabel));
+        labelUsages.add(astLabel);
+
+        /*LocalFrame frame = localFrames.peek();
 
         switch (frame.state) {
             case LocalFrame.STATE_IF_TRUE:
                 frame.endOfIfElse = label;
                 break;
-        }
+        }*/
     }
+
+    private ArrayList<Object> labelUsages = new ArrayList<>();
+    private ArrayList<Runnable> labelUsageChecks = new ArrayList<>();
 
     @Override
     public void visitLabel(Label label) {
-        if(localFrames.size() == 0)
+        /*
+        Create mark statement
+        */
+
+        Object astLabel = asmLabelToAstLabelMap.computeIfAbsent(label, l -> new Object());
+
+        StatementDom mark = DomFactory.mark(astLabel);
+        getStatements().add(mark);
+
+        labelUsageChecks.add(new Runnable() {
+            @Override
+            public void run() {
+                if(!labelUsages.contains(astLabel)) {
+                    int index = IntStream.range(0, getStatements().size())
+                        .filter(i -> getStatements().get(i) == mark)
+                        .findAny().getAsInt();
+                    getStatements().remove(index);
+                    //getStatements().remove(mark);
+                }
+            }
+        });
+
+        /*if(localFrames.size() == 0)
             return;
 
         LocalFrame frame = localFrames.peek();
@@ -512,7 +568,7 @@ public class ByteCodeToTree extends InstructionAdapter {
                     localFrames.peek().statements.addAll(poppedFrame.statements);
                 }
                 break;
-        }
+        }*/
 
         // If at else block, then extract true statements into block
         // True statements ended with an unconditional jump, that label is interpreted as the end of the if-else-statement
@@ -552,6 +608,8 @@ public class ByteCodeToTree extends InstructionAdapter {
     }
 
     public StatementDom getBlock() {
+        labelUsageChecks.forEach(x -> x.run());
+
         return DomFactory.block(root.statements);
     }
 }

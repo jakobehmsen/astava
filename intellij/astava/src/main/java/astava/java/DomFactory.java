@@ -128,6 +128,11 @@ public class DomFactory {
                     }
                 };
             }
+
+            @Override
+            public String toString() {
+                return "return " + expression;
+            }
         };
     }
 
@@ -158,6 +163,11 @@ public class DomFactory {
                         r.accept(value == otherValue);
                     }
                 };
+            }
+
+            @Override
+            public String toString() {
+                return "" + value;
             }
         };
     }
@@ -332,6 +342,11 @@ public class DomFactory {
                     }
                 };
             }
+
+            @Override
+            public String toString() {
+                return "compare(" + lhs + ", " + rhs + ")";
+            }
         };
     }
 
@@ -350,6 +365,11 @@ public class DomFactory {
                         r.accept(type.equals(otherType) && name.equals(otherName));
                     }
                 };
+            }
+
+            @Override
+            public String toString() {
+                return type + " " + name;
             }
         };
     }
@@ -370,6 +390,11 @@ public class DomFactory {
                         r.accept(name.equals(otherName) && expression.equals(otherValue, context));
                     }
                 };
+            }
+
+            @Override
+            public String toString() {
+                return name + " = " + expression;
             }
         };
     }
@@ -418,6 +443,11 @@ public class DomFactory {
                     }
                 };
             }
+
+            @Override
+            public String toString() {
+                return name;
+            }
         };
     }
 
@@ -441,6 +471,11 @@ public class DomFactory {
                     }
                 };
             }
+
+            @Override
+            public String toString() {
+                return target + "." + name;
+            }
         };
     }
 
@@ -463,6 +498,11 @@ public class DomFactory {
                         r.accept(true);
                     }
                 };
+            }
+
+            @Override
+            public String toString() {
+                return "this";
             }
         };
     }
@@ -502,6 +542,11 @@ public class DomFactory {
                         //r.accept(statements.equals(otherStatements));
                     }
                 };
+            }
+
+            @Override
+            public String toString() {
+                return statements.stream().map(x -> x.toString()).collect(Collectors.joining("\n"));
             }
         };
     }
@@ -543,6 +588,11 @@ public class DomFactory {
                         );
                     }
                 };
+            }
+
+            @Override
+            public String toString() {
+                return "if(" + condition + ") " + ifTrue + " else " + ifFalse;
             }
         };
     }
@@ -768,6 +818,11 @@ public class DomFactory {
             public void accept(StatementDomVisitor visitor) {
                 visitor.visitMark(label);
             }
+
+            @Override
+            public String toString() {
+                return "mark " + label;
+            }
         };
     }
 
@@ -786,6 +841,11 @@ public class DomFactory {
             @Override
             public void accept(StatementDomVisitor visitor) {
                 visitor.visitGoTo(label);
+            }
+
+            @Override
+            public String toString() {
+                return "goTo " + label;
             }
         };
     }

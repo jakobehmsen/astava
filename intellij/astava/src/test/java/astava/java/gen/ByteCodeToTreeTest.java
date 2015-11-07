@@ -85,7 +85,7 @@ public class ByteCodeToTreeTest {
     public static Collection values() {
 
         return Arrays.asList(
-            new Object() {
+            /*new Object() {
                 private int i;
 
                 public void byteCode() {
@@ -208,7 +208,7 @@ public class ByteCodeToTreeTest {
                         DomFactory.ret(DomFactory.add(DomFactory.accessVar("arg0"), DomFactory.accessVar("arg1")))
                     ));
                 }
-            },
+            },*/
             // *** If-else-statements with ieq compare condition inside methods that return non-void value ***
             new Object() {
                 private int i;
@@ -226,13 +226,21 @@ public class ByteCodeToTreeTest {
                 }
 
                 public StatementDom expectedTree() {
+                    Object ifFalse = new Object();
+                    Object end = new Object();
+
                     return DomFactory.block(Arrays.asList(
                         DomFactory.declareVar(Descriptor.INT, "i"),
                         DomFactory.ifElse(
-                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
-                            DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(1)))),
-                            DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(0))))
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.NE),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
                         ),
+                        DomFactory.assignVar("i", DomFactory.literal(1)),
+                        DomFactory.goTo(end),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.assignVar("i", DomFactory.literal(0)),
+                        DomFactory.mark(end),
                         DomFactory.ret(DomFactory.accessVar("i"))
                     ));
                 }
@@ -249,12 +257,17 @@ public class ByteCodeToTreeTest {
                 }
 
                 public StatementDom expectedTree() {
+                    Object ifFalse = new Object();
+
                     return DomFactory.block(Arrays.asList(
                         DomFactory.ifElse(
-                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
-                            DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(1)))),
-                            DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(0))))
-                        )
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.NE),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.ret(DomFactory.literal(0))
                     ));
                 }
             },
@@ -270,69 +283,85 @@ public class ByteCodeToTreeTest {
                 }
 
                 public StatementDom expectedTree() {
+                    Object ifFalse = new Object();
+
                     return DomFactory.block(Arrays.asList(
                         DomFactory.ifElse(
-                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
-                            DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(1)))),
-                            DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.literal(0))))
-                        )
-                    ));
-                }
-            },
-            new Object() {
-                private int i;
-
-                public int byteCode() {
-                    int i = 1;
-
-                    if(this.i == 1) {
-                        return i;
-                    } else {
-                        i = 0;
-                    }
-
-                    return i;
-                }
-
-                public StatementDom expectedTree() {
-                    return DomFactory.block(Arrays.asList(
-                        DomFactory.declareVar(Descriptor.INT, "i"),
-                        DomFactory.assignVar("i", DomFactory.literal(1)),
-                        DomFactory.ifElse(
-                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
-                            DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.accessVar("i")))),
-                            DomFactory.block(Arrays.asList(
-                                DomFactory.assignVar("i", DomFactory.literal(0)),
-                                DomFactory.ret(DomFactory.accessVar("i"))
-                            ))
-                        )
-                    ));
-                }
-            },
-            new Object() {
-                private int i;
-
-                public int byteCode() {
-                    int i = 1;
-
-                    if(this.i == 1) {
-                        i = 0;
-                    } else {
-                        return i;
-                    }
-
-                    return i;
-                }
-
-                public StatementDom expectedTree() {
-                    return DomFactory.block(Arrays.asList(
-                        DomFactory.declareVar(Descriptor.INT, "i"),
-                        DomFactory.assignVar("i", DomFactory.literal(1)),
-                        DomFactory.ifElse(
-                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
-                            DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(0)))),
-                            DomFactory.block(Arrays.asList(DomFactory.ret(DomFactory.accessVar("i"))))
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.NE),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
                         ),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.ret(DomFactory.literal(0))
+                    ));
+                }
+            },
+            new Object() {
+                private int i;
+
+                public int byteCode() {
+                    int i = 1;
+
+                    if(this.i == 1) {
+                        return i;
+                    } else {
+                        i = 0;
+                    }
+
+                    return i;
+                }
+
+                public StatementDom expectedTree() {
+                    Object ifFalse = new Object();
+
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "i"),
+                        DomFactory.assignVar("i", DomFactory.literal(1)),
+                        DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.NE),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.ret(DomFactory.accessVar("i")),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.assignVar("i", DomFactory.literal(0)),
+                        DomFactory.ret(DomFactory.accessVar("i"))
+                    ));
+                }
+            },
+            new Object() {
+                private int i;
+
+                public int byteCode() {
+                    int i = 1;
+
+                    if(this.i == 1) {
+                        i = 0;
+                    } else {
+                        return i;
+                    }
+
+                    return i;
+                }
+
+                public StatementDom expectedTree() {
+                    Object ifFalse = new Object();
+                    Object end = new Object();
+
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "i"),
+                        DomFactory.assignVar("i", DomFactory.literal(1)),
+                        DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.NE),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.assignVar("i", DomFactory.literal(0)),
+                        DomFactory.goTo(end),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.ret(DomFactory.accessVar("i")),
+                        DomFactory.mark(end),
                         DomFactory.ret(DomFactory.accessVar("i"))
                     ));
                 }
@@ -351,18 +380,22 @@ public class ByteCodeToTreeTest {
                 }
 
                 public StatementDom expectedTree() {
+                    Object end = new Object();
+
                     return DomFactory.block(Arrays.asList(
                         DomFactory.declareVar(Descriptor.INT, "i"),
                         DomFactory.assignVar("i", DomFactory.literal(0)),
                         DomFactory.ifElse(
-                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ),
-                            DomFactory.block(Arrays.asList(DomFactory.assignVar("i", DomFactory.literal(1)))),
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.NE),
+                            DomFactory.goTo(end),
                             DomFactory.block(Arrays.asList())
                         ),
+                        DomFactory.assignVar("i", DomFactory.literal(1)),
+                        DomFactory.mark(end),
                         DomFactory.ret(DomFactory.accessVar("i"))
                     ));
                 }
-            },
+            }/*,
             // *** If-else-statements with ieq compare condition inside methods that return void ***
             new Object() {
                 private int i;
@@ -760,7 +793,7 @@ public class ByteCodeToTreeTest {
                         DomFactory.ret()
                     ));
                 }
-            }
+            }*/
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
@@ -770,6 +803,12 @@ public class ByteCodeToTreeTest {
         byteCodeToTree.prepareVariables(mv -> methodNode.accept(mv));
         methodNode.accept(byteCodeToTree);
         StatementDom actualStatement = byteCodeToTree.getBlock();
+
+        System.out.println("expectedStatement:");
+        System.out.println(expectedStatement);
+        System.out.println("actualStatement:");
+        System.out.println(actualStatement);
+
         assertEquals(expectedStatement, actualStatement);
 
         if(expectedUnpreparedStatement != null) {
