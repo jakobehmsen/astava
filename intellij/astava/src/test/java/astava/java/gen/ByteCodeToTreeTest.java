@@ -85,7 +85,7 @@ public class ByteCodeToTreeTest {
     public static Collection values() {
 
         return Arrays.asList(
-            /*new Object() {
+            new Object() {
                 private int i;
 
                 public void byteCode() {
@@ -208,8 +208,8 @@ public class ByteCodeToTreeTest {
                         DomFactory.ret(DomFactory.add(DomFactory.accessVar("arg0"), DomFactory.accessVar("arg1")))
                     ));
                 }
-            },*/
-            // *** If-else-statements with ieq compare condition inside methods that return non-void value ***
+            },
+            // *** If-else-statements with ieq compare conditionNegative inside methods that return non-void value ***
             new Object() {
                 private int i;
 
@@ -396,7 +396,7 @@ public class ByteCodeToTreeTest {
                     ));
                 }
             },
-            // *** If-else-statements with ieq compare condition inside methods that return void ***
+            // *** If-else-statements with ieq compare conditionNegative inside methods that return void ***
             new Object() {
                 private int i;
 
@@ -583,7 +583,7 @@ public class ByteCodeToTreeTest {
                     ));
                 }
             },
-            // *** If-else-statements (same structure) with non-eq compare condition inside methods that return void ***
+            // *** If-else-statements (same structure) with non-eq compare conditionNegative inside methods that return void ***
             new Object() {
                 private int i;
 
@@ -896,6 +896,24 @@ public class ByteCodeToTreeTest {
                         DomFactory.assignVar("i", DomFactory.literal(0)),
                         DomFactory.mark(end),
                         DomFactory.ret()
+                    ));
+                }
+            },
+            // *** Ternary expressions
+            new Object() {
+                private int i;
+
+                public int byteCode() {
+                    int j = i == 1 ? 1 : 0;
+
+                    return j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "j"),
+                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
+                        DomFactory.ret(DomFactory.accessVar("j"))
                     ));
                 }
             }

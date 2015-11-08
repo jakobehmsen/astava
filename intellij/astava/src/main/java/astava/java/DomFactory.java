@@ -109,6 +109,11 @@ public class DomFactory {
                     }
                 };
             }
+
+            @Override
+            public String toString() {
+                return "return;";
+            }
         };
     }
 
@@ -599,7 +604,31 @@ public class DomFactory {
 
     // If-else-expression (not statement)
     public static ExpressionDom ifElseExpr(ExpressionDom condition, ExpressionDom ifTrue, ExpressionDom ifFalse) {
-        return v -> v.visitIfElse(condition, ifTrue, ifFalse);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitIfElse(condition, ifTrue, ifFalse);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitIfElse(ExpressionDom otherCondition, ExpressionDom otherIfTrue, ExpressionDom otherIfFalse) {
+                        r.accept(
+                            condition.equals(otherCondition) &&
+                            ifTrue.equals(otherIfTrue) &&
+                            ifFalse.equals(otherIfFalse)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public String toString() {
+                return condition + " ? " + ifTrue + " : " + ifFalse;
+            }
+        };
     }
 
     public static StatementDom breakOption() {

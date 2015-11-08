@@ -4,17 +4,45 @@ import astava.java.Descriptor;
 import astava.java.agent.ClassLoaderExtender;
 import astava.java.agent.Parser.ParserFactory;
 import astava.java.agent.Parser.SourceCode;
+import astava.java.agent.sample.MyClass;
 import astava.java.parser.ClassInspector;
 import astava.java.parser.ClassResolver;
 import astava.java.parser.DefaultClassInspector;
 import astava.java.parser.DefaultClassResolver;
+import com.strobel.assembler.InputTypeLoader;
+import com.strobel.assembler.metadata.ClassFileReader;
+import com.strobel.assembler.metadata.ITypeLoader;
+import com.strobel.assembler.metadata.MetadataSystem;
+import com.strobel.assembler.metadata.TypeDefinition;
+import com.strobel.decompiler.DecompilationOptions;
+import com.strobel.decompiler.Decompiler;
+import com.strobel.decompiler.DecompilerSettings;
+import com.strobel.decompiler.PlainTextOutput;
+import com.strobel.decompiler.languages.java.JavaLanguage;
+import com.strobel.decompiler.languages.java.ast.CompilationUnit;
+import com.strobel.decompiler.languages.java.ast.IAstVisitor;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        /*StringWriter writer = new StringWriter();
+        Decompiler.decompile(MyClass.class.getName(), new PlainTextOutput(writer));
+        System.out.println(writer);
+
+        DecompilerSettings settings = new DecompilerSettings();
+        Object typeLoader = settings.getTypeLoader() != null?settings.getTypeLoader():new InputTypeLoader();
+        MetadataSystem metadataSystem = new MetadataSystem((ITypeLoader)typeLoader);
+        TypeDefinition type = (TypeDefinition)metadataSystem.lookupType(MyClass.class.getName());;
+
+        JavaLanguage javaLanguage = new JavaLanguage();
+        DecompilationOptions decompilationOptions = new DecompilationOptions();
+        decompilationOptions.setFullDecompilation(true);
+        CompilationUnit unit = javaLanguage.decompileTypeToAst(type, decompilationOptions);*/
+
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
         ClassResolver classResolver = new DefaultClassResolver(classLoader, Arrays.asList(

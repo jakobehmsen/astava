@@ -22,13 +22,25 @@ public class ByteCodeToTree extends InstructionAdapter {
         public static final int STATE_IF_FALSE = 2;
 
         public int state = STATE_UNCONDITIONAL;
-        public Stack<ExpressionDom> stack = new Stack<>();
+        public Stack<ExpressionDom> originalStack;
+        public Stack<ExpressionDom> stack;
+        public Stack<ExpressionDom> stackIfTrue;
         public ArrayList<StatementDom> statements = new ArrayList<>();
+        public Label jumpLabel;
+        public int ifTrueStart;
+        public int ifTrueEnd;
+        public int ifFalseStart;
+        public int ifFalseEnd;
 
-        public ExpressionDom condition;
-        public Label ifFalseStart;
+        public ExpressionDom conditionNegative;
+        //public Label ifFalseStart;
         public StatementDom ifTrue;
         public Label endOfIfElse;
+        public Label lastGoToLabel;
+        public Label branchEnd;
+        public ArrayList<Object> labelUsages = new ArrayList<>();
+        public ArrayList<Runnable> labelUsageChecks = new ArrayList<>();
+        public ExpressionDom conditionPositive;
     }
 
     private MethodNode methodNode;
@@ -46,6 +58,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         this.returnType = Type.getReturnType(methodNode.desc);
 
         root = new LocalFrame();
+        root.stack = new Stack<>();
         localFrames.push(root);
         //localFrames.push(new LocalFrame());
     }
@@ -337,7 +350,7 @@ public class ByteCodeToTree extends InstructionAdapter {
             getStatements().add(DomFactory.ret(expression));
         }
 
-        LocalFrame frame = localFrames.peek();
+        //LocalFrame frame = localFrames.peek();
 
         /*
         What about
@@ -349,7 +362,15 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         return ...;
         */
-        switch (frame.state) {
+
+        if (localFrames.size() > 1) {
+            /*LocalFrame poppedFrame = localFrames.pop();
+            localFrames.peek().statements.addAll(poppedFrame.statements);*/
+
+            popFrame();
+        }
+
+        /*switch (frame.state) {
             case LocalFrame.STATE_IF_TRUE:
                 frame.ifTrue = DomFactory.block(frame.statements);
                 frame.statements = new ArrayList<>();
@@ -358,11 +379,6 @@ public class ByteCodeToTree extends InstructionAdapter {
                 // Should pop?
                 break;
             case LocalFrame.STATE_IF_FALSE: {
-               /* if(frame.ifFalseStart == label) {
-                    frame.ifTrueStatements = frame.statements;
-                    frame.statements = new ArrayList<>();
-                    frame.state = LocalFrame.STATE_IF_FALSE;
-                }*/
                 // At end of false block
                 // Construct if-else-statement?
 
@@ -370,16 +386,14 @@ public class ByteCodeToTree extends InstructionAdapter {
                 frame.statements = new ArrayList<>();
 
                 // Build if-else-statement
-                getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, ifFalse));
+                getStatements().add(DomFactory.ifElse(frame.conditionNegative, frame.ifTrue, ifFalse));
                 LocalFrame poppedFrame = localFrames.pop();
                 localFrames.peek().statements.addAll(poppedFrame.statements);
                 break;
         } default: {
-                /*LocalFrame poppedFrame = localFrames.pop();
-                localFrames.peek().statements.addAll(poppedFrame.statements);*/
                 break;
             }
-        }
+        }*/
     }
 
     @Override
@@ -387,7 +401,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = DomFactory.nil();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
     }
 
     @Override
@@ -395,7 +409,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = DomFactory.nil();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
@@ -403,7 +417,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
     }
 
     @Override
@@ -411,7 +425,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
@@ -419,7 +433,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
     }
 
     @Override
@@ -427,7 +441,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.NE), DomFactory.compare(lhs, rhs, RelationalOperator.EQ), label);
     }
 
     @Override
@@ -435,7 +449,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
     }
 
     @Override
@@ -443,7 +457,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GE), DomFactory.compare(lhs, rhs, RelationalOperator.LT), label);
     }
 
     @Override
@@ -451,7 +465,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
     }
 
     @Override
@@ -459,24 +473,37 @@ public class ByteCodeToTree extends InstructionAdapter {
         ExpressionDom rhs = getStack().pop();
         ExpressionDom lhs = getStack().pop();
         //branch(DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
-        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), label);
+        branch(DomFactory.compare(lhs, rhs, RelationalOperator.LE), DomFactory.compare(lhs, rhs, RelationalOperator.GT), label);
     }
 
     private Hashtable<Label, Object> asmLabelToAstLabelMap = new Hashtable<>();
 
-    private void branch(ExpressionDom condition, Label label) {
+    private void branch(ExpressionDom conditionNegative, ExpressionDom conditionPositive, Label label) {
         /*
         Created if statement with goto label statement for true block and empty false block
         */
 
-        Object astLabel = asmLabelToAstLabelMap.computeIfAbsent(label, l -> new Object());
+        Object astLabel = getAstLabel(label);;
 
-        getStatements().add(DomFactory.ifElse(condition, DomFactory.goTo(astLabel), DomFactory.block(Arrays.asList())));
-        labelUsages.add(astLabel);
+        /*getStatements().add(DomFactory.ifElse(conditionNegative, DomFactory.goTo(astLabel), DomFactory.block(Arrays.asList())));
+        labelUsages.add(astLabel);*/
+
+        LocalFrame branchFrame = new LocalFrame();
+        branchFrame.ifTrueStart = localFrames.peek().statements.size();
+        branchFrame.jumpLabel = label;
+        branchFrame.originalStack = localFrames.peek().stack;
+        branchFrame.stack = (Stack<ExpressionDom>)branchFrame.originalStack.clone();
+        branchFrame.conditionNegative = conditionNegative;
+        branchFrame.conditionPositive = conditionPositive;
+
+        //branchFrame.conditionNegative = conditionNegative;
+        //branchFrame.ifFalseStart = label;
+
+        localFrames.push(branchFrame);
 
         /*LocalFrame branchFrame = new LocalFrame();
         branchFrame.state = LocalFrame.STATE_IF_TRUE;
-        branchFrame.condition = condition;
+        branchFrame.conditionNegative = conditionNegative;
         branchFrame.ifFalseStart = label;
 
         localFrames.push(branchFrame);*/
@@ -484,14 +511,16 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void goTo(Label label) {
+        localFrames.peek().lastGoToLabel = label; // Potential end of if-else-code
+
         /*
         Create goto statement
         */
 
-        Object astLabel = asmLabelToAstLabelMap.computeIfAbsent(label, l -> new Object());
+        Object astLabel = getAstLabel(label);;
 
         getStatements().add(DomFactory.goTo(astLabel));
-        labelUsages.add(astLabel);
+        localFrames.peek().labelUsages.add(astLabel);
 
         /*LocalFrame frame = localFrames.peek();
 
@@ -502,24 +531,42 @@ public class ByteCodeToTree extends InstructionAdapter {
         }*/
     }
 
-    private ArrayList<Object> labelUsages = new ArrayList<>();
-    private ArrayList<Runnable> labelUsageChecks = new ArrayList<>();
+    //private ArrayList<Object> labelUsages = new ArrayList<>();
+    //private ArrayList<Runnable> labelUsageChecks = new ArrayList<>();
+
+    private Object getAstLabel(Label asmLabel) {
+        return asmLabelToAstLabelMap.computeIfAbsent(asmLabel, l -> new Object());
+    }
 
     @Override
     public void visitLabel(Label label) {
+        LocalFrame frame = localFrames.peek();
+
+        if(label == frame.jumpLabel) {
+            frame.ifFalseStart = frame.statements.size();
+            frame.branchEnd = frame.lastGoToLabel;
+            //frame.stack = (Stack<ExpressionDom>)frame.originalStack.clone();
+            frame.stackIfTrue = frame.stack;
+            frame.stack = frame.originalStack;
+        }
+
+        if(label == frame.branchEnd) {
+            popFrame();
+        }
+
         /*
         Create mark statement
         */
 
-        Object astLabel = asmLabelToAstLabelMap.computeIfAbsent(label, l -> new Object());
+        Object astLabel = getAstLabel(label);
 
         StatementDom mark = DomFactory.mark(astLabel);
         getStatements().add(mark);
 
-        labelUsageChecks.add(new Runnable() {
+        localFrames.peek().labelUsageChecks.add(new Runnable() {
             @Override
             public void run() {
-                if(!labelUsages.contains(astLabel)) {
+                if(!localFrames.peek().labelUsages.contains(astLabel)) {
                     int index = IntStream.range(0, getStatements().size())
                         .filter(i -> getStatements().get(i) == mark)
                         .findAny().getAsInt();
@@ -549,7 +596,7 @@ public class ByteCodeToTree extends InstructionAdapter {
 
                         // Build if-statement
                         // Create special if-statement?
-                        getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, DomFactory.block(Arrays.asList())));
+                        getStatements().add(DomFactory.ifElse(frame.conditionNegative, frame.ifTrue, DomFactory.block(Arrays.asList())));
 
                         LocalFrame poppedFrame = localFrames.pop();
                         localFrames.peek().statements.addAll(poppedFrame.statements);
@@ -562,7 +609,7 @@ public class ByteCodeToTree extends InstructionAdapter {
                     frame.statements = new ArrayList<>();
 
                     // Build if-else-statement
-                    getStatements().add(DomFactory.ifElse(frame.condition, frame.ifTrue, ifFalse));
+                    getStatements().add(DomFactory.ifElse(frame.conditionNegative, frame.ifTrue, ifFalse));
 
                     LocalFrame poppedFrame = localFrames.pop();
                     localFrames.peek().statements.addAll(poppedFrame.statements);
@@ -578,6 +625,23 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         // If at end of if-else-statement label, true statements and false statements can be constructed and an
         // if-else-statement can then be constructed
+    }
+
+    private void popFrame() {
+        LocalFrame frame = localFrames.pop();
+
+        if(frame.stack.size() == 1 && frame.stackIfTrue.size() == 1 &&
+            frame.statements.size() == 2 &&
+            frame.statements.get(0).equals(DomFactory.goTo(getAstLabel(frame.lastGoToLabel))) &&
+            frame.statements.get(1).equals(DomFactory.mark(getAstLabel(frame.jumpLabel)))) {
+            localFrames.peek().stack.add(DomFactory.ifElseExpr(frame.conditionPositive, frame.stackIfTrue.pop(), frame.stack.pop()));
+        } else {
+            localFrames.peek().statements.add(DomFactory.ifElse(frame.conditionNegative, DomFactory.goTo(getAstLabel(frame.jumpLabel)), DomFactory.block(Arrays.asList())));
+            localFrames.peek().labelUsages.add(getAstLabel(frame.jumpLabel));
+            localFrames.peek().statements.addAll(frame.statements);
+            localFrames.peek().labelUsages.addAll(frame.labelUsages);
+            localFrames.peek().labelUsageChecks.addAll(frame.labelUsageChecks);
+        }
     }
 
     private ExpressionDom ensureType(Type type, ExpressionDom expression) {
@@ -608,7 +672,16 @@ public class ByteCodeToTree extends InstructionAdapter {
     }
 
     public StatementDom getBlock() {
-        labelUsageChecks.forEach(x -> x.run());
+        localFrames.peek().labelUsageChecks.forEach(x -> x.run());
+
+        /*List<StatementDom> cleanedStatements = root.statements.stream().filter(x -> {
+            return Util.returnFrom(true, r -> x.accept(new DefaultStatementDomVisitor() {
+                @Override
+                public void visitMark(Object label) {
+                    r.accept(localFrames.peek().labelUsages.contains(label));
+                }
+            }));
+        }).collect(Collectors.toList());*/
 
         return DomFactory.block(root.statements);
     }

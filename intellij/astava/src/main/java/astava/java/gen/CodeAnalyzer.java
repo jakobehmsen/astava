@@ -57,7 +57,7 @@ public class CodeAnalyzer {
                 List<String> returnTypes = statements.stream().map(s -> returnType(statement, methodScope)).filter(s -> s != null).collect(Collectors.toList());
                 return returnTypes.get(0); // Bad assumption!!!
             } case ASTType.IF_ELSE: {
-                Tuple condition = ifElseCondition(statement);
+                Tuple conditionNegative = ifElseCondition(statement);
                 Tuple ifTrue = ifElseIfTrue(statement);
                 Tuple ifFalse = ifElseIfFalse(statement);
 
@@ -191,11 +191,11 @@ public class CodeAnalyzer {
 
                 return expressionResultTypes.get(0);
             } case ASTType.IF_ELSE: {
-                Tuple condition = ifElseCondition(expression);
+                Tuple conditionNegative = ifElseCondition(expression);
                 Tuple ifTrue = ifElseIfTrue(expression);
                 Tuple ifFalse = ifElseIfFalse(expression);
 
-                String resultType = resultType(condition, methodScope);
+                String resultType = resultType(conditionNegative, methodScope);
                 String ifTrueResultType = resultType(ifTrue, methodScope);
                 String ifFalseResultType = resultType(ifFalse, methodScope);
 
