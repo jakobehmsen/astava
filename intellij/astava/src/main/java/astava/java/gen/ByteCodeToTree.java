@@ -488,6 +488,8 @@ public class ByteCodeToTree extends InstructionAdapter {
         /*getStatements().add(DomFactory.ifElse(conditionNegative, DomFactory.goTo(astLabel), DomFactory.block(Arrays.asList())));
         labelUsages.add(astLabel);*/
 
+        localFrames.peek().lastGoToLabel = label;
+
         LocalFrame branchFrame = new LocalFrame();
         branchFrame.ifTrueStart = localFrames.peek().statements.size();
         branchFrame.jumpLabel = label;
@@ -672,7 +674,8 @@ public class ByteCodeToTree extends InstructionAdapter {
     }
 
     public StatementDom getBlock() {
-        localFrames.peek().labelUsageChecks.forEach(x -> x.run());
+        localFrames.peek().labelUsageChecks.forEach(x ->
+            x.run());
 
         /*List<StatementDom> cleanedStatements = root.statements.stream().filter(x -> {
             return Util.returnFrom(true, r -> x.accept(new DefaultStatementDomVisitor() {
@@ -683,6 +686,8 @@ public class ByteCodeToTree extends InstructionAdapter {
             }));
         }).collect(Collectors.toList());*/
 
-        return DomFactory.block(root.statements);
+        //return DomFactory.block(root.statements);
+
+        return DomFactory.block(getStatements());
     }
 }

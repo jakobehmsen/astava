@@ -9,18 +9,6 @@ import astava.java.parser.ClassInspector;
 import astava.java.parser.ClassResolver;
 import astava.java.parser.DefaultClassInspector;
 import astava.java.parser.DefaultClassResolver;
-import com.strobel.assembler.InputTypeLoader;
-import com.strobel.assembler.metadata.ClassFileReader;
-import com.strobel.assembler.metadata.ITypeLoader;
-import com.strobel.assembler.metadata.MetadataSystem;
-import com.strobel.assembler.metadata.TypeDefinition;
-import com.strobel.decompiler.DecompilationOptions;
-import com.strobel.decompiler.Decompiler;
-import com.strobel.decompiler.DecompilerSettings;
-import com.strobel.decompiler.PlainTextOutput;
-import com.strobel.decompiler.languages.java.JavaLanguage;
-import com.strobel.decompiler.languages.java.ast.CompilationUnit;
-import com.strobel.decompiler.languages.java.ast.IAstVisitor;
 
 import java.io.IOException;
 import java.io.StringWriter;

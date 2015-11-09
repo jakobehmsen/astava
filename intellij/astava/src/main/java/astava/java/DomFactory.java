@@ -348,9 +348,28 @@ public class DomFactory {
                 };
             }
 
+            private String operatorToString() {
+                switch (operator) {
+                    case RelationalOperator.EQ:
+                        return "=";
+                    case RelationalOperator.NE:
+                        return "!=";
+                    case RelationalOperator.LT:
+                        return "<";
+                    case RelationalOperator.LE:
+                        return "<=";
+                    case RelationalOperator.GT:
+                        return ">";
+                    case RelationalOperator.GE:
+                        return ">=";
+                }
+
+                return "<NA>";
+            }
+
             @Override
             public String toString() {
-                return "compare(" + lhs + ", " + rhs + ")";
+                return lhs + " " + operatorToString() + " " + rhs;
             }
         };
     }
