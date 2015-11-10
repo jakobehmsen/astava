@@ -12,6 +12,7 @@ import org.objectweb.asm.tree.MethodNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -42,11 +43,31 @@ public class ByteCodeToGraphTest {
     @Test
     public void testConvert() throws Exception {
         InsnList instructions = getInstructions(new Object() {
-            public void byteCode() {
+            private int i;
 
+            public void byteCode() {
+                if(i == 0) {
+                    i++;
+                } else {
+                    i--;
+                }
             }
         });
         DirectedGraph<AbstractInsnNode, Object> graph = ByteCodeToGraph.convert(instructions);
-        graph.toString();
+
+        graph.outgoingEdgesOf(instructions.getFirst());
+    }
+
+    private void print(DirectedGraph<AbstractInsnNode, Object> graph, AbstractInsnNode start) {
+        Set<Object> outgoing = graph.outgoingEdgesOf(start);
+        if(outgoing.size() == 1) {
+
+        } else if(outgoing.size() == 2) {
+
+        } else if(outgoing.size() == 0) {
+
+        } else {
+
+        }
     }
 }

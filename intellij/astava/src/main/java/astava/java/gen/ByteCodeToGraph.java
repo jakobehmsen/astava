@@ -22,7 +22,10 @@ public class ByteCodeToGraph {
     private static void convert(AbstractInsnNode previous, DirectedGraph<AbstractInsnNode, Object> graph) {
         graph.addVertex(previous);
 
-        Hashtable<Label, AbstractInsnNode> branchLabelToVertexMap = new Hashtable<>();
+        Hashtable<Label, AbstractInsnNode> labelToBranchVertexMap = new Hashtable<>();
+        Hashtable<Label, AbstractInsnNode> labelToVertexMap = new Hashtable<>();
+        ArrayList<Runnable> postProcessors = new ArrayList<>();
+        Stack<AbstractInsnNode> branchStack = new Stack<>();
 
         while(true) {
             AbstractInsnNode current = previous.getNext();
@@ -32,32 +35,64 @@ public class ByteCodeToGraph {
 
                 graph.addEdge(previous, current);
 
-                boolean jumpedBack = false;
+                switch (current.getType()) {
+                    case AbstractInsnNode.JUMP_INSN:
+                        Label label = ((JumpInsnNode) current).label.getLabel();
 
-                while(jumpedBack) {
-                    switch (current.getType()) {
-                        case AbstractInsnNode.JUMP_INSN:
+                        if(current.getOpcode() == Opcodes.GOTO) {
+                            branchStack.pop();
+
+                            //AbstractInsnNode branchVertex = labelToBranchVertexMap.get(((LabelNode) current).getLabel());
+                            AbstractInsnNode sourceVertex = current;
+
+                            if(labelToVertexMap.containsKey(label)) {
+                                // Jump backward / loop
+                            } else {
+                                // Jump forward
+
+                                postProcessors.add(() -> {
+                                    AbstractInsnNode targetVertex = labelToBranchVertexMap.get(label);
+                                    graph.addEdge(sourceVertex, targetVertex);
+                                });
+                            }
+                        } else if(current.getOpcode() >= Opcodes.IFEQ && current.getOpcode() <= Opcodes.IF_ACMPNE) {
                             // What if there are multiple branches with the same label?
                             // Index branch vertex
-                            branchLabelToVertexMap.put(((JumpInsnNode) current).label.getLabel(), current);
+                            labelToBranchVertexMap.put(label, current);
 
-                            break;
-                        case AbstractInsnNode.LABEL:
-                            AbstractInsnNode branchVertex = branchLabelToVertexMap.get(((LabelNode) current).getLabel());
-                            if (branchVertex != null) {
-                                // "Jump" back to branch vertex, from which the F route was started, and now
-                                // start the T route
+                            branchStack.push(current);
+                            branchStack.push(current);
+                        } else {
+                            // How to handle this kind of instruction?
+                        }
+
+                        break;
+                    case AbstractInsnNode.LABEL: {
+                        labelToVertexMap.put(((LabelNode) current).getLabel(), current);
+
+                        AbstractInsnNode branchVertex = labelToBranchVertexMap.get(((LabelNode) current).getLabel());
+                        if (branchVertex != null) {
+                            branchStack.pop();
+                            graph.addEdge(branchVertex, current);
+                        }
+
+                        break;
+                    } default:
+                        if(current.getOpcode() == Opcodes.RETURN || current.getOpcode() == Opcodes.ARETURN) {
+                            if(branchStack.size() > 0) {
+                                AbstractInsnNode branchVertex = branchStack.pop();
                                 current = branchVertex;
-                                jumpedBack = true;
                             }
+                        }
 
-                            break;
-                    }
+                        break;
                 }
 
                 previous = current;
             } else
                 break;
         }
+
+        postProcessors.forEach(x -> x.run());
     }
 }
