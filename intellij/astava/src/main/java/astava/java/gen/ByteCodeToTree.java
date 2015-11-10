@@ -488,7 +488,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         /*getStatements().add(DomFactory.ifElse(conditionNegative, DomFactory.goTo(astLabel), DomFactory.block(Arrays.asList())));
         labelUsages.add(astLabel);*/
 
-        localFrames.peek().lastGoToLabel = label;
+        //localFrames.peek().lastGoToLabel = label;
 
         LocalFrame branchFrame = new LocalFrame();
         branchFrame.ifTrueStart = localFrames.peek().statements.size();
@@ -522,7 +522,15 @@ public class ByteCodeToTree extends InstructionAdapter {
         Object astLabel = getAstLabel(label);;
 
         getStatements().add(DomFactory.goTo(astLabel));
-        localFrames.peek().labelUsages.add(astLabel);
+
+        LocalFrame frame = localFrames.peek();
+
+        frame.labelUsages.add(astLabel);
+
+        /*switch (frame.state) {
+            case LocalFrame.STATE_IF_TRUE:
+                break;
+        }*/
 
         /*LocalFrame frame = localFrames.peek();
 
@@ -550,6 +558,13 @@ public class ByteCodeToTree extends InstructionAdapter {
             //frame.stack = (Stack<ExpressionDom>)frame.originalStack.clone();
             frame.stackIfTrue = frame.stack;
             frame.stack = frame.originalStack;
+        }
+
+        if(localFrames.size() > 1) {
+            LocalFrame outerFrame = localFrames.get(localFrames.size() - 2);
+            if(label == outerFrame.jumpLabel) {
+                // Merge branch into outer branch
+            }
         }
 
         if(label == frame.branchEnd) {
