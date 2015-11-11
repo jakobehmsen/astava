@@ -551,6 +551,13 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void visitLabel(Label label) {
+        /*
+        Create mark statement
+        */
+
+        Object astLabel = getAstLabel(label);
+
+        StatementDom mark = DomFactory.mark(astLabel);
         LocalFrame frame = localFrames.peek();
 
         if(label == frame.jumpLabel ||
@@ -562,29 +569,33 @@ public class ByteCodeToTree extends InstructionAdapter {
             frame.stack = frame.originalStack;
         }
 
+        //boolean mergedBranches = false;
+
         if(localFrames.size() > 1) {
             LocalFrame outerFrame = localFrames.get(localFrames.size() - 2);
             // Or one of the other merged branches' jumpLabel
             if(label == outerFrame.jumpLabel ||
                 outerFrame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel)) {
                 outerFrame.mergedBranches.add(frame);
+
+                //outerFrame.statements.add(mark);
+
                 // Merge branch into outer branch
                 popFrame();
+
+                //mergedBranches = true;
             }
         }
+
+        /*if(!mergedBranches) {
+            getStatements().add(mark);
+        }*/
+
+        getStatements().add(mark);
 
         if(label == frame.branchEnd) {
             popFrame();
         }
-
-        /*
-        Create mark statement
-        */
-
-        Object astLabel = getAstLabel(label);
-
-        StatementDom mark = DomFactory.mark(astLabel);
-        getStatements().add(mark);
 
         localFrames.peek().labelUsageChecks.add(new Runnable() {
             @Override
