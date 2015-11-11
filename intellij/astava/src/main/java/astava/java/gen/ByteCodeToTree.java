@@ -41,6 +41,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         public ArrayList<Object> labelUsages = new ArrayList<>();
         public ArrayList<Runnable> labelUsageChecks = new ArrayList<>();
         public ExpressionDom conditionPositive;
+        public ArrayList<LocalFrame> mergedBranches = new ArrayList<>();
     }
 
     private MethodNode methodNode;
@@ -552,7 +553,8 @@ public class ByteCodeToTree extends InstructionAdapter {
     public void visitLabel(Label label) {
         LocalFrame frame = localFrames.peek();
 
-        if(label == frame.jumpLabel) {
+        if(label == frame.jumpLabel ||
+            frame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel)) {
             frame.ifFalseStart = frame.statements.size();
             frame.branchEnd = frame.lastGoToLabel;
             //frame.stack = (Stack<ExpressionDom>)frame.originalStack.clone();
@@ -562,8 +564,12 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         if(localFrames.size() > 1) {
             LocalFrame outerFrame = localFrames.get(localFrames.size() - 2);
-            if(label == outerFrame.jumpLabel) {
+            // Or one of the other merged branches' jumpLabel
+            if(label == outerFrame.jumpLabel ||
+                outerFrame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel)) {
+                outerFrame.mergedBranches.add(frame);
                 // Merge branch into outer branch
+                popFrame();
             }
         }
 

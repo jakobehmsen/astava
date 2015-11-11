@@ -1019,26 +1019,33 @@ public class ByteCodeToTreeTest {
                 }
 
                 public StatementDom expectedTree() {
+                    Object ifFalse1 = new Object();
                     Object ifTrue = new Object();
-                    Object ifFalse = new Object();
+                    Object ifFalse2 = new Object();
                     Object end = new Object();
 
                     return DomFactory.block(Arrays.asList(
                         DomFactory.declareVar(Descriptor.INT, "i"),
                         DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(90), RelationalOperator.GE),
+                            DomFactory.goTo(ifFalse1),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.ifElse(
                             DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.GE),
                             DomFactory.goTo(ifTrue),
                             DomFactory.block(Arrays.asList())
                         ),
+                        DomFactory.mark(ifFalse1),
                         DomFactory.ifElse(
                             DomFactory.compare(DomFactory.accessField(DomFactory.self(), "j", Descriptor.INT), DomFactory.literal(2), RelationalOperator.GT),
-                            DomFactory.goTo(ifFalse),
+                            DomFactory.goTo(ifFalse2),
                             DomFactory.block(Arrays.asList())
                         ),
                         DomFactory.mark(ifTrue),
                         DomFactory.assignVar("i", DomFactory.literal(1)),
                         DomFactory.goTo(end),
-                        DomFactory.mark(ifFalse),
+                        DomFactory.mark(ifFalse2),
                         DomFactory.assignVar("i", DomFactory.literal(0)),
                         DomFactory.mark(end),
                         DomFactory.ret()
