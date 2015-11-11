@@ -498,6 +498,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         branchFrame.stack = (Stack<ExpressionDom>)branchFrame.originalStack.clone();
         branchFrame.conditionNegative = conditionNegative;
         branchFrame.conditionPositive = conditionPositive;
+        branchFrame.state = LocalFrame.STATE_IF_TRUE;
 
         //branchFrame.conditionNegative = conditionNegative;
         //branchFrame.ifFalseStart = label;
@@ -562,6 +563,7 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         if(label == frame.jumpLabel ||
             frame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel)) {
+            frame.ifTrueEnd = frame.statements.size() - 1;
             frame.ifFalseStart = frame.statements.size();
             frame.branchEnd = frame.lastGoToLabel;
             //frame.stack = (Stack<ExpressionDom>)frame.originalStack.clone();
@@ -578,6 +580,12 @@ public class ByteCodeToTree extends InstructionAdapter {
                 outerFrame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel)) {
                 outerFrame.mergedBranches.add(frame);
 
+                if(outerFrame.state != LocalFrame.STATE_UNCONDITIONAL) {
+                    if (frame.branchEnd != null && outerFrame.branchEnd == null) {
+                        outerFrame.branchEnd = frame.branchEnd;
+                    }
+                }
+
                 //outerFrame.statements.add(mark);
 
                 // Merge branch into outer branch
@@ -591,11 +599,13 @@ public class ByteCodeToTree extends InstructionAdapter {
             getStatements().add(mark);
         }*/
 
-        getStatements().add(mark);
-
         if(label == frame.branchEnd) {
+            frame.ifFalseEnd = frame.statements.size() - 1;
+
             popFrame();
         }
+
+        getStatements().add(mark);
 
         localFrames.peek().labelUsageChecks.add(new Runnable() {
             @Override
@@ -719,6 +729,10 @@ public class ByteCodeToTree extends InstructionAdapter {
         }).collect(Collectors.toList());*/
 
         //return DomFactory.block(root.statements);
+
+        if(localFrames.size() != 1) {
+            localFrames.toString();
+        }
 
         return DomFactory.block(getStatements());
     }

@@ -83,9 +83,8 @@ public class ByteCodeToTreeTest {
 
     @Parameterized.Parameters
     public static Collection values() {
-
         return Arrays.asList(
-            /*new Object() {
+            new Object() {
                 private int i;
 
                 public void byteCode() {
@@ -1052,7 +1051,7 @@ public class ByteCodeToTreeTest {
                         DomFactory.ret()
                     ));
                 }
-            },*/
+            },
             new Object() {
                 private int i;
                 private int j;
