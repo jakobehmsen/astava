@@ -163,10 +163,64 @@ public class MyClass extends MyOtherClass {
         return i;
     }
 
-    public int myMethodOrAnd() {
+    public int myMethodOrAndOr() {
         int i = 0;
 
-        if(b2 || b3 && b4) {
+        if(b2 || b2 && b3 || b4) {
+            i = 1;
+        } else {
+            i = 2;
+        }
+
+        return i;
+    }
+
+    public int myMethodAndOrAnd() {
+        int i = 0;
+
+        if(b2 && b2 || b3 && b4) {
+            i = 1;
+        } else {
+            i = 2;
+        }
+
+        return i;
+    }
+
+    public int myMethodOrIfOnly() {
+        int i = 0;
+
+        if(b2 || b3 || b4) {
+            i = 1;
+        }
+
+        return i;
+    }
+
+    public int myMethodAndOrIfOnly() {
+        int i = 0;
+
+        if(b2 && b3 || b4) {
+            i = 1;
+        }
+
+        return i;
+    }
+
+    public int myMethodOrAndOrIfOnly() {
+        int i = 0;
+
+        if(b2 || b2 && b3 || b4) {
+            i = 1;
+        }
+
+        return i;
+    }
+
+    public int myMethodAndOrAndIfOnly() {
+        int i = 0;
+
+        if(b2 && b2 || b3 && b4) {
             i = 1;
         } else {
             i = 2;

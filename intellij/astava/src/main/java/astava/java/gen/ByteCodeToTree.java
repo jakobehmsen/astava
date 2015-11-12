@@ -561,14 +561,15 @@ public class ByteCodeToTree extends InstructionAdapter {
         StatementDom mark = DomFactory.mark(astLabel);
         LocalFrame frame = localFrames.peek();
 
-        if(label == frame.jumpLabel ||
-            frame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel)) {
+        if(frame.state == LocalFrame.STATE_IF_TRUE &&
+            (label == frame.jumpLabel || frame.mergedBranches.stream().anyMatch(x -> label == x.jumpLabel))) {
             frame.ifTrueEnd = frame.statements.size() - 1;
             frame.ifFalseStart = frame.statements.size();
             frame.branchEnd = frame.lastGoToLabel;
             //frame.stack = (Stack<ExpressionDom>)frame.originalStack.clone();
             frame.stackIfTrue = frame.stack;
             frame.stack = frame.originalStack;
+            frame.state = LocalFrame.STATE_IF_FALSE;
         }
 
         //boolean mergedBranches = false;

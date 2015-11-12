@@ -1001,6 +1001,85 @@ public class ByteCodeToTreeTest {
                     ));
                 }
             },
+            new Object() {
+                private int i;
+                private int j;
+
+                public void byteCode() {
+                    int i;
+
+                    if (this.i >= 1 || this.j <= 2) {
+                        i = 1;
+                        return;
+                    } else {
+
+                    }
+                }
+
+                public StatementDom expectedTree() {
+                    Object ifTrue = new Object();
+                    Object ifFalse = new Object();
+
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "i"),
+                        DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.GE),
+                            DomFactory.goTo(ifTrue),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "j", Descriptor.INT), DomFactory.literal(2), RelationalOperator.GT),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.mark(ifTrue),
+                        DomFactory.assignVar("i", DomFactory.literal(1)),
+                        DomFactory.ret(),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.ret()
+                    ));
+                }
+            },
+            new Object() {
+                private int i;
+                private int j;
+
+                public void byteCode() {
+                    int i;
+
+                    if (this.i >= 1 || this.j <= 2) {
+                        i = 1;
+                        return;
+                    } else {
+                        i = 0;
+                    }
+                }
+
+                public StatementDom expectedTree() {
+                    Object ifTrue = new Object();
+                    Object ifFalse = new Object();
+
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "i"),
+                        DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.GE),
+                            DomFactory.goTo(ifTrue),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.ifElse(
+                            DomFactory.compare(DomFactory.accessField(DomFactory.self(), "j", Descriptor.INT), DomFactory.literal(2), RelationalOperator.GT),
+                            DomFactory.goTo(ifFalse),
+                            DomFactory.block(Arrays.asList())
+                        ),
+                        DomFactory.mark(ifTrue),
+                        DomFactory.assignVar("i", DomFactory.literal(1)),
+                        DomFactory.ret(),
+                        DomFactory.mark(ifFalse),
+                        DomFactory.assignVar("i", DomFactory.literal(0)),
+                        DomFactory.ret()
+                    ));
+                }
+            },
             // *** Composite conditions ***
             new Object() {
                 private int i;
