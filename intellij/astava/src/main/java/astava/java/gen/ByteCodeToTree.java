@@ -351,7 +351,7 @@ public class ByteCodeToTree extends InstructionAdapter {
             getStatements().add(DomFactory.ret(expression));
         }
 
-        //LocalFrame frame = localFrames.peek();
+        LocalFrame frame = localFrames.peek();
 
         /*
         What about
@@ -367,6 +367,15 @@ public class ByteCodeToTree extends InstructionAdapter {
         if (localFrames.size() > 1) {
             /*LocalFrame poppedFrame = localFrames.pop();
             localFrames.peek().statements.addAll(poppedFrame.statements);*/
+
+            switch(frame.state) {
+                case LocalFrame.STATE_IF_TRUE:
+                    frame.ifTrueEnd = frame.statements.size() - 1;
+                    break;
+                case LocalFrame.STATE_IF_FALSE:
+                    frame.ifFalseEnd = frame.statements.size() - 1;
+                    break;
+            }
 
             popFrame();
         }
@@ -492,7 +501,7 @@ public class ByteCodeToTree extends InstructionAdapter {
         //localFrames.peek().lastGoToLabel = label;
 
         LocalFrame branchFrame = new LocalFrame();
-        branchFrame.ifTrueStart = localFrames.peek().statements.size();
+        branchFrame.ifTrueStart = 0;//localFrames.peek().statements.size();
         branchFrame.jumpLabel = label;
         branchFrame.originalStack = localFrames.peek().stack;
         branchFrame.stack = (Stack<ExpressionDom>)branchFrame.originalStack.clone();
@@ -681,6 +690,14 @@ public class ByteCodeToTree extends InstructionAdapter {
             frame.statements.get(1).equals(DomFactory.mark(getAstLabel(frame.jumpLabel)))) {
             localFrames.peek().stack.add(DomFactory.ifElseExpr(frame.conditionPositive, frame.stackIfTrue.pop(), frame.stack.pop()));
         } else {
+            if(frame.state == LocalFrame.STATE_IF_TRUE) {
+                frame.toString();
+            } else if(frame.state == LocalFrame.STATE_IF_FALSE) {
+                frame.toString();
+            } else {
+                frame.toString();
+            }
+
             localFrames.peek().statements.add(DomFactory.ifElse(frame.conditionNegative, DomFactory.goTo(getAstLabel(frame.jumpLabel)), DomFactory.block(Arrays.asList())));
             localFrames.peek().labelUsages.add(getAstLabel(frame.jumpLabel));
             localFrames.peek().statements.addAll(frame.statements);
