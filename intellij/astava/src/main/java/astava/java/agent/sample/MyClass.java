@@ -228,4 +228,19 @@ public class MyClass extends MyOtherClass {
 
         return i;
     }
+
+    public int myMethodWhile() {
+        int i = 0;
+
+        while(i < 10) {
+            i++;
+
+            if(i > 5)
+                break;
+
+            i++;
+        }
+
+        return i;
+    }
 }

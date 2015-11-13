@@ -609,26 +609,29 @@ public class ByteCodeToTree extends InstructionAdapter {
             getStatements().add(mark);
         }*/
 
+        getStatements().add(mark);
+
         if(label == frame.branchEnd) {
-            frame.ifFalseEnd = frame.statements.size() - 1;
+            frame.ifFalseEnd = frame.statements.size() - 2; // Don't include mark statement
 
             popFrame();
         }
 
-        getStatements().add(mark);
-
-        localFrames.peek().labelUsageChecks.add(new Runnable() {
-            @Override
-            public void run() {
-                if(!localFrames.peek().labelUsages.contains(astLabel)) {
-                    int index = IntStream.range(0, getStatements().size())
-                        .filter(i -> getStatements().get(i) == mark)
-                        .findAny().getAsInt();
-                    getStatements().remove(index);
-                    //getStatements().remove(mark);
+        // Mark statement may have been removed in popFrame; check if it's still there
+        if(getStatements().get(getStatements().size() - 1) == mark) {
+            localFrames.peek().labelUsageChecks.add(new Runnable() {
+                @Override
+                public void run() {
+                    if (!localFrames.peek().labelUsages.contains(astLabel)) {
+                        int index = IntStream.range(0, getStatements().size())
+                            .filter(i -> getStatements().get(i) == mark)
+                            .findAny().getAsInt();
+                        getStatements().remove(index);
+                        //getStatements().remove(mark);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         /*if(localFrames.size() == 0)
             return;
@@ -685,9 +688,10 @@ public class ByteCodeToTree extends InstructionAdapter {
         LocalFrame frame = localFrames.pop();
 
         if(frame.stack.size() == 1 && frame.stackIfTrue.size() == 1 &&
-            frame.statements.size() == 2 &&
+            frame.statements.size() == 3 &&
             frame.statements.get(0).equals(DomFactory.goTo(getAstLabel(frame.lastGoToLabel))) &&
-            frame.statements.get(1).equals(DomFactory.mark(getAstLabel(frame.jumpLabel)))) {
+            frame.statements.get(1).equals(DomFactory.mark(getAstLabel(frame.jumpLabel))) &&
+            frame.statements.get(2).equals(DomFactory.mark(getAstLabel(frame.lastGoToLabel)))) {
             localFrames.peek().stack.add(DomFactory.ifElseExpr(frame.conditionPositive, frame.stackIfTrue.pop(), frame.stack.pop()));
         } else {
             if(frame.state == LocalFrame.STATE_IF_TRUE) {

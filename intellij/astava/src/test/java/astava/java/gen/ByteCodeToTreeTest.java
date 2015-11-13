@@ -84,7 +84,7 @@ public class ByteCodeToTreeTest {
     @Parameterized.Parameters
     public static Collection values() {
         return Arrays.asList(
-            new Object() {
+            /*new Object() {
                 private int i;
 
                 public void byteCode() {
@@ -915,7 +915,36 @@ public class ByteCodeToTreeTest {
                         DomFactory.ret(DomFactory.accessVar("j"))
                     ));
                 }
-            },
+            },*/
+            new Object() {
+                private int i;
+
+                private boolean t() {
+                    return true;
+                }
+
+                private boolean f() {
+                    return false;
+                }
+
+                public void byteCode() {
+                    int j = 0;
+
+                    if(i == 1 ? t() : f()) {
+                        j = 1;
+                    } else {
+                        j = 2;
+                    }
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "j"),
+                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
+                        DomFactory.ret(DomFactory.accessVar("j"))
+                    ));
+                }
+            }/*,
             // *** If else with composite logical expressions
             new Object() {
                 private int i;
@@ -1178,7 +1207,7 @@ public class ByteCodeToTreeTest {
                         DomFactory.ret()
                     ));
                 }
-            }
+            }*/
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
