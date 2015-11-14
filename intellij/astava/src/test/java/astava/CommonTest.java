@@ -32,15 +32,15 @@ public class CommonTest {
     public static StatementDom whileLoop(ExpressionDom condition, StatementDom body) {
         // Embedded loop aren't supported
         return block(Arrays.asList(
-            label("continue"),
+            labelOLD("continue"),
             ifElse(condition,
                 block(Arrays.asList(
                     body,
-                    goTo("continue")
+                    goToOLD("continue")
                 )),
-                goTo("break")
+                goToOLD("break")
             ),
-            label("break")
+            labelOLD("break")
         ));
     }
 }

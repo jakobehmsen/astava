@@ -3,6 +3,7 @@ package astava.java;
 import astava.tree.*;
 
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -551,6 +552,10 @@ public class DomFactory {
         };
     }
 
+    public static StatementDom block(StatementDom... statements) {
+        return block(Arrays.asList(statements));
+    }
+
     public static StatementDom block(List<StatementDom> statements) {
         return new AbstractStatementDom() {
             @Override
@@ -722,11 +727,11 @@ public class DomFactory {
         return v -> v.visitNewInstance(type, parameterTypes, arguments);
     }
 
-    public static StatementDom label(String name) {
+    public static StatementDom labelOLD(String name) {
         return v -> v.visitLabel(name);
     }
 
-    public static StatementDom goTo(String name) {
+    public static StatementDom goToOLD(String name) {
         return v -> v.visitGoTo(name);
     }
 

@@ -2,8 +2,10 @@ package astava.java.gen;
 
 import astava.java.Descriptor;
 import astava.java.DomFactory;
+import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.ExpressionDom;
 import astava.tree.StatementDom;
+import astava.tree.Util;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -157,11 +159,41 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         ExpressionBuilder value = stackPop();
 
         statementBuilders.add(statements -> {
-            statements.add(DomFactory.ret(value.build()));
+            ExpressionDom v = value.build();
+            v = ensureType(returnType, v);
+
+            statements.add(DomFactory.ret(v));
         });
 
         if(branches.size() > 0)
             branches.pop();
+    }
+
+    private ExpressionDom ensureType(Type type, ExpressionDom expression) {
+        if(type.equals(Type.BOOLEAN_TYPE)) {
+            return Util.returnFrom(expression, r -> expression.accept(new DefaultExpressionDomVisitor() {
+                @Override
+                public void visitIntLiteral(int value) {
+                    r.accept(DomFactory.literal(value == 1 ? true : false));
+                }
+            }));
+        } else if(type.equals(Type.BYTE_TYPE)) {
+            return Util.returnFrom(expression, r -> expression.accept(new DefaultExpressionDomVisitor() {
+                @Override
+                public void visitIntLiteral(int value) {
+                    r.accept(DomFactory.literal((byte)value));
+                }
+            }));
+        } else if(type.equals(Type.SHORT_TYPE)) {
+            return Util.returnFrom(expression, r -> expression.accept(new DefaultExpressionDomVisitor() {
+                @Override
+                public void visitIntLiteral(int value) {
+                    r.accept(DomFactory.literal((short)value));
+                }
+            }));
+        }
+
+        return expression;
     }
 
     @Override

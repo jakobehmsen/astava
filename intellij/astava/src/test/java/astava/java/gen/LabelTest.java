@@ -26,7 +26,7 @@ public class LabelTest {
         StatementDom methodBody = block(Arrays.asList(
             goTo(labelName),
             ret(literal(0)), // This shouldn't be reached
-            label(labelName),
+            labelOLD(labelName),
             ret(literal(expectedValue))
         ));
 
@@ -56,8 +56,8 @@ public class LabelTest {
         StatementDom methodBody = block(Arrays.asList(
             goTo(labelName),
             ret(literal(0)),
-            label(labelName),
-            label(labelName),
+            labelOLD(labelName),
+            labelOLD(labelName),
             ret(literal(expectedValue))
         ));
 

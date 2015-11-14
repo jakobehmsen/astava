@@ -118,8 +118,6 @@ public class ByteCodeToTree2Test {
                 }
             },*/
             new Object() {
-                private int i;
-
                 public boolean byteCode(boolean a, boolean b, boolean c) {
                     if(a || b && c)
                         return true;
@@ -127,11 +125,15 @@ public class ByteCodeToTree2Test {
                 }
 
                 public StatementDom expectedTree() {
-                    return DomFactory.block(Arrays.asList(
-                        DomFactory.declareVar(Descriptor.INT, "j"),
-                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
-                        DomFactory.ret(DomFactory.accessVar("j"))
-                    ));
+                    return DomFactory.block(
+                        DomFactory.ifElse(DomFactory.ne(DomFactory.accessVar("a"), DomFactory.literal(false)), DomFactory.goTo("L0"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("b"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("c"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
+                        DomFactory.mark("L0"),
+                        DomFactory.ret(DomFactory.literal(true)),
+                        DomFactory.mark("L1"),
+                        DomFactory.ret(DomFactory.literal(false))
+                    );
                 }
             }
         ).stream().map(x -> load(x)).collect(Collectors.toList());
