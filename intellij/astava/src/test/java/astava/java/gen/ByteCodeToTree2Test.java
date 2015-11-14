@@ -152,7 +152,11 @@ public class ByteCodeToTree2Test {
                         DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("b"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
                         DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("c"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
                         DomFactory.mark("L0"),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("b"), DomFactory.literal(false)), DomFactory.goTo("L2"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("a"), DomFactory.literal(false)), DomFactory.goTo("L2"), DomFactory.block()),
                         DomFactory.ret(DomFactory.literal(true)),
+                        DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.literal(false)),
                         DomFactory.mark("L1"),
                         DomFactory.ret(DomFactory.literal(false))
                     );
