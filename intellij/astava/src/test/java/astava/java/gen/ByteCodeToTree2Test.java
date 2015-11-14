@@ -100,8 +100,8 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.accessVar("j"))
                     ));
                 }
-            },*/
-            /*new Object() {
+            },
+            new Object() {
                 private int i;
 
                 public boolean byteCode(boolean a, boolean b, boolean c) {
@@ -116,11 +116,33 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.accessVar("j"))
                     ));
                 }
-            },*/
+            },
             new Object() {
                 public boolean byteCode(boolean a, boolean b, boolean c) {
                     if(a || b && c)
                         return true;
+                    return false;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ifElse(DomFactory.ne(DomFactory.accessVar("a"), DomFactory.literal(false)), DomFactory.goTo("L0"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("b"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("c"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
+                        DomFactory.mark("L0"),
+                        DomFactory.ret(DomFactory.literal(true)),
+                        DomFactory.mark("L1"),
+                        DomFactory.ret(DomFactory.literal(false))
+                    );
+                }
+            },*/
+            new Object() {
+                public boolean byteCode(boolean a, boolean b, boolean c) {
+                    if(a || b && c) {
+                        if(b && a)
+                            return true;
+                        return false;
+                    }
                     return false;
                 }
 

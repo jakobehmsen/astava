@@ -6,10 +6,7 @@ import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.ExpressionDom;
 import astava.tree.StatementDom;
 import astava.tree.Util;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -65,6 +62,10 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     private ArrayList<Consumer<List<StatementDom>>> statementBuilders = new ArrayList<>();
     private Hashtable<String, String> relabels = new Hashtable<>();
 
+    private boolean isArgument(int index) {
+        return index > 0 && index <= Type.getArgumentTypes(methodNode.desc).length;
+    }
+
     public void prepareVariables(Consumer<MethodVisitor> accepter) {
         accepter.accept(new MethodVisitor(Opcodes.ASM5) {
             @Override
@@ -74,7 +75,7 @@ public class ByteCodeToTree2 extends InstructionAdapter {
                         varToName.put(index, name);
                     }
 
-                    if(index <= Type.getArgumentTypes(methodNode.desc).length) {
+                    if(isArgument(index)) {
                         varAssignCount.put(name, 1);
                     }
                 }
@@ -88,10 +89,67 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void fconst(float v) {
+        stackPush(() -> DomFactory.literal(v));
+    }
+
+    @Override
+    public void aconst(Object o) {
+        if(o instanceof String) {
+            stackPush(() -> DomFactory.literal((String)o));
+        } else {
+
+        }
+    }
+
+    @Override
+    public void dconst(double v) {
+        stackPush(() -> DomFactory.literal(v));
+    }
+
+    @Override
+    public void lconst(long l) {
+        stackPush(() -> DomFactory.literal(l));
+    }
+
+    @Override
+    public void tconst(Type type) {
+        stackPush(() -> DomFactory.classLiteral(type.getDescriptor()));
+    }
+
+    @Override
     public void add(Type type) {
         ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();
         stackPush(() -> DomFactory.add(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void sub(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        stackPush(() -> DomFactory.sub(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void mul(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        stackPush(() -> DomFactory.mul(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void div(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        stackPush(() -> DomFactory.div(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void rem(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        stackPush(() -> DomFactory.rem(lhs.build(), rhs.build()));
     }
 
     @Override
@@ -117,31 +175,31 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     public void ifne(Label label) {
         ExpressionBuilder rhs = () -> DomFactory.literal(false);
         ExpressionBuilder lhs = stackPop();
-        branch2(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
     }
 
     @Override
     public void ifeq(Label label) {
         ExpressionBuilder rhs = () -> DomFactory.literal(false);
         ExpressionBuilder lhs = stackPop();
-        branch2(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
     }
 
     @Override
     public void ificmpeq(Label label) {
         ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();
-        branch2(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
     }
 
     @Override
     public void ificmpne(Label label) {
         ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();
-        branch2(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
     }
 
-    private void branch2(ExpressionBuilder condition, Label jumpLabel) {
+    private void branch(ExpressionBuilder condition, Label jumpLabel) {
         statementBuilders.add(statements -> {
             statements.add(DomFactory.ifElse(condition.build(), DomFactory.goTo(jumpLabel), DomFactory.block(Arrays.asList())));
         });
