@@ -199,6 +199,62 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
     }
 
+    @Override
+    public void ificmple(Label label) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.lt(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ificmpgt(Label label) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.gt(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ificmpge(Label label) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.ge(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ificmplt(Label label) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.gt(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifnull(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.nil();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifnonnull(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.nil();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifacmpeq(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.nil();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifacmpne(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.nil();
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+    }
+
     private void branch(ExpressionBuilder condition, Label jumpLabel) {
         statementBuilders.add(statements -> {
             statements.add(DomFactory.ifElse(condition.build(), DomFactory.goTo(jumpLabel), DomFactory.block(Arrays.asList())));
