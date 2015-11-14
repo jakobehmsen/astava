@@ -84,13 +84,46 @@ public class ByteCodeToTree2Test {
     @Parameterized.Parameters
     public static Collection values() {
         return Arrays.asList(
-            new Object() {
+            /*new Object() {
                 private int i;
 
                 public int byteCode() {
                     int j = i == 1 ? 1 : 0;
 
                     return j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "j"),
+                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
+                        DomFactory.ret(DomFactory.accessVar("j"))
+                    ));
+                }
+            },*/
+            /*new Object() {
+                private int i;
+
+                public boolean byteCode(boolean a, boolean b, boolean c) {
+                    return a || b && c;
+
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(Arrays.asList(
+                        DomFactory.declareVar(Descriptor.INT, "j"),
+                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
+                        DomFactory.ret(DomFactory.accessVar("j"))
+                    ));
+                }
+            },*/
+            new Object() {
+                private int i;
+
+                public boolean byteCode(boolean a, boolean b, boolean c) {
+                    if(a || b && c)
+                        return true;
+                    return false;
                 }
 
                 public StatementDom expectedTree() {
