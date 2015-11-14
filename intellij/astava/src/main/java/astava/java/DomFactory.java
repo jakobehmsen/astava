@@ -142,7 +142,27 @@ public class DomFactory {
     }
 
     public static ExpressionDom literal(boolean value) {
-        return v -> v.visitBooleanLiteral(value);
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitBooleanLiteral(value);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitBooleanLiteral(boolean otherValue) {
+                        r.accept(value == otherValue);
+                    }
+                };
+            }
+
+            @Override
+            public String toString() {
+                return Boolean.toString(value);
+            }
+        };
     }
 
     public static ExpressionDom literal(byte value) {
@@ -351,7 +371,7 @@ public class DomFactory {
             private String operatorToString() {
                 switch (operator) {
                     case RelationalOperator.EQ:
-                        return "=";
+                        return "==";
                     case RelationalOperator.NE:
                         return "!=";
                     case RelationalOperator.LT:
