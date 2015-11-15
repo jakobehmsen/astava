@@ -700,7 +700,38 @@ public class DomFactory {
     }
 
     public static StatementDom invoke(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
-        return v -> v.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitInvocation(int otherInvocation, ExpressionDom otherTarget, String otherType, String otherName, String otherDescriptor, List<ExpressionDom> otherArguments) {
+                        r.accept(
+                            invocation == otherInvocation &&
+                            target.equals(otherTarget) &&
+                            type.equals(otherType) &&
+                            methodDescriptor.equals(otherDescriptor) &&
+                            arguments.equals(otherArguments)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
+            }
+
+            @Override
+            public String toString() {
+                String targetStr = invocation == Invocation.STATIC ? type : target.toString();
+
+                return targetStr + "." + name +
+                    "(" +
+                    arguments.stream().map(x -> x.toString()).collect(Collectors.joining(", "))
+                    + ")";
+            }
+        };
     }
 
     public static ExpressionDom invokeStaticExpr(String type, String name, String methodDescriptor, List<ExpressionDom> arguments) {
@@ -716,7 +747,38 @@ public class DomFactory {
     }
 
     public static ExpressionDom invokeExpr(int invocation, String type, String name, String methodDescriptor, ExpressionDom target /*null for static*/, List<ExpressionDom> arguments) {
-        return v -> v.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitInvocation(int otherInvocation, ExpressionDom otherTarget, String otherType, String otherName, String otherDescriptor, List<ExpressionDom> otherArguments) {
+                        r.accept(
+                            invocation == otherInvocation &&
+                                target.equals(otherTarget) &&
+                                type.equals(otherType) &&
+                                methodDescriptor.equals(otherDescriptor) &&
+                                arguments.equals(otherArguments)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitInvocation(invocation, target, type, name, methodDescriptor, arguments);
+            }
+
+            @Override
+            public String toString() {
+                String targetStr = invocation == Invocation.STATIC ? type : target.toString();
+
+                return targetStr + "." + name +
+                    "(" +
+                    arguments.stream().map(x -> x.toString()).collect(Collectors.joining(", "))
+                    + ")";
+            }
+        };
     }
 
     public static StatementDom newInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {

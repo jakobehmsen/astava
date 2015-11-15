@@ -135,7 +135,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(false))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public boolean byteCode(boolean a, boolean b, boolean c) {
                     if(a || b && c) {
@@ -159,6 +159,57 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(false)),
                         DomFactory.mark("L1"),
                         DomFactory.ret(DomFactory.literal(false))
+                    );
+                }
+            },*/
+            new Object() {
+                public void myMethod(int i) {
+
+                }
+
+                public void byteCode() {
+                    myMethod(50);
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.invokeVirtual(
+                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class), void.class),
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50)))
+                    );
+                }
+            },
+            new Object() {
+                public int myMethod(int i) {
+                    return i;
+                }
+
+                public void byteCode() {
+                    myMethod(50);
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.invokeVirtual(
+                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class), int.class),
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50)))
+                    );
+                }
+            },
+            new Object() {
+                public int myMethod(int i) {
+                    return i;
+                }
+
+                public void byteCode() {
+                    int i = myMethod(50);
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.assignVar("i", DomFactory.invokeVirtualExpr(
+                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class), int.class),
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50))))
                     );
                 }
             }

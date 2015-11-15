@@ -2,6 +2,7 @@ package astava.java.gen;
 
 import astava.java.Descriptor;
 import astava.java.DomFactory;
+import astava.java.Invocation;
 import astava.tree.DefaultExpressionDomVisitor;
 import astava.tree.ExpressionDom;
 import astava.tree.StatementDom;
@@ -81,6 +82,62 @@ public class ByteCodeToTree2 extends InstructionAdapter {
                 }
             }
         });
+    }
+
+    @Override
+    public void invokevirtual(String owner, String name, String desc, boolean itf) {
+        invoke(owner, name, desc, Invocation.VIRTUAL);
+    }
+
+    @Override
+    public void invokespecial(String owner, String name, String desc, boolean itf) {
+        invoke(owner, name, desc, Invocation.SPECIAL);
+    }
+
+    @Override
+    public void invokeinterface(String owner, String name, String desc) {
+        invoke(owner, name, desc, Invocation.INTERFACE);
+    }
+
+    @Override
+    public void invokestatic(String owner, String name, String desc, boolean itf) {
+        invoke(owner, name, desc, Invocation.STATIC);
+    }
+
+    private void invoke(String owner, String name, String desc, int invocation) {
+        Type[] argumentTypes = Type.getArgumentTypes(desc);
+        List<ExpressionBuilder> arguments =
+            Arrays.asList(argumentTypes).stream().map(x -> stackPop()).collect(Collectors.toList());
+        ExpressionBuilder target = stackPop();
+        if(Type.getReturnType(desc).equals(Type.VOID_TYPE))
+            statementBuilders.add(statements ->
+                statements.add(DomFactory.invoke(invocation, owner, name, desc, target.build(), arguments.stream().map(x -> x.build()).collect(Collectors.toList()))));
+        else
+            stackPush(() -> DomFactory.invokeExpr(invocation, owner, name, desc, target.build(), arguments.stream().map(x -> x.build()).collect(Collectors.toList())));
+    }
+
+    @Override
+    public void pop() {
+        // An expression as statement? Always? When not?
+        ExpressionBuilder expression = stackPop();
+
+        // E.g. invocation expressions are translated into their statement counterpart
+        statementBuilders.add(statements ->
+            statements.add(expressionToStatement(expression.build())));
+    }
+
+    private StatementDom expressionToStatement(ExpressionDom expression) {
+        return Util.returnFrom(null, r -> expression.accept(new DefaultExpressionDomVisitor() {
+            @Override
+            public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
+                r.accept(DomFactory.invoke(invocation, type, name, descriptor, target, arguments));
+            }
+
+            @Override
+            public void visitNewInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
+                r.accept(DomFactory.newInstance(type, parameterTypes, arguments));
+            }
+        }));
     }
 
     @Override
@@ -270,17 +327,19 @@ public class ByteCodeToTree2 extends InstructionAdapter {
 
     @Override
     public void areturn(Type type) {
-        ExpressionBuilder value = stackPop();
+        if(!type.equals(Type.VOID_TYPE)) {
+            ExpressionBuilder value = stackPop();
 
-        statementBuilders.add(statements -> {
-            ExpressionDom v = value.build();
-            v = ensureType(returnType, v);
+            statementBuilders.add(statements -> {
+                ExpressionDom v = value.build();
+                v = ensureType(returnType, v);
 
-            statements.add(DomFactory.ret(v));
-        });
+                statements.add(DomFactory.ret(v));
+            });
 
-        if(branches.size() > 0)
-            branches.pop();
+            if (branches.size() > 0)
+                branches.pop();
+        }
     }
 
     private ExpressionDom ensureType(Type type, ExpressionDom expression) {
