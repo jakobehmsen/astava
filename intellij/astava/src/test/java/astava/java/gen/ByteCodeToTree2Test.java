@@ -163,57 +163,89 @@ public class ByteCodeToTree2Test {
                 }
             },*/
             new Object() {
-                public void myMethod(int i) {
+                public void myMethod(int i, int j) {
 
                 }
 
                 public void byteCode() {
-                    myMethod(50);
+                    myMethod(50, 55);
                 }
 
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.invokeVirtual(
-                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class), void.class),
-                            DomFactory.self(), Arrays.asList(DomFactory.literal(50)))
+                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class, int.class), void.class),
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55)))
                     );
                 }
             },
             new Object() {
-                public int myMethod(int i) {
+                public int myMethod(int i, int j) {
                     return i;
                 }
 
                 public void byteCode() {
-                    myMethod(50);
+                    myMethod(50, 55);
                 }
 
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.invokeVirtual(
-                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class), int.class),
-                            DomFactory.self(), Arrays.asList(DomFactory.literal(50)))
+                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class, int.class), int.class),
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55)))
                     );
                 }
             },
             new Object() {
-                public int myMethod(int i) {
+                public int myMethod(int i, int j) {
                     return i;
                 }
 
                 public void byteCode() {
-                    int i = myMethod(50);
+                    int i = myMethod(50, 55);
                 }
 
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.assignVar("i", DomFactory.invokeVirtualExpr(
-                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class), int.class),
-                            DomFactory.self(), Arrays.asList(DomFactory.literal(50))))
+                            Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class, int.class), int.class),
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55))))
+                    );
+                }
+            },
+            new Object() {
+                public void byteCode() {
+                    MyClass x = new MyClass(4, 5);
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.assignVar("x", DomFactory.newInstanceExpr(
+                            Descriptor.get(MyClass.class.getName()), Arrays.asList(Descriptor.get(int.class), Descriptor.get(int.class)),
+                            Arrays.asList(DomFactory.literal(4), DomFactory.literal(5))))
+                    );
+                }
+            },
+            new Object() {
+                public void byteCode() {
+                    new MyClass(4, 5);
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.newInstance(
+                            Descriptor.get(MyClass.class.getName()), Arrays.asList(Descriptor.get(int.class), Descriptor.get(int.class)),
+                            Arrays.asList(DomFactory.literal(4), DomFactory.literal(5)))
                     );
                 }
             }
         ).stream().map(x -> load(x)).collect(Collectors.toList());
+    }
+
+    private static class MyClass {
+        public MyClass(int i, int j) {
+
+        }
     }
 
     @Test

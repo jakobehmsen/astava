@@ -3,10 +3,7 @@ package astava.java.gen;
 import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.Invocation;
-import astava.tree.DefaultExpressionDomVisitor;
-import astava.tree.ExpressionDom;
-import astava.tree.StatementDom;
-import astava.tree.Util;
+import astava.tree.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.InstructionAdapter;
 import org.objectweb.asm.tree.MethodNode;
@@ -91,7 +88,20 @@ public class ByteCodeToTree2 extends InstructionAdapter {
 
     @Override
     public void invokespecial(String owner, String name, String desc, boolean itf) {
-        invoke(owner, name, desc, Invocation.SPECIAL);
+        switch (state) {
+            case STATE_NEW_INSTANCE:
+                Type[] argumentTypes = Type.getArgumentTypes(desc);
+                List<String> parameterTypes = Arrays.asList(argumentTypes).stream().map(x -> x.getDescriptor()).collect(Collectors.toList());
+                List<ExpressionBuilder> arguments =
+                    Arrays.asList(argumentTypes).stream().map(x -> stackPop()).collect(Collectors.toList());
+                Collections.reverse(arguments);
+                stackPush(() -> DomFactory.newInstanceExpr(owner, parameterTypes, arguments.stream().map(x -> x.build()).collect(Collectors.toList())));
+                state = STATE_DEFAULT;
+
+                break;
+            default:
+                invoke(owner, name, desc, Invocation.SPECIAL);
+        }
     }
 
     @Override
@@ -108,12 +118,50 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         Type[] argumentTypes = Type.getArgumentTypes(desc);
         List<ExpressionBuilder> arguments =
             Arrays.asList(argumentTypes).stream().map(x -> stackPop()).collect(Collectors.toList());
+        Collections.reverse(arguments);
         ExpressionBuilder target = stackPop();
         if(Type.getReturnType(desc).equals(Type.VOID_TYPE))
             statementBuilders.add(statements ->
                 statements.add(DomFactory.invoke(invocation, owner, name, desc, target.build(), arguments.stream().map(x -> x.build()).collect(Collectors.toList()))));
         else
             stackPush(() -> DomFactory.invokeExpr(invocation, owner, name, desc, target.build(), arguments.stream().map(x -> x.build()).collect(Collectors.toList())));
+    }
+
+    private final int STATE_DEFAULT = 0;
+    private final int STATE_NEW_INSTANCE = 1;
+    private int state = STATE_DEFAULT;
+
+    private Type newInstanceType;
+
+    @Override
+    public void anew(Type type) {
+        /*
+        NEW java/lang/Object
+        DUP
+        INVOKESPECIAL java/lang/Object.<init> ()V
+        */
+
+        /*
+        The bytecode pattern:
+        NEW, DUP, INVOKESPECIAL
+        should be translated into a single newInstance statement or expression
+        This could be implemented by having a state machine
+        */
+
+        switch (state) {
+            case STATE_DEFAULT:
+                state = STATE_NEW_INSTANCE;
+                newInstanceType = type;
+                break;
+        }
+    }
+
+    @Override
+    public void dup() {
+        switch (state) {
+            case STATE_NEW_INSTANCE:
+                break;
+        }
     }
 
     @Override

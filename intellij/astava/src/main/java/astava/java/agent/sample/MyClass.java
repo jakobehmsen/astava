@@ -243,4 +243,10 @@ public class MyClass extends MyOtherClass {
 
         return i;
     }
+
+    public Object newObj() {
+        Object obj = new MyClass("12");
+
+        return obj;
+    }
 }

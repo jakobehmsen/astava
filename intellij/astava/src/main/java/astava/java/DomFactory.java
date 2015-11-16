@@ -724,7 +724,7 @@ public class DomFactory {
 
             @Override
             public String toString() {
-                String targetStr = invocation == Invocation.STATIC ? type : target.toString();
+                String targetStr = invocation == Invocation.STATIC ? Descriptor.getName(type) : target.toString();
 
                 return targetStr + "." + name +
                     "(" +
@@ -771,7 +771,7 @@ public class DomFactory {
 
             @Override
             public String toString() {
-                String targetStr = invocation == Invocation.STATIC ? type : target.toString();
+                String targetStr = invocation == Invocation.STATIC ? Descriptor.getName(type) : target.toString();
 
                 return targetStr + "." + name +
                     "(" +
@@ -782,11 +782,65 @@ public class DomFactory {
     }
 
     public static StatementDom newInstance(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-        return v -> v.visitNewInstance(type, parameterTypes, arguments);
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitNewInstance(String otherType, List<String> otherParameterTypes, List<ExpressionDom> otherArguments) {
+                        r.accept(
+                            type.equals(otherType) &&
+                                parameterTypes.equals(otherParameterTypes) &&
+                                arguments.equals(otherArguments)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitNewInstance(type, parameterTypes, arguments);
+            }
+
+            @Override
+            public String toString() {
+                return "new " + Descriptor.getName(type) +
+                    "(" +
+                    arguments.stream().map(x -> x.toString()).collect(Collectors.joining(", "))
+                    + ")";
+            }
+        };
     }
 
     public static ExpressionDom newInstanceExpr(String type, List<String> parameterTypes, List<ExpressionDom> arguments) {
-        return v -> v.visitNewInstance(type, parameterTypes, arguments);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitNewInstance(String otherType, List<String> otherParameterTypes, List<ExpressionDom> otherArguments) {
+                        r.accept(
+                            type.equals(otherType) &&
+                            parameterTypes.equals(otherParameterTypes) &&
+                            arguments.equals(otherArguments)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitNewInstance(type, parameterTypes, arguments);
+            }
+
+            @Override
+            public String toString() {
+                return "new " + Descriptor.getName(type) +
+                    "(" +
+                    arguments.stream().map(x -> x.toString()).collect(Collectors.joining(", "))
+                    + ")";
+            }
+        };
     }
 
     public static StatementDom labelOLD(String name) {
