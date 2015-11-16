@@ -164,6 +164,12 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void aload(Type type) {
+        String typeStr = type.getDescriptor();
+        stackPush(() -> DomFactory.classLiteral(typeStr));
+    }
+
+    @Override
     public void anew(Type type) {
         /*
         NEW java/lang/Object
@@ -248,7 +254,8 @@ public class ByteCodeToTree2 extends InstructionAdapter {
 
     @Override
     public void tconst(Type type) {
-        stackPush(() -> DomFactory.classLiteral(type.getDescriptor()));
+        String descriptor = Descriptor.getFieldDescriptorTypeDescriptor(type.getDescriptor());
+        stackPush(() -> DomFactory.classLiteral(descriptor));
     }
 
     @Override
@@ -303,6 +310,13 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
 
         stackPush(() -> DomFactory.accessField(target.build(), name, Type.getType(typeDescriptor).getDescriptor()));
+    }
+
+    @Override
+    public void getstatic(String owner, String name, String desc) {
+        String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
+
+        stackPush(() -> DomFactory.accessStaticField(owner, name, Type.getType(typeDescriptor).getDescriptor()));
     }
 
     @Override

@@ -562,7 +562,31 @@ public class DomFactory {
     }
 
     public static ExpressionDom accessStaticField(String targetTypeName, String name, String typeName) {
-        return v -> v.visitStaticFieldAccess(targetTypeName, name, typeName);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitStaticFieldAccess(String otherTypeName, String otherName, String otherFieldTypeName) {
+                        r.accept(
+                            targetTypeName.equals(otherTypeName) &&
+                            name.equals(otherName) &&
+                            typeName.equals(otherFieldTypeName)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitStaticFieldAccess(targetTypeName, name, typeName);
+            }
+
+            @Override
+            public String toString() {
+                return Descriptor.getName(targetTypeName) + "." + name;
+            }
+        };
     }
 
     public static ExpressionDom self() {
@@ -1055,7 +1079,27 @@ public class DomFactory {
     }
 
     public static ExpressionDom classLiteral(String type) {
-        return v -> v.visitClassLiteral(type);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitClassLiteral(String otherType) {
+                        r.accept(type.equals(otherType));
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitClassLiteral(type);
+            }
+
+            @Override
+            public String toString() {
+                return Descriptor.getName(type) + ".class";
+            }
+        };
     }
 
     public static StatementDom mark(Object label) {
