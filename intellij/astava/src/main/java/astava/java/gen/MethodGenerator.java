@@ -372,6 +372,14 @@ public class MethodGenerator {
                 Label asmLabel = astLabelToASMLabelMap.computeIfAbsent(label, l -> generator.newLabel());
                 generator.visitJumpInsn(Opcodes.GOTO, asmLabel);
             }
+
+            @Override
+            public void visitArrayStore(ExpressionDom expression, ExpressionDom index, ExpressionDom value) {
+                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope, astLabelToASMLabelMap);
+                populateMethodExpression(methodNode, originalInstructions, generator, index, null, true, scope, astLabelToASMLabelMap);
+                String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true, scope, astLabelToASMLabelMap);
+                generator.arrayStore(Type.getType(valueType));
+            }
         });
 
         return Descriptor.VOID;

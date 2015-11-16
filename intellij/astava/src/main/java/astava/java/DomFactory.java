@@ -215,7 +215,27 @@ public class DomFactory {
     }
 
     public static ExpressionDom literal(String value) {
-        return v -> v.visitStringLiteral(value);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitStringLiteral(String otherValue) {
+                        r.accept(value.equals(otherValue));
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitStringLiteral(value);
+            }
+
+            @Override
+            public String toString() {
+                return "\"" + value + "\"";
+            }
+        };
     }
 
     public static ExpressionDom nil() {
@@ -1170,6 +1190,34 @@ public class DomFactory {
             @Override
             public String toString() {
                 return expression + ".length";
+            }
+        };
+    }
+
+    public static StatementDom arrayStore(ExpressionDom expression, ExpressionDom index, ExpressionDom value) {
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitArrayStore(ExpressionDom otherExpression, ExpressionDom otherIndex, ExpressionDom otherValue) {
+                        r.accept(
+                            expression.equals(otherExpression) &&
+                            index.equals(otherIndex) &&
+                            value.equals(otherValue)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitArrayStore(expression, index, value);
+            }
+
+            @Override
+            public String toString() {
+                return expression + "[" + index + "] = " + value;
             }
         };
     }

@@ -110,4 +110,9 @@ public abstract class DefaultStatementDomVisitor implements StatementDomVisitor 
     public void visitGoTo(Object label) {
 
     }
+
+    @Override
+    public void visitArrayStore(ExpressionDom expression, ExpressionDom index, ExpressionDom value) {
+
+    }
 }

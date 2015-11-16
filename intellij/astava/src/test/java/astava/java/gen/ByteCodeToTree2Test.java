@@ -346,7 +346,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.accessStaticField(Descriptor.get(Integer.class), "TYPE", Descriptor.get(Class.class)))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public int byteCode(Object[] array) {
                     return array.length;
@@ -357,7 +357,19 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.arrayLength(DomFactory.accessVar("array")))
                     );
                 }
+            },*/
+            new Object() {
+                public void byteCode(Object[] array) {
+                    array[1] = "str";
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.arrayStore(DomFactory.accessVar("array"), DomFactory.literal(1), DomFactory.literal("str"))
+                    );
+                }
             }
+
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
