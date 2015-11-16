@@ -259,6 +259,12 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void arraylength() {
+        ExpressionBuilder expression = stackPop();
+        stackPush(() -> DomFactory.arrayLength(expression.build()));
+    }
+
+    @Override
     public void add(Type type) {
         ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();

@@ -765,6 +765,12 @@ public class MethodGenerator {
             public void visitClassLiteral(String type) {
                 generator.push(Type.getType(type));
             }
+
+            @Override
+            public void visitArrayLength(ExpressionDom expression) {
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope, astLabelToASMLabelMap);
+                generator.arrayLength();
+            }
         }.returnFrom(expression);
     }
 

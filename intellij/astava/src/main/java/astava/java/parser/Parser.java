@@ -218,6 +218,11 @@ public class Parser {
             public void visitClassLiteral(String type) {
                 setResult(Descriptor.get(Class.class.getName()));
             }
+
+            @Override
+            public void visitArrayLength(ExpressionDom expression) {
+                setResult(Descriptor.get(int.class));
+            }
         }.returnFrom(expr);
     }
 

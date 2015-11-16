@@ -1149,4 +1149,28 @@ public class DomFactory {
             }
         };
     }
+
+    public static ExpressionDom arrayLength(ExpressionDom expression) {
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitArrayLength(ExpressionDom otherExpression) {
+                        r.accept(expression.equals(otherExpression));
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitArrayLength(expression);
+            }
+
+            @Override
+            public String toString() {
+                return expression + ".length";
+            }
+        };
+    }
 }

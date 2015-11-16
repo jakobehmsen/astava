@@ -66,6 +66,8 @@ public interface ExpressionDomVisitor {
 
     void visitClassLiteral(String type);
 
+    void visitArrayLength(ExpressionDom expression);
+
     public static abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
 
