@@ -568,6 +568,14 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         stackPush(() -> DomFactory.typeCast(expression.build(), toType));
     }
 
+    @Override
+    public void checkcast(Type type) {
+        ExpressionBuilder expression = stackPop();
+        String toType = type.getDescriptor();
+
+        stackPush(() -> DomFactory.typeCast(expression.build(), toType));
+    }
+
     private void stackPush(ExpressionBuilder value) {
         String varName = "s" + stackVariableNo++;
         if(stackIndex == stack.size()) {
