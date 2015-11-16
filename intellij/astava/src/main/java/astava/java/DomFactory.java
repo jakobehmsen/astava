@@ -791,7 +791,30 @@ public class DomFactory {
     }
 
     public static ExpressionDom instanceOf(ExpressionDom expression, String type) {
-        return v -> v.visitInstanceOf(expression, type);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitInstanceOf(ExpressionDom otherExpression, String otherType) {
+                        r.accept(
+                            expression.equals(otherExpression) &&
+                            type.equals(otherType)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitInstanceOf(expression, type);
+            }
+
+            @Override
+            public String toString() {
+                return expression + " instanceof " + Descriptor.getName(type);
+            }
+        };
     }
 
     public static StatementDom invokeInterface(String type, String name, String methodDescriptor, ExpressionDom target, List<ExpressionDom> arguments) {
