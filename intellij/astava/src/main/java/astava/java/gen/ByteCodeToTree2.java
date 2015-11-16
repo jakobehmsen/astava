@@ -131,7 +131,13 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     private final int STATE_NEW_INSTANCE = 1;
     private int state = STATE_DEFAULT;
 
-    private Type newInstanceType;
+    @Override
+    public void visitIincInsn(int var, int increment) {
+        String name = getVarName(var, Descriptor.get(int.class));
+
+        statementBuilders.add(statements ->
+            statements.add(DomFactory.intIncVar(name, increment)));
+    }
 
     @Override
     public void anew(Type type) {
@@ -151,7 +157,6 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         switch (state) {
             case STATE_DEFAULT:
                 state = STATE_NEW_INSTANCE;
-                newInstanceType = type;
                 break;
         }
     }

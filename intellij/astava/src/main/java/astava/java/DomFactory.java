@@ -610,7 +610,37 @@ public class DomFactory {
     }
 
     public static StatementDom intIncVar(String name, int amount) {
-        return v -> v.visitIncrement(name, amount);
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitIncrement(String otherName, int otherAmount) {
+                        r.accept(
+                            name.equals(otherName) &&
+                            amount == otherAmount
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitIncrement(name, amount);
+            }
+
+            @Override
+            public String toString() {
+                String operatorOperand;
+
+                if(amount > 0)
+                    operatorOperand = amount == 1 ? "++" : " += " + amount;
+                else
+                    operatorOperand = amount == -1 ? "--" : " -= " + amount;
+
+                return name + operatorOperand;
+            }
+        };
     }
 
     public static ExpressionDom not(ExpressionDom expression) {

@@ -161,7 +161,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(false))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public void myMethod(int i, int j) {
 
@@ -236,6 +236,58 @@ public class ByteCodeToTree2Test {
                         DomFactory.newInstance(
                             Descriptor.get(MyClass.class.getName()), Arrays.asList(Descriptor.get(int.class), Descriptor.get(int.class)),
                             Arrays.asList(DomFactory.literal(4), DomFactory.literal(5)))
+                    );
+                }
+            },*/
+            new Object() {
+                public void byteCode() {
+                    int k = 0;
+                    k++;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.assignVar("k", DomFactory.literal(0)),
+                        DomFactory.intIncVar("k", 1)
+                    );
+                }
+            },
+            new Object() {
+                public void byteCode() {
+                    int k = 0;
+                    k += 11;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.assignVar("k", DomFactory.literal(0)),
+                        DomFactory.intIncVar("k", 11)
+                    );
+                }
+            },
+            new Object() {
+                public void byteCode() {
+                    int k = 0;
+                    k--;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.assignVar("k", DomFactory.literal(0)),
+                        DomFactory.intIncVar("k", -1)
+                    );
+                }
+            },
+            new Object() {
+                public void byteCode() {
+                    int k = 0;
+                    k -= 11;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.assignVar("k", DomFactory.literal(0)),
+                        DomFactory.intIncVar("k", -11)
                     );
                 }
             }
