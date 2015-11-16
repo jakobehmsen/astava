@@ -3,6 +3,7 @@ package astava.java.gen;
 import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.RelationalOperator;
+import astava.tree.Dom;
 import astava.tree.StatementDom;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -238,7 +239,7 @@ public class ByteCodeToTree2Test {
                             Arrays.asList(DomFactory.literal(4), DomFactory.literal(5)))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public void byteCode() {
                     int k = 0;
@@ -288,6 +289,39 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.assignVar("k", DomFactory.literal(0)),
                         DomFactory.intIncVar("k", -11)
+                    );
+                }
+            },*/
+            new Object() {
+                public int byteCode(int i, int j) {
+                    return i & j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.band(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
+                    );
+                }
+            },
+            new Object() {
+                public int byteCode(int i, int j) {
+                    return i | j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.bor(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
+                    );
+                }
+            },
+            new Object() {
+                public int byteCode(int i, int j) {
+                    return i ^ j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.bxor(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
                     );
                 }
             }

@@ -309,7 +309,44 @@ public class DomFactory {
     }
 
     public static ExpressionDom bitwise(ExpressionDom lhs, ExpressionDom rhs, int operator) {
-        return v -> v.visitBitwise(operator, lhs, rhs);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitBitwise(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
+                        r.accept(
+                            operator == otherOperator &&
+                            lhs.equals(otherLhs) &&
+                            rhs.equals(otherRhs)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitBitwise(operator, lhs, rhs);
+            }
+
+            private String operatorToString() {
+                switch (operator) {
+                    case BitwiseOperator.AND:
+                        return "&";
+                    case BitwiseOperator.OR:
+                        return "|";
+                    case BitwiseOperator.XOR:
+                        return "^";
+                }
+
+                return null;
+            }
+
+            @Override
+            public String toString() {
+                return lhs + " " + operatorToString() + " " + rhs;
+            }
+        };
     }
 
     public static ExpressionDom and(ExpressionDom lhs, ExpressionDom rhs) {

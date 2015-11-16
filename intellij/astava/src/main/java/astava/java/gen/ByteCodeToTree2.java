@@ -132,11 +132,35 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     private int state = STATE_DEFAULT;
 
     @Override
-    public void visitIincInsn(int var, int increment) {
+    public void iinc(int var, int increment) {
         String name = getVarName(var, Descriptor.get(int.class));
 
         statementBuilders.add(statements ->
             statements.add(DomFactory.intIncVar(name, increment)));
+    }
+
+    @Override
+    public void and(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+
+        stackPush(() -> DomFactory.band(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void or(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+
+        stackPush(() -> DomFactory.bor(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void xor(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+
+        stackPush(() -> DomFactory.bxor(lhs.build(), rhs.build()));
     }
 
     @Override
