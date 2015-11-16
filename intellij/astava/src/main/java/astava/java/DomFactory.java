@@ -1083,7 +1083,30 @@ public class DomFactory {
     }
 
     public static ExpressionDom typeCast(ExpressionDom expression, String targetTypeName) {
-        return v -> v.visitTypeCast(expression, targetTypeName);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitTypeCast(ExpressionDom otherExpression, String otherTargetType) {
+                        r.accept(
+                            expression.equals(otherExpression) &&
+                            targetTypeName.equals(otherTargetType)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitTypeCast(expression, targetTypeName);
+            }
+
+            @Override
+            public String toString() {
+                return "(" + Descriptor.getName(targetTypeName) + ") " + expression;
+            }
+        };
     }
 
     public static StatementDom throwStatement(ExpressionDom expression) {

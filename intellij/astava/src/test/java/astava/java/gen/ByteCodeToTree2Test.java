@@ -357,7 +357,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.arrayLength(DomFactory.accessVar("array")))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public void byteCode(Object[] array) {
                     array[1] = "str";
@@ -366,6 +366,17 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.arrayStore(DomFactory.accessVar("array"), DomFactory.literal(1), DomFactory.literal("str"))
+                    );
+                }
+            },*/
+            new Object() {
+                public byte byteCode(int i) {
+                    return (byte)i;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.typeCast(DomFactory.accessVar("i"), Descriptor.get(byte.class)))
                     );
                 }
             }
