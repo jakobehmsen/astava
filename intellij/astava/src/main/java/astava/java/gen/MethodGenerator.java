@@ -772,12 +772,22 @@ public class MethodGenerator {
             @Override
             public void visitClassLiteral(String type) {
                 generator.push(Type.getType(type));
+                setResult(Type.getDescriptor(Class.class));
             }
 
             @Override
             public void visitArrayLength(ExpressionDom expression) {
                 String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope, astLabelToASMLabelMap);
                 generator.arrayLength();
+                setResult(Descriptor.get(int.class));
+            }
+
+            @Override
+            public void visitNeg(ExpressionDom expression) {
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope, astLabelToASMLabelMap);
+                generator.visitInsn(Opcodes.INEG);
+                setResult(resultType);
+
             }
         }.returnFrom(expression);
     }

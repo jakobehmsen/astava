@@ -223,6 +223,12 @@ public class Parser {
             public void visitArrayLength(ExpressionDom expression) {
                 setResult(Descriptor.get(int.class));
             }
+
+            @Override
+            public void visitNeg(ExpressionDom expression) {
+                String resultType = expressionResultType(classInspector, self, expression, locals, returnType);
+                setResult(resultType);
+            }
         }.returnFrom(expr);
     }
 

@@ -390,7 +390,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.instanceOf(DomFactory.accessVar("obj"), Descriptor.get(String.class)))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public void byteCode() {
                     MyClass.x = 10;
@@ -399,6 +399,17 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.assignStaticField(Descriptor.get(MyClass.class), "x", Descriptor.get(int.class), DomFactory.literal(10))
+                    );
+                }
+            },*/
+            new Object() {
+                public int byteCode(int i) {
+                    return -i;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.neg(DomFactory.accessVar("i")))
                     );
                 }
             }

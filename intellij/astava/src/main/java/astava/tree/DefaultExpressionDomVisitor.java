@@ -164,4 +164,9 @@ public abstract class DefaultExpressionDomVisitor implements ExpressionDomVisito
     public void visitArrayLength(ExpressionDom expression) {
 
     }
+
+    @Override
+    public void visitNeg(ExpressionDom expression) {
+
+    }
 }
