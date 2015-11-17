@@ -401,7 +401,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.assignStaticField(Descriptor.get(MyClass.class), "x", Descriptor.get(int.class), DomFactory.literal(10))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public int byteCode(int i) {
                     return -i;
@@ -410,6 +410,39 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.ret(DomFactory.neg(DomFactory.accessVar("i")))
+                    );
+                }
+            },*/
+            new Object() {
+                public int byteCode(int i, int j) {
+                    return i << j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.shl(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
+                    );
+                }
+            },
+            new Object() {
+                public int byteCode(int i, int j) {
+                    return i >> j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.shr(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
+                    );
+                }
+            },
+            new Object() {
+                public int byteCode(int i, int j) {
+                    return i >>> j;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.ret(DomFactory.ushr(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
                     );
                 }
             }

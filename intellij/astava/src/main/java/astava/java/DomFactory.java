@@ -311,7 +311,44 @@ public class DomFactory {
     }
 
     public static ExpressionDom shift(ExpressionDom lhs, ExpressionDom rhs, int operator) {
-        return v -> v.visitShift(operator, lhs, rhs);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitShift(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
+                        r.accept(
+                            operator == otherOperator &&
+                            lhs.equals(otherLhs, context) &&
+                            rhs.equals(otherRhs, context)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitShift(operator, lhs, rhs);
+            }
+
+            private String operatorToString() {
+                switch (operator) {
+                    case ShiftOperator.SHL:
+                        return "<<";
+                    case ShiftOperator.SHR:
+                        return ">>";
+                    case ShiftOperator.USHR:
+                        return ">>>";
+                }
+
+                return null;
+            }
+
+            @Override
+            public String toString() {
+                return lhs + " " + operatorToString() + " " + rhs;
+            }
+        };
     }
 
     public static ExpressionDom band(ExpressionDom lhs, ExpressionDom rhs) {

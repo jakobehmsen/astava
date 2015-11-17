@@ -339,6 +339,30 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void shl(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+
+        stackPush(() -> DomFactory.shl(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void shr(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+
+        stackPush(() -> DomFactory.shr(lhs.build(), rhs.build()));
+    }
+
+    @Override
+    public void ushr(Type type) {
+        ExpressionBuilder rhs = stackPop();
+        ExpressionBuilder lhs = stackPop();
+
+        stackPush(() -> DomFactory.ushr(lhs.build(), rhs.build()));
+    }
+
+    @Override
     public void ifne(Label label) {
         ExpressionBuilder rhs = () -> DomFactory.literal(false);
         ExpressionBuilder lhs = stackPop();
