@@ -37,12 +37,21 @@ public class ByteCodeToTree2 extends InstructionAdapter {
         return DomFactory.block(statements);
     }
 
-    private static class Branch {
+    private static class LocalFrame {
+        public static final int TYPE_BRANCH = 0;
+        public static final int TYPE_SWITCH = 1;
+
+        int type = TYPE_BRANCH;
+
         int stackIndex;
         Label jumpLabel;
+
+        int labelIndex;
+        Label dflt;
+        Label[] labels;
     }
 
-    private Stack<Branch> branches = new Stack<>();
+    private Stack<LocalFrame> localFrames = new Stack<>();
 
     public ByteCodeToTree2(MethodNode methodNode) {
         super(Opcodes.ASM5, new MethodVisitor(Opcodes.ASM5, null) {
@@ -363,6 +372,22 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void lookupswitch(Label dflt, int[] keys, Label[] labels) {
+        ExpressionBuilder expression = stackPop();
+
+        labelUsages.add(dflt);
+        labelUsages.addAll(Arrays.asList(labels));
+
+        statementBuilders.add(statements -> statements.add(DomFactory.select(expression.build(), dflt, keys, labels)));
+
+        LocalFrame lookupswitchFrame = new LocalFrame();
+        lookupswitchFrame.type = LocalFrame.TYPE_SWITCH;
+        lookupswitchFrame.dflt = dflt;
+        lookupswitchFrame.labels = labels;
+        localFrames.push(lookupswitchFrame);
+    }
+
+    @Override
     public void ifne(Label label) {
         ExpressionBuilder rhs = () -> DomFactory.literal(false);
         ExpressionBuilder lhs = stackPop();
@@ -451,10 +476,11 @@ public class ByteCodeToTree2 extends InstructionAdapter {
             statements.add(DomFactory.ifElse(condition.build(), DomFactory.goTo(jumpLabel), DomFactory.block(Arrays.asList())));
         });
 
-        Branch b = new Branch();
+        LocalFrame b = new LocalFrame();
+        b.type = LocalFrame.TYPE_BRANCH;
         b.jumpLabel = jumpLabel;
         b.stackIndex = stack.size();
-        branches.push(b);
+        localFrames.push(b);
 
         labelUsages.add(jumpLabel);
     }
@@ -471,8 +497,20 @@ public class ByteCodeToTree2 extends InstructionAdapter {
                 statements.add(DomFactory.ret(v));
             });
 
-            if (branches.size() > 0)
-                branches.pop();
+            if (localFrames.size() > 0) {
+                LocalFrame localFrame = localFrames.peek();
+
+                switch (localFrame.type) {
+                    case LocalFrame.TYPE_BRANCH:
+                        localFrames.pop();
+                        break;
+                    case LocalFrame.TYPE_SWITCH:
+                        // If within last case or default case, then pop
+                        if(localFrame.labelIndex >= localFrame.labels.length)
+                            localFrames.pop();
+                        break;
+                }
+            }
         }
     }
 
@@ -505,10 +543,26 @@ public class ByteCodeToTree2 extends InstructionAdapter {
 
     @Override
     public void visitLabel(Label label) {
-        if(branches.size() > 0) {
-            if(branches.peek().jumpLabel == label) {
-                // Rewind stack index
-                stackIndex = branches.peek().stackIndex;
+        if(localFrames.size() > 0) {
+            LocalFrame localFrame = localFrames.peek();
+
+            switch (localFrame.type) {
+                case LocalFrame.TYPE_BRANCH:
+                    if(localFrame.jumpLabel == label) {
+                        // Rewind stack index
+                        stackIndex = localFrames.peek().stackIndex;
+                    }
+                    break;
+                case LocalFrame.TYPE_SWITCH:
+                    if(localFrame.labelIndex < localFrame.labels.length) {
+                        Label switchlookupLabel = localFrame.labels[localFrame.labelIndex];
+                        if(label == switchlookupLabel)
+                            localFrame.labelIndex++;
+                    } else if(label == localFrame.dflt) {
+                        localFrame.labelIndex++;
+                    }
+
+                    break;
             }
         }
 
@@ -524,6 +578,18 @@ public class ByteCodeToTree2 extends InstructionAdapter {
             statements.add(DomFactory.goTo(label)));
 
         labelUsages.add(label);
+
+        LocalFrame localFrame = localFrames.peek();
+
+        switch (localFrame.type) {
+            case LocalFrame.TYPE_SWITCH:
+                // Assumed to be a break
+                if(localFrame.labelIndex == localFrame.labels.length + 1) {
+                    // Is default label; switch ends here
+                    localFrames.pop();
+                }
+                break;
+        }
     }
 
     private String getVarName(int var, String type) {

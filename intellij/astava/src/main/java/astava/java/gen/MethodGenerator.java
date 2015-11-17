@@ -380,6 +380,16 @@ public class MethodGenerator {
                 String valueType = populateMethodExpression(methodNode, originalInstructions, generator, value, null, true, scope, astLabelToASMLabelMap);
                 generator.arrayStore(Type.getType(valueType));
             }
+
+            @Override
+            public void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels) {
+                populateMethodExpression(methodNode, originalInstructions, generator, expression, null, true, scope, astLabelToASMLabelMap);
+                Label asmDflt = astLabelToASMLabelMap.computeIfAbsent(dflt, l -> generator.newLabel());
+                Label[] asmLabels = Arrays.asList(labels).stream()
+                    .map(x -> astLabelToASMLabelMap.computeIfAbsent(x, l -> generator.newLabel()))
+                    .toArray(s -> new Label[s]);
+                generator.visitLookupSwitchInsn(asmDflt, keys, asmLabels);
+            }
         });
 
         return Descriptor.VOID;

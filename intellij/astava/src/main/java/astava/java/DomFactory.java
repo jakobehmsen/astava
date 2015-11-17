@@ -1,6 +1,8 @@
 package astava.java;
 
+import astava.java.gen.ByteCodeToTree2;
 import astava.tree.*;
+import org.objectweb.asm.Label;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -1055,6 +1057,39 @@ public class DomFactory {
 
     public static StatementDom goToOLD(String name) {
         return v -> v.visitGoTo(name);
+    }
+
+
+    public static StatementDom select(ExpressionDom expression, Object dflt, int[] keys, Object[] labels) {
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitSwitch(ExpressionDom otherEpression, Object otherDflt, int[] otherKeys, Object[] otherLabels) {
+                        r.accept(
+                            expression.equals(otherEpression, context) &&
+                            context.isSameLabel(dflt, otherDflt) &&
+                            Arrays.equals(keys, otherKeys) &&
+                            IntStream.range(0, labels.length).allMatch(i -> context.isSameLabel(labels[i], otherLabels[i]))
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitSwitch(expression, dflt, keys, labels);
+            }
+
+            @Override
+            public String toString() {
+                return "switch(" + expression + ") {\n" +
+                    IntStream.range(0, keys.length).mapToObj(i -> "case " + keys[i] + ": " + labels[i]).collect(Collectors.joining("\n")) + "\n" +
+                    "default: " + dflt + "\n" +
+                    "}";
+            }
+        };
     }
 
     // What about support for select expressions?

@@ -50,6 +50,8 @@ public interface StatementDomVisitor {
 
     void visitArrayStore(ExpressionDom expression, ExpressionDom index, ExpressionDom value);
 
+    void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels);
+
     class Default implements StatementDomVisitor {
         @Override
         public void visitVariableDeclaration(String type, String name) {
@@ -158,6 +160,11 @@ public interface StatementDomVisitor {
 
         @Override
         public void visitArrayStore(ExpressionDom expression, ExpressionDom index, ExpressionDom value) {
+
+        }
+
+        @Override
+        public void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels) {
 
         }
     }

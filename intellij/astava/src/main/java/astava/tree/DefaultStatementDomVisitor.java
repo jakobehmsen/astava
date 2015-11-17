@@ -115,4 +115,9 @@ public abstract class DefaultStatementDomVisitor implements StatementDomVisitor 
     public void visitArrayStore(ExpressionDom expression, ExpressionDom index, ExpressionDom value) {
 
     }
+
+    @Override
+    public void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels) {
+
+    }
 }

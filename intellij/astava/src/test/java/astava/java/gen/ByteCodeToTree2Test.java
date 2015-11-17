@@ -412,7 +412,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.neg(DomFactory.accessVar("i")))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public int byteCode(int i, int j) {
                     return i << j;
@@ -445,8 +445,124 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.ushr(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
                     );
                 }
-            }
+            },*/
 
+            /*
+            new Object() {
+                public int byteCode(int i) {
+                    switch(i) {
+                        case 0:
+                            return 1;
+                        case 2:
+                            return 4;
+                        default:
+                            return 7;
+                    }
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
+                        DomFactory.mark("L0"),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark("L1"),
+                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.literal(7))
+                    );
+                }
+            },*/
+            new Object() {
+                public void byteCode(int i) {
+                    switch(i) {
+                        case 0:
+                            i++;
+                            break;
+                        case 2:
+                            i--;
+                            break;
+                        default:
+                            i*=2;
+                            break;
+                    }
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
+                        DomFactory.mark("L0"),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark("L1"),
+                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.literal(7))
+                    );
+                }
+            }/*,
+            new Object() {
+                public int byteCode(int i) {
+                    if(i > 0) {
+                        switch (i) {
+                            case 0:
+                                return 1;
+                            case 2:
+                                return 4;
+                            default:
+                                return 7;
+                        }
+                    } else {
+                        switch (i) {
+                            case 0:
+                                return 1;
+                            case 2:
+                                return 4;
+                            default:
+                                return 7;
+                        }
+                    }
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
+                        DomFactory.mark("L0"),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark("L1"),
+                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.literal(7))
+                    );
+                }
+            },
+            new Object() {
+                public int byteCode(int i) {
+                    switch(i) {
+                        case 0:
+                            if(i > 0)
+                                return 1;
+                        case 2:
+                            if(i > 0)
+                                return 4;
+                        default:
+                            if(i > 0)
+                                return 7;
+                    }
+
+                    return 9;
+                }
+
+                public StatementDom expectedTree() {
+                    return DomFactory.block(
+                        DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
+                        DomFactory.mark("L0"),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark("L1"),
+                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.literal(7))
+                    );
+                }
+            }*/
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
