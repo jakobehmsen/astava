@@ -309,6 +309,12 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void putstatic(String owner, String name, String desc) {
+        ExpressionBuilder value = stackPop();
+        statementBuilders.add(statements -> statements.add(DomFactory.assignStaticField(owner, name, desc, value.build())));
+    }
+
+    @Override
     public void getfield(String owner, String name, String desc) {
         // desc: LClassName; or primitive
 

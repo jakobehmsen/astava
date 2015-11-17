@@ -2,11 +2,9 @@ package astava.java;
 
 import astava.tree.*;
 
-import java.util.AbstractMap;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -522,11 +520,41 @@ public class DomFactory {
                     }
                 };
             }
+
+            @Override
+            public String toString() {
+                return target + "." + name + " = " + expression;
+            }
         };
     }
 
     public static StatementDom assignStaticField(String targetTypeName, String name, String type, ExpressionDom expression) {
-        return v -> v.visitStaticFieldAssignment(targetTypeName, name, type, expression);
+        return new AbstractStatementDom() {
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitStaticFieldAssignment(targetTypeName, name, type, expression);
+            }
+
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitStaticFieldAssignment(String otherTypeName, String otherName, String otherType, ExpressionDom otherValue) {
+                        r.accept(
+                            targetTypeName.equals(otherTypeName) &&
+                            name.equals(otherName) &&
+                            type.equals(otherType) &&
+                            expression.equals(otherValue, context)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public String toString() {
+                return Descriptor.getName(targetTypeName) + "." + name + " = " + expression;
+            }
+        };
     }
 
     public static ExpressionDom accessVar(String name) {
@@ -662,14 +690,8 @@ public class DomFactory {
                         List<StatementDom> s = statements;
                         CodeDomComparison ctx = context;
                         r.accept(
-                            s.size() == otherStatements.size() &&
-                            IntStream.range(0, statements.size())
-                            .allMatch(i ->
-                                s.get(i).equals(otherStatements.get(i), ctx)
-                            )
+                            allStatementsEquals(s, otherStatements, ctx)
                         );
-
-                        //r.accept(statements.equals(otherStatements));
                     }
                 };
             }
@@ -679,6 +701,19 @@ public class DomFactory {
                 return statements.stream().map(x -> x.toString()).collect(Collectors.joining("\n"));
             }
         };
+    }
+
+    private static boolean allStatementsEquals(List<StatementDom> l1, List<StatementDom> l2, CodeDomComparison context) {
+        return allEquals(l1, l2, (x, y) -> x.equals(y, context));
+    }
+
+    private static boolean allExpressionsEquals(List<ExpressionDom> l1, List<ExpressionDom> l2, CodeDomComparison context) {
+        return allEquals(l1, l2, (x, y) -> x.equals(y, context));
+    }
+
+    private static <T> boolean allEquals(List<T> l1, List<T> l2, BiPredicate<T, T> comparer) {
+        return l1.size() == l2.size() &&
+            IntStream.range(0, l1.size()).allMatch(i -> comparer.test(l1.get(i), l2.get(i)));
     }
 
     // At most one expression dom
@@ -771,9 +806,9 @@ public class DomFactory {
                     @Override
                     public void visitIfElse(ExpressionDom otherCondition, ExpressionDom otherIfTrue, ExpressionDom otherIfFalse) {
                         r.accept(
-                            condition.equals(otherCondition) &&
-                            ifTrue.equals(otherIfTrue) &&
-                            ifFalse.equals(otherIfFalse)
+                            condition.equals(otherCondition, context) &&
+                            ifTrue.equals(otherIfTrue, context) &&
+                            ifFalse.equals(otherIfFalse, context)
                         );
                     }
                 };
@@ -798,7 +833,7 @@ public class DomFactory {
                     @Override
                     public void visitInstanceOf(ExpressionDom otherExpression, String otherType) {
                         r.accept(
-                            expression.equals(otherExpression) &&
+                            expression.equals(otherExpression, context) &&
                             type.equals(otherType)
                         );
                     }
@@ -842,10 +877,10 @@ public class DomFactory {
                     public void visitInvocation(int otherInvocation, ExpressionDom otherTarget, String otherType, String otherName, String otherDescriptor, List<ExpressionDom> otherArguments) {
                         r.accept(
                             invocation == otherInvocation &&
-                            target.equals(otherTarget) &&
+                            target.equals(otherTarget, context) &&
                             type.equals(otherType) &&
                             methodDescriptor.equals(otherDescriptor) &&
-                            arguments.equals(otherArguments)
+                            allExpressionsEquals(arguments, otherArguments, context)
                         );
                     }
                 };
@@ -889,10 +924,10 @@ public class DomFactory {
                     public void visitInvocation(int otherInvocation, ExpressionDom otherTarget, String otherType, String otherName, String otherDescriptor, List<ExpressionDom> otherArguments) {
                         r.accept(
                             invocation == otherInvocation &&
-                                target.equals(otherTarget) &&
-                                type.equals(otherType) &&
-                                methodDescriptor.equals(otherDescriptor) &&
-                                arguments.equals(otherArguments)
+                            target.equals(otherTarget, context) &&
+                            type.equals(otherType) &&
+                            methodDescriptor.equals(otherDescriptor) &&
+                            allExpressionsEquals(arguments, otherArguments, context)
                         );
                     }
                 };
@@ -924,8 +959,8 @@ public class DomFactory {
                     public void visitNewInstance(String otherType, List<String> otherParameterTypes, List<ExpressionDom> otherArguments) {
                         r.accept(
                             type.equals(otherType) &&
-                                parameterTypes.equals(otherParameterTypes) &&
-                                arguments.equals(otherArguments)
+                            parameterTypes.equals(otherParameterTypes) &&
+                            allExpressionsEquals(arguments, otherArguments, context)
                         );
                     }
                 };
@@ -956,7 +991,7 @@ public class DomFactory {
                         r.accept(
                             type.equals(otherType) &&
                             parameterTypes.equals(otherParameterTypes) &&
-                            arguments.equals(otherArguments)
+                            allExpressionsEquals(arguments, otherArguments, context)
                         );
                     }
                 };
@@ -1113,7 +1148,7 @@ public class DomFactory {
                     @Override
                     public void visitTypeCast(ExpressionDom otherExpression, String otherTargetType) {
                         r.accept(
-                            expression.equals(otherExpression) &&
+                            expression.equals(otherExpression, context) &&
                             targetTypeName.equals(otherTargetType)
                         );
                     }
@@ -1248,9 +1283,9 @@ public class DomFactory {
                     @Override
                     public void visitArrayStore(ExpressionDom otherExpression, ExpressionDom otherIndex, ExpressionDom otherValue) {
                         r.accept(
-                            expression.equals(otherExpression) &&
-                            index.equals(otherIndex) &&
-                            value.equals(otherValue)
+                            expression.equals(otherExpression, context) &&
+                            index.equals(otherIndex, context) &&
+                            value.equals(otherValue, context)
                         );
                     }
                 };
