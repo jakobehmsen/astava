@@ -496,20 +496,22 @@ public class ByteCodeToTree2 extends InstructionAdapter {
 
                 statements.add(DomFactory.ret(v));
             });
+        } else
+            statementBuilders.add(statements ->
+                statements.add(DomFactory.ret()));
 
-            if (localFrames.size() > 0) {
-                LocalFrame localFrame = localFrames.peek();
+        if (localFrames.size() > 0) {
+            LocalFrame localFrame = localFrames.peek();
 
-                switch (localFrame.type) {
-                    case LocalFrame.TYPE_BRANCH:
+            switch (localFrame.type) {
+                case LocalFrame.TYPE_BRANCH:
+                    localFrames.pop();
+                    break;
+                case LocalFrame.TYPE_SWITCH:
+                    // If within last case or default case, then pop
+                    if(localFrame.labelIndex >= localFrame.labels.length)
                         localFrames.pop();
-                        break;
-                    case LocalFrame.TYPE_SWITCH:
-                        // If within last case or default case, then pop
-                        if(localFrame.labelIndex >= localFrame.labels.length)
-                            localFrames.pop();
-                        break;
-                }
+                    break;
             }
         }
     }
@@ -620,7 +622,8 @@ public class ByteCodeToTree2 extends InstructionAdapter {
                 stackPush(new ExpressionBuilder() {
                     @Override
                     public boolean isConstant() {
-                        return varAssignCount.get(name) == 1;
+                        //return varAssignCount.get(name) == 1;
+                        return true;
                     }
 
                     @Override

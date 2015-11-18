@@ -297,6 +297,13 @@ public class DomFactory {
                     }
                 };
             }
+
+            private String[] operatorsToString = new String[]{"+", "-", "*", "/", "%"};
+
+            @Override
+            public String toString() {
+                return lhs + " " + operatorsToString[operator] + " " + rhs;
+            }
         };
     }
 

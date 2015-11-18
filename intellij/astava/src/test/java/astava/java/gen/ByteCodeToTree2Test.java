@@ -447,7 +447,7 @@ public class ByteCodeToTree2Test {
                 }
             },*/
 
-            /*
+
             new Object() {
                 public int byteCode(int i) {
                     switch(i) {
@@ -471,7 +471,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(7))
                     );
                 }
-            },*/
+            },
             new Object() {
                 public void byteCode(int i) {
                     switch(i) {
@@ -491,11 +491,15 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
                         DomFactory.mark("L0"),
-                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.intIncVar("i", 1),
+                        DomFactory.goTo("L3"),
                         DomFactory.mark("L1"),
-                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.intIncVar("i", -1),
+                        DomFactory.goTo("L3"),
                         DomFactory.mark("L2"),
-                        DomFactory.ret(DomFactory.literal(7))
+                        DomFactory.assignVar("i", DomFactory.mul(DomFactory.accessVar("i"), DomFactory.literal(2))),
+                        DomFactory.mark("L3"),
+                        DomFactory.ret()
                     );
                 }
             }/*,
