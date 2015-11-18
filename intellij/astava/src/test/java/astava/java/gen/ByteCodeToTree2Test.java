@@ -448,7 +448,7 @@ public class ByteCodeToTree2Test {
             },*/
 
 
-            new Object() {
+            /*new Object() {
                 public int byteCode(int i) {
                     switch(i) {
                         case 0:
@@ -502,7 +502,9 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret()
                     );
                 }
-            }/*,
+            },*/
+
+
             new Object() {
                 public int byteCode(int i) {
                     if(i > 0) {
@@ -528,16 +530,28 @@ public class ByteCodeToTree2Test {
 
                 public StatementDom expectedTree() {
                     return DomFactory.block(
-                        DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
-                        DomFactory.mark("L0"),
-                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.ifElse(DomFactory.le(DomFactory.accessVar("i"), DomFactory.literal(0)), DomFactory.goTo("L0"), DomFactory.block()),
+
+                        DomFactory.select(DomFactory.accessVar("i"), "L3", new int[]{0, 2}, new Object[]{"L1", "L2"}),
                         DomFactory.mark("L1"),
-                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.ret(DomFactory.literal(1)),
                         DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.mark("L3"),
+                        DomFactory.ret(DomFactory.literal(7)),
+
+                        DomFactory.mark("L0"),
+
+                        DomFactory.select(DomFactory.accessVar("i"), "L6", new int[]{0, 2}, new Object[]{"L4", "L5"}),
+                        DomFactory.mark("L4"),
+                        DomFactory.ret(DomFactory.literal(1)),
+                        DomFactory.mark("L5"),
+                        DomFactory.ret(DomFactory.literal(4)),
+                        DomFactory.mark("L6"),
                         DomFactory.ret(DomFactory.literal(7))
                     );
                 }
-            },
+            }/*,
             new Object() {
                 public int byteCode(int i) {
                     switch(i) {

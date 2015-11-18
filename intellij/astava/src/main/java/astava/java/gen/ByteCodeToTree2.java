@@ -402,6 +402,34 @@ public class ByteCodeToTree2 extends InstructionAdapter {
     }
 
     @Override
+    public void iflt(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.literal(0);
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.lt(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifle(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.literal(0);
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.le(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifgt(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.literal(0);
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.gt(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
+    public void ifge(Label label) {
+        ExpressionBuilder rhs = () -> DomFactory.literal(0);
+        ExpressionBuilder lhs = stackPop();
+        branch(() -> DomFactory.ge(lhs.build(), rhs.build()), label);
+    }
+
+    @Override
     public void ificmpeq(Label label) {
         ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();
