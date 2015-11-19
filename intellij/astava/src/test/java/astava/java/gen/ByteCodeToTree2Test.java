@@ -502,7 +502,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret()
                     );
                 }
-            },*/
+            },
 
 
             new Object() {
@@ -551,19 +551,22 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(7))
                     );
                 }
-            }/*,
+            },*/
             new Object() {
                 public int byteCode(int i) {
                     switch(i) {
                         case 0:
                             if(i > 0)
                                 return 1;
+                            break;
                         case 2:
                             if(i > 0)
                                 return 4;
+                            break;
                         default:
                             if(i > 0)
                                 return 7;
+                            break;
                     }
 
                     return 9;
@@ -572,15 +575,24 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.select(DomFactory.accessVar("i"), "L2", new int[]{0, 2}, new Object[]{"L0", "L1"}),
+
                         DomFactory.mark("L0"),
+                        DomFactory.ifElse(DomFactory.le(DomFactory.accessVar("i"), DomFactory.literal(0)), DomFactory.goTo("L3"), DomFactory.block()),
                         DomFactory.ret(DomFactory.literal(1)),
+
                         DomFactory.mark("L1"),
+                        DomFactory.ifElse(DomFactory.le(DomFactory.accessVar("i"), DomFactory.literal(0)), DomFactory.goTo("L3"), DomFactory.block()),
                         DomFactory.ret(DomFactory.literal(4)),
+
                         DomFactory.mark("L2"),
-                        DomFactory.ret(DomFactory.literal(7))
+                        DomFactory.ifElse(DomFactory.le(DomFactory.accessVar("i"), DomFactory.literal(0)), DomFactory.goTo("L3"), DomFactory.block()),
+                        DomFactory.ret(DomFactory.literal(7)),
+
+                        DomFactory.mark("L3"),
+                        DomFactory.ret(DomFactory.literal(9))
                     );
                 }
-            }*/
+            }
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
