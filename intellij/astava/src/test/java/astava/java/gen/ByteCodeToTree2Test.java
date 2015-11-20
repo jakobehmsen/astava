@@ -85,7 +85,7 @@ public class ByteCodeToTree2Test {
     @Parameterized.Parameters
     public static Collection values() {
         return Arrays.asList(
-            /*new Object() {
+            new Object() {
                 private int i;
 
                 public int byteCode() {
@@ -95,13 +95,22 @@ public class ByteCodeToTree2Test {
                 }
 
                 public StatementDom expectedTree() {
-                    return DomFactory.block(Arrays.asList(
-                        DomFactory.declareVar(Descriptor.INT, "j"),
-                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
+                    // To improve robustness of tests, add support for logical equivalents of variables, such that
+                    // it is not necessary to write the exact same names for variables (such as "{s3, s4}"), but
+                    // instead their logical equivalents - corresponding to how labels are compared.
+                    // This is especially practical for stack variables that aren't copy propogated.
+                    return DomFactory.block(
+                        DomFactory.ifElse(DomFactory.ne(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1)), DomFactory.goTo("L0"), DomFactory.block()),
+                        DomFactory.assignVar("{s3, s4}", DomFactory.literal(1)),
+                        DomFactory.goTo("L1"),
+                        DomFactory.mark("L0"),
+                        DomFactory.assignVar("{s3, s4}", DomFactory.literal(0)),
+                        DomFactory.mark("L1"),
+                        DomFactory.assignVar("j", DomFactory.accessVar("{s3, s4}")),
                         DomFactory.ret(DomFactory.accessVar("j"))
-                    ));
+                    );
                 }
-            },
+            }/*,
             new Object() {
                 private int i;
 
@@ -448,7 +457,7 @@ public class ByteCodeToTree2Test {
             },*/
 
 
-            new Object() {
+            /*new Object() {
                 public int byteCode(int i) {
                     switch(i) {
                         case 0:
@@ -694,7 +703,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret()
                     );
                 }
-            }
+            }*/
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
