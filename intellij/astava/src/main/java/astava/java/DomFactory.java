@@ -759,7 +759,8 @@ public class DomFactory {
 
     private static <T> boolean allEquals(List<T> l1, List<T> l2, BiPredicate<T, T> comparer) {
         return l1.size() == l2.size() &&
-            IntStream.range(0, l1.size()).allMatch(i -> comparer.test(l1.get(i), l2.get(i)));
+            IntStream.range(0, l1.size()).allMatch(i ->
+                comparer.test(l1.get(i), l2.get(i)));
     }
 
     // At most one expression dom
