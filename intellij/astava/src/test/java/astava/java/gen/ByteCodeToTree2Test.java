@@ -98,7 +98,7 @@ public class ByteCodeToTree2Test {
                     // To improve robustness of tests, add support for logical equivalents of variables, such that
                     // it is not necessary to write the exact same names for variables (such as "{s3, s4}"), but
                     // instead their logical equivalents - corresponding to how labels are compared.
-                    // This is especially practical for stack variables that aren't copy propogated.
+                    // This is especially practical for stack variables that aren't copy propagated.
                     return DomFactory.block(
                         DomFactory.ifElse(DomFactory.ne(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1)), DomFactory.goTo("L0"), DomFactory.block()),
                         DomFactory.assignVar("{s3, s4}", DomFactory.literal(1)),
@@ -110,7 +110,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.accessVar("j"))
                     );
                 }
-            }/*,
+            },
             new Object() {
                 private int i;
 
@@ -120,11 +120,18 @@ public class ByteCodeToTree2Test {
                 }
 
                 public StatementDom expectedTree() {
-                    return DomFactory.block(Arrays.asList(
-                        DomFactory.declareVar(Descriptor.INT, "j"),
-                        DomFactory.assignVar("j", DomFactory.ifElseExpr(DomFactory.compare(DomFactory.accessField(DomFactory.self(), "i", Descriptor.INT), DomFactory.literal(1), RelationalOperator.EQ), DomFactory.literal(1), DomFactory.literal(0))),
-                        DomFactory.ret(DomFactory.accessVar("j"))
-                    ));
+                    return DomFactory.block(
+                        DomFactory.ifElse(DomFactory.ne(DomFactory.accessVar("a"), DomFactory.literal(false)), DomFactory.goTo("L0"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("b"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
+                        DomFactory.ifElse(DomFactory.eq(DomFactory.accessVar("c"), DomFactory.literal(false)), DomFactory.goTo("L1"), DomFactory.block()),
+                        DomFactory.mark("L0"),
+                        DomFactory.assignVar("{s3, s4}", DomFactory.literal(1)),
+                        DomFactory.goTo("L2"),
+                        DomFactory.mark("L1"),
+                        DomFactory.assignVar("{s3, s4}", DomFactory.literal(0)),
+                        DomFactory.mark("L2"),
+                        DomFactory.ret(DomFactory.accessVar("{s3, s4}"))
+                    );
                 }
             },
             new Object() {
@@ -145,7 +152,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(false))
                     );
                 }
-            },
+            }/*,
             new Object() {
                 public boolean byteCode(boolean a, boolean b, boolean c) {
                     if(a || b && c) {
