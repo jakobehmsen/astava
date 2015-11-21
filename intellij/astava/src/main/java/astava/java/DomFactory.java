@@ -1,8 +1,6 @@
 package astava.java;
 
-import astava.java.gen.ByteCodeToTree2;
 import astava.tree.*;
-import org.objectweb.asm.Label;
 
 import java.util.*;
 import java.util.function.BiFunction;
