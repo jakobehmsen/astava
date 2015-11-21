@@ -152,7 +152,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.literal(false))
                     );
                 }
-            }/*,
+            },
             new Object() {
                 public boolean byteCode(boolean a, boolean b, boolean c) {
                     if(a || b && c) {
@@ -192,7 +192,8 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.invokeVirtual(
                             Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class, int.class), void.class),
-                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55)))
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55))),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -209,7 +210,8 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.invokeVirtual(
                             Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class, int.class), int.class),
-                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55)))
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55))),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -226,7 +228,8 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.assignVar("i", DomFactory.invokeVirtualExpr(
                             Descriptor.get(getClass().getName()), "myMethod", Descriptor.getMethodDescriptor(Arrays.asList(int.class, int.class), int.class),
-                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55))))
+                            DomFactory.self(), Arrays.asList(DomFactory.literal(50), DomFactory.literal(55)))),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -239,7 +242,8 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.assignVar("x", DomFactory.newInstanceExpr(
                             Descriptor.get(MyClass.class.getName()), Arrays.asList(Descriptor.get(int.class), Descriptor.get(int.class)),
-                            Arrays.asList(DomFactory.literal(4), DomFactory.literal(5))))
+                            Arrays.asList(DomFactory.literal(4), DomFactory.literal(5)))),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -252,7 +256,8 @@ public class ByteCodeToTree2Test {
                     return DomFactory.block(
                         DomFactory.newInstance(
                             Descriptor.get(MyClass.class.getName()), Arrays.asList(Descriptor.get(int.class), Descriptor.get(int.class)),
-                            Arrays.asList(DomFactory.literal(4), DomFactory.literal(5)))
+                            Arrays.asList(DomFactory.literal(4), DomFactory.literal(5))),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -265,7 +270,8 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.assignVar("k", DomFactory.literal(0)),
-                        DomFactory.intIncVar("k", 1)
+                        DomFactory.intIncVar("k", 1),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -278,7 +284,8 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.assignVar("k", DomFactory.literal(0)),
-                        DomFactory.intIncVar("k", 11)
+                        DomFactory.intIncVar("k", 11),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -291,7 +298,8 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.assignVar("k", DomFactory.literal(0)),
-                        DomFactory.intIncVar("k", -1)
+                        DomFactory.intIncVar("k", -1),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -304,7 +312,8 @@ public class ByteCodeToTree2Test {
                 public StatementDom expectedTree() {
                     return DomFactory.block(
                         DomFactory.assignVar("k", DomFactory.literal(0)),
-                        DomFactory.intIncVar("k", -11)
+                        DomFactory.intIncVar("k", -11),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -381,7 +390,8 @@ public class ByteCodeToTree2Test {
 
                 public StatementDom expectedTree() {
                     return DomFactory.block(
-                        DomFactory.arrayStore(DomFactory.accessVar("array"), DomFactory.literal(1), DomFactory.literal("str"))
+                        DomFactory.arrayStore(DomFactory.accessVar("array"), DomFactory.literal(1), DomFactory.literal("str")),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -414,7 +424,8 @@ public class ByteCodeToTree2Test {
 
                 public StatementDom expectedTree() {
                     return DomFactory.block(
-                        DomFactory.assignStaticField(Descriptor.get(MyClass.class), "x", Descriptor.get(int.class), DomFactory.literal(10))
+                        DomFactory.assignStaticField(Descriptor.get(MyClass.class), "x", Descriptor.get(int.class), DomFactory.literal(10)),
+                        DomFactory.ret()
                     );
                 }
             },
@@ -461,10 +472,10 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret(DomFactory.ushr(DomFactory.accessVar("i"), DomFactory.accessVar("j")))
                     );
                 }
-            },*/
+            },
 
 
-            /*new Object() {
+            new Object() {
                 public int byteCode(int i) {
                     switch(i) {
                         case 0:
@@ -710,7 +721,7 @@ public class ByteCodeToTree2Test {
                         DomFactory.ret()
                     );
                 }
-            }*/
+            }
         ).stream().map(x -> load(x)).collect(Collectors.toList());
     }
 
