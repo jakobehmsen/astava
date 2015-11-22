@@ -18,6 +18,14 @@ public interface DeclaringMethodNodeExtenderTransformer {
     void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions);
 
     default void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
+
+        {
+            Printer printer = new Textifier();
+            methodNode.accept(new TraceMethodVisitor(printer));
+            System.out.println(methodNode.name + " pre:");
+            printer.getText().forEach(x -> System.out.print(x.toString()));
+        }
+
         InsnList originalInstructions = new InsnList();
         originalInstructions.add(methodNode.instructions);
         methodNode.instructions.clear();
@@ -26,9 +34,10 @@ public interface DeclaringMethodNodeExtenderTransformer {
             transform(classNode, thisClass, classResolver, classInspector, methodNode, generator, originalInstructions);
         });
 
-        /*Printer printer = new Textifier();
+        Printer printer = new Textifier();
         methodNode.accept(new TraceMethodVisitor(printer));
-        printer.getText().forEach(x -> System.out.print(x.toString()));*/
+        System.out.println(methodNode.name + " post:");
+        printer.getText().forEach(x -> System.out.print(x.toString()));
     }
 
     default DeclaringClassNodeExtenderTransformer when(DeclaringClassNodeExtenderElementMethodNodePredicate condition) {

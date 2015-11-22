@@ -70,6 +70,8 @@ public interface ExpressionDomVisitor {
 
     void visitNeg(ExpressionDom expression);
 
+    void visitObjectEquality(int operator, ExpressionDom lhs, ExpressionDom rhs);
+
     abstract class Return<T> implements ExpressionDomVisitor {
         private T result;
 

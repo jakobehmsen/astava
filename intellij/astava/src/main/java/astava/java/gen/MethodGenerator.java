@@ -541,6 +541,10 @@ public class MethodGenerator {
 
             @Override
             public void visitCompare(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+                // Have another compare for object comparison?
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+
                 int op;
 
                 switch (operator) {
@@ -552,9 +556,6 @@ public class MethodGenerator {
                     case RelationalOperator.NE: op = GeneratorAdapter.EQ; break;
                     default: op = -1;
                 }
-
-                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
-                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
 
                 Type t = Type.getType(lhsResultType);
 
@@ -570,6 +571,39 @@ public class MethodGenerator {
                     generator.visitLabel(endLabel);
                 } else {
                     generator.ifCmp(t, op, ifFalseLabel);
+                }
+
+                setResult(Descriptor.BOOLEAN);
+            }
+
+            @Override
+            public void visitObjectEquality(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+                // Have another compare for object comparison?
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+
+                int opcode;
+
+                switch (operator) {
+                    case RelationalOperator.EQ: opcode = Opcodes.IF_ACMPEQ; break;
+                    case RelationalOperator.NE: opcode = Opcodes.IF_ACMPNE; break;
+                    default: opcode = -1;
+                }
+
+                Type t = Type.getType(lhsResultType);
+
+                if (reifyCondition) {
+                    Label endLabel = generator.newLabel();
+                    Label innerIfFalseLabel = generator.newLabel();
+
+                    generator.visitJumpInsn(opcode, innerIfFalseLabel);
+                    generator.push(true);
+                    generator.goTo(endLabel);
+                    generator.visitLabel(innerIfFalseLabel);
+                    generator.push(false);
+                    generator.visitLabel(endLabel);
+                } else {
+                    generator.visitJumpInsn(opcode, ifFalseLabel);
                 }
 
                 setResult(Descriptor.BOOLEAN);

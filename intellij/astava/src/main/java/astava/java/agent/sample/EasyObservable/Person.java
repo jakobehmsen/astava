@@ -4,7 +4,11 @@ package astava.java.agent.sample.EasyObservable;
 public class Person {
     private String name;
 
-    public void setName() {
-        this.name = "Some value";
+    public static Object v = null;
+
+    public void setName(String newName) {
+        if(this.name != v && !this.name.equals(newName)) {
+            this.name = newName;
+        }
     }
 }

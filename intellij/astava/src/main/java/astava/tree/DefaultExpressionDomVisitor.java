@@ -169,4 +169,9 @@ public abstract class DefaultExpressionDomVisitor implements ExpressionDomVisito
     public void visitNeg(ExpressionDom expression) {
 
     }
+
+    @Override
+    public void visitObjectEquality(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+    }
 }

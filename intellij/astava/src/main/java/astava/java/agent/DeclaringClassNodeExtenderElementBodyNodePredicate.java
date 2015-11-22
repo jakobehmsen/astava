@@ -15,6 +15,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.ParameterNode;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,12 +28,13 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
         return (classNode, thisClass, classResolver, methodNode) -> {
             ArrayList<Object> captures = new ArrayList<>();
 
-            /*Textifier textifier = new Textifier();
+            Textifier textifier = new Textifier();
             methodNode.accept(new TraceMethodVisitor(textifier));
-            textifier.getText().forEach(x -> System.out.print(x));*/
+            textifier.getText().forEach(x -> System.out.print(x));
 
             ByteCodeToTree byteCodeToTree = new ByteCodeToTree(methodNode);
             methodNode.instructions.accept(byteCodeToTree);
+            byteCodeToTree.prepareVariables(v -> methodNode.accept(v));
             StatementDom body = byteCodeToTree.getBlock();
 
             return new DeclaringMethodNodeExtenderTransformer() {

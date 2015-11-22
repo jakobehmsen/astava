@@ -3,6 +3,7 @@ package astava.java.gen;
 import astava.java.Descriptor;
 import astava.java.DomFactory;
 import astava.java.Invocation;
+import astava.java.RelationalOperator;
 import astava.tree.*;
 import org.objectweb.asm.*;
 import org.objectweb.asm.commons.InstructionAdapter;
@@ -246,6 +247,8 @@ public class ByteCodeToTree extends InstructionAdapter {
     public void aconst(Object o) {
         if(o instanceof String) {
             stackPush(() -> DomFactory.literal((String)o));
+        } else if(o == null) {
+            stackPush(() -> DomFactory.nil());
         } else {
 
         }
@@ -475,28 +478,28 @@ public class ByteCodeToTree extends InstructionAdapter {
     public void ifnull(Label label) {
         ExpressionBuilder rhs = () -> DomFactory.nil();
         ExpressionBuilder lhs = stackPop();
-        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.objectEquality(lhs.build(), rhs.build(), RelationalOperator.EQ), label);
     }
 
     @Override
     public void ifnonnull(Label label) {
         ExpressionBuilder rhs = () -> DomFactory.nil();
         ExpressionBuilder lhs = stackPop();
-        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.objectEquality(lhs.build(), rhs.build(), RelationalOperator.NE), label);
     }
 
     @Override
     public void ifacmpeq(Label label) {
-        ExpressionBuilder rhs = () -> DomFactory.nil();
+        ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();
-        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.objectEquality(lhs.build(), rhs.build(), RelationalOperator.EQ), label);
     }
 
     @Override
     public void ifacmpne(Label label) {
-        ExpressionBuilder rhs = () -> DomFactory.nil();
+        ExpressionBuilder rhs = stackPop();
         ExpressionBuilder lhs = stackPop();
-        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.objectEquality(lhs.build(), rhs.build(), RelationalOperator.NE), label);
     }
 
     private void branch(ExpressionBuilder condition, Label jumpLabel) {
@@ -627,7 +630,7 @@ public class ByteCodeToTree extends InstructionAdapter {
             // Use consistent strategies to derive argument- and variable names
             int parameterCount = Type.getArgumentTypes(methodNode.desc).length;
             if((var - 1) < parameterCount)
-                return methodNode.parameters != null ? (String)methodNode.parameters.get(var - 1) : "a" + (var - 1);
+                return methodNode.parameters != null ? (String)methodNode.parameters.get(var - 1) : "arg" + (var - 1);
             else {
                 String name = "v" + (var - parameterCount - 1);
                 statementBuilders.add(statements ->

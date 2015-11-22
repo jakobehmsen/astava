@@ -76,6 +76,6 @@ public class Main {
             }
         });
 
-        person.getClass().getMethod("setName").invoke(person);
+        person.getClass().getMethod("setName", String.class).invoke(person, "John");
     }
 }

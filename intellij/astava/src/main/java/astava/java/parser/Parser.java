@@ -120,6 +120,11 @@ public class Parser {
             }
 
             @Override
+            public void visitObjectEquality(int operator, ExpressionDom lhs, ExpressionDom rhs) {
+
+            }
+
+            @Override
             public void visitLogical(int operator, ExpressionDom lhs, ExpressionDom rhs) {
 
             }

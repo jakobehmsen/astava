@@ -494,6 +494,45 @@ public class DomFactory {
         };
     }
 
+    public static ExpressionDom objectEquality(ExpressionDom lhs, ExpressionDom rhs, int operator) {
+        return new AbstractExpressionDom() {
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitObjectEquality(operator, lhs, rhs);
+            }
+
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitObjectEquality(int otherOperator, ExpressionDom otherLhs, ExpressionDom otherRhs) {
+                        r.accept(
+                            operator == otherOperator &&
+                            lhs.equals(otherLhs, context) &&
+                            rhs.equals(otherRhs, context)
+                        );
+                    }
+                };
+            }
+
+            private String operatorToString() {
+                switch (operator) {
+                    case RelationalOperator.EQ:
+                        return "==";
+                    case RelationalOperator.NE:
+                        return "!=";
+                }
+
+                return "<NA>";
+            }
+
+            @Override
+            public String toString() {
+                return lhs + " " + operatorToString() + " " + rhs;
+            }
+        };
+    }
+
     public static StatementDom declareVar(String type, String name) {
         return new AbstractStatementDom() {
             @Override
