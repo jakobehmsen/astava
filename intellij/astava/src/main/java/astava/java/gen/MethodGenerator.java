@@ -150,15 +150,26 @@ public class MethodGenerator {
 
             @Override
             public void visitIfElse(ExpressionDom condition, StatementDom ifTrue, StatementDom ifFalse) {
+                boolean emptyElse = Util.returnFrom(false, r -> ifFalse.accept(new StatementDomVisitor.Default() {
+                    @Override
+                    public void visitBlock(List<StatementDom> statements) {
+                        r.accept(statements.size() == 0);
+                    }
+                }));
+
                 Label endLabel = generator.newLabel();
                 Label ifFalseLabel = generator.newLabel();
 
                 String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, ifFalseLabel, false, scope, astLabelToASMLabelMap);
                 populateMethodStatement(methodNode, originalInstructions, generator, ifTrue, breakLabel, labelScope, scope, astLabelToASMLabelMap);
-                generator.goTo(endLabel);
+                if(!emptyElse) {
+                    generator.goTo(endLabel);
+                }
                 generator.visitLabel(ifFalseLabel);
-                populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, scope, astLabelToASMLabelMap);
-                generator.visitLabel(endLabel);
+                if(!emptyElse) {
+                    populateMethodStatement(methodNode, originalInstructions, generator, ifFalse, breakLabel, labelScope, scope, astLabelToASMLabelMap);
+                    generator.visitLabel(endLabel);
+                }
             }
 
             @Override
@@ -390,6 +401,13 @@ public class MethodGenerator {
                     .toArray(s -> new Label[s]);
                 generator.visitLookupSwitchInsn(asmDflt, keys, asmLabels);
             }
+
+            @Override
+            public void visitIfJump(ExpressionDom condition, Object label) {
+                Label ifFalseLabel =  astLabelToASMLabelMap.computeIfAbsent(label, l -> generator.newLabel());
+
+                String resultType = populateMethodExpression(methodNode, originalInstructions, generator, condition, ifFalseLabel, false, scope, astLabelToASMLabelMap);
+            }
         });
 
         return Descriptor.VOID;
@@ -402,7 +420,7 @@ public class MethodGenerator {
                 if(!value) {
                     if(reifyCondition)
                         generator.push(value);
-                    if(ifFalseLabel != null)
+                    else //if(ifFalseLabel != null)
                         generator.goTo(ifFalseLabel);
                 } else {
                     if(reifyCondition)
@@ -542,8 +560,10 @@ public class MethodGenerator {
             @Override
             public void visitCompare(int operator, ExpressionDom lhs, ExpressionDom rhs) {
                 // Have another compare for object comparison?
-                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
-                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+                //String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+                //String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
+                String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, true, scope, astLabelToASMLabelMap);
+                String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, true, scope, astLabelToASMLabelMap);
 
                 int op;
 
@@ -752,6 +772,11 @@ public class MethodGenerator {
             @Override
             public void visitInvocation(int invocation, ExpressionDom target, String type, String name, String descriptor, List<ExpressionDom> arguments) {
                 String resultType = populateMethodInvocation(methodNode, originalInstructions, generator, scope, invocation, target, type, name, descriptor, arguments, CODE_LEVEL_EXPRESSION, astLabelToASMLabelMap);
+
+                if(!reifyCondition && ifFalseLabel != null && resultType.equals(Descriptor.get(boolean.class))) {
+                    generator.ifZCmp(GeneratorAdapter.EQ, ifFalseLabel);
+                }
+
                 setResult(resultType);
             }
 

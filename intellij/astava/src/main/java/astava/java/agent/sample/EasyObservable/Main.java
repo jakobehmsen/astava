@@ -44,22 +44,22 @@ public class Main {
         ClassLoaderExtender loader = new ClassLoaderExtender(factory
             .whenClass("@Support(Observable.class)")
             .then(factory
-                .whenMethod("")
+                .whenMethodName(x -> !x.equals("<init>"))
                 .then(factory
-                    .whenBody("this.? = ?;")
-                    .then(factory.modBody(captures -> new SourceCode(
-                        "observer.changingField(this, \"" + captures.get(0) + "\");\n" +
-                        "this." + captures.get(0) + " = ?;\n" +
-                        "observer.changedField(this, \"" + captures.get(0) + "\");\n"
-                        , captures.get(1)
-                    )))
+                        .whenBody("this.? = ?;")
+                        .then(factory.modBody(captures -> new SourceCode(
+                            "observer.changingField(this, \"" + captures.get(0) + "\");\n" +
+                                "this." + captures.get(0) + " = ?;\n" +
+                                "observer.changedField(this, \"" + captures.get(0) + "\");\n"
+                            , captures.get(1)
+                        )))
                 )
                 .andThen(factory.modClass(
-                    "implements Observable\n" +
-                    "private Observer observer;\n" +
-                    "public void setObserver(Observer observer) {this.observer = observer;}"
-                )
-            )),
+                        "implements Observable\n" +
+                            "private Observer observer;\n" +
+                            "public void setObserver(Observer observer) {this.observer = observer;}"
+                    )
+                )),
             classResolver, classInspector
         );
 
@@ -76,6 +76,6 @@ public class Main {
             }
         });
 
-        person.getClass().getMethod("setName", String.class).invoke(person, "John");
+        person.getClass().getMethod("setName", String.class, String.class).invoke(person, "John", "Johnson");
     }
 }

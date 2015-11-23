@@ -120,4 +120,9 @@ public abstract class DefaultStatementDomVisitor implements StatementDomVisitor 
     public void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels) {
 
     }
+
+    @Override
+    public void visitIfJump(ExpressionDom condition, Object label) {
+
+    }
 }

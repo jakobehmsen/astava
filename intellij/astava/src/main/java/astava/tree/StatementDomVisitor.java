@@ -52,6 +52,8 @@ public interface StatementDomVisitor {
 
     void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels);
 
+    void visitIfJump(ExpressionDom condition, Object label);
+
     class Default implements StatementDomVisitor {
         @Override
         public void visitVariableDeclaration(String type, String name) {
@@ -165,6 +167,11 @@ public interface StatementDomVisitor {
 
         @Override
         public void visitSwitch(ExpressionDom expression, Object dflt, int[] keys, Object[] labels) {
+
+        }
+
+        @Override
+        public void visitIfJump(ExpressionDom condition, Object label) {
 
         }
     }

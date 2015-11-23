@@ -3,6 +3,7 @@ package astava.java.agent;
 import astava.java.parser.ClassInspector;
 import astava.java.parser.ClassResolver;
 import astava.java.parser.MutableClassDeclaration;
+import astava.tree.CodeDom;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -40,5 +41,10 @@ public interface DeclaringClassNodeExtenderElementMethodNodePredicate {
     default DeclaringClassNodeExtenderElementMethodNodePredicate and(DeclaringClassNodeExtenderElementMethodNodePredicate other) {
         return (classNode, thisClass, classResolver, methodNode) ->
             this.test(classNode, thisClass, classResolver, methodNode) && other.test(classNode, thisClass, classResolver, methodNode);
+    }
+
+    default DeclaringClassNodeExtenderElementMethodNodePredicate not() {
+        return (classNode, thisClass, classResolver, methodNode) ->
+            !this.test(classNode, thisClass, classResolver, methodNode);
     }
 }

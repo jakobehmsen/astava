@@ -69,6 +69,11 @@ public class ByteCodeToTree extends InstructionAdapter {
     private HashSet<Object> labelUsages = new HashSet<>();
     private ArrayList<Consumer<List<StatementDom>>> statementBuilders = new ArrayList<>();
     private Hashtable<String, String> relabels = new Hashtable<>();
+    private Hashtable<Label, Object> asmLabelToAstLabelMap = new Hashtable<>();
+
+    private Object getLabel(Label asmLabel) {
+        return asmLabelToAstLabelMap.computeIfAbsent(asmLabel, l -> "L" + asmLabelToAstLabelMap.size());
+    }
 
     private boolean isArgument(int index) {
         return index > 0 && index <= Type.getArgumentTypes(methodNode.desc).length;
@@ -317,13 +322,15 @@ public class ByteCodeToTree extends InstructionAdapter {
 
         ExpressionBuilder value = stackPop();
         ExpressionBuilder target = stackPop();
-        statementBuilders.add(statements -> statements.add(DomFactory.assignField(target.build(), name, desc, value.build())));
+        String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
+        statementBuilders.add(statements -> statements.add(DomFactory.assignField(target.build(), name, typeDescriptor, value.build())));
     }
 
     @Override
     public void putstatic(String owner, String name, String desc) {
         ExpressionBuilder value = stackPop();
-        statementBuilders.add(statements -> statements.add(DomFactory.assignStaticField(owner, name, desc, value.build())));
+        String typeDescriptor = Descriptor.getFieldDescriptorTypeDescriptor(desc);
+        statementBuilders.add(statements -> statements.add(DomFactory.assignStaticField(owner, name, typeDescriptor, value.build())));
     }
 
     @Override
@@ -392,16 +399,16 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void ifne(Label label) {
-        ExpressionBuilder rhs = () -> DomFactory.literal(false);
         ExpressionBuilder lhs = stackPop();
-        branch(() -> DomFactory.ne(lhs.build(), rhs.build()), label);
+        branch(() -> DomFactory.not(lhs.build()), label);
     }
 
     @Override
     public void ifeq(Label label) {
-        ExpressionBuilder rhs = () -> DomFactory.literal(false);
+        //ExpressionBuilder rhs = () -> DomFactory.literal(false);
         ExpressionBuilder lhs = stackPop();
-        branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+        //branch(() -> DomFactory.eq(lhs.build(), rhs.build()), label);
+        branch(() -> lhs.build(), label);
     }
 
     @Override
@@ -476,6 +483,7 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     @Override
     public void ifnull(Label label) {
+        // Are labels getting messed up somehow? When later comparing during generation?
         ExpressionBuilder rhs = () -> DomFactory.nil();
         ExpressionBuilder lhs = stackPop();
         branch(() -> DomFactory.objectEquality(lhs.build(), rhs.build(), RelationalOperator.EQ), label);
@@ -504,7 +512,8 @@ public class ByteCodeToTree extends InstructionAdapter {
 
     private void branch(ExpressionBuilder condition, Label jumpLabel) {
         statementBuilders.add(statements -> {
-            statements.add(DomFactory.ifElse(condition.build(), DomFactory.goTo(jumpLabel), DomFactory.block(Arrays.asList())));
+            //statements.add(DomFactory.ifElse(condition.build(), DomFactory.goTo(jumpLabel), DomFactory.block(Arrays.asList())));
+            statements.add(DomFactory.ifJump(condition.build(), jumpLabel));
         });
 
         LocalFrame b = new LocalFrame();

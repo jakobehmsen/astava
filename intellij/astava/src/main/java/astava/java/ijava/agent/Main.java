@@ -311,7 +311,7 @@ public class Main {
             /*MutableClassDomBuilder combinedBuilder = new MutableClassDomBuilder();
 
             // Populate from class node
-            combinedBuilder.setName(className);
+            combinedBuilder.setFirstName(className);
             combinedBuilder.setSuperName(classNode.superName);
             combinedBuilder.setModifier(classNode.access);
             classNode.interfaces.forEach(x -> combinedBuilder.addInterface(Descriptor.getName((String) x)));

@@ -26,8 +26,6 @@ import java.util.stream.IntStream;
 public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
     default DeclaringMethodNodeExtenderElement then(DeclaringBodyNodeExtenderElement element) {
         return (classNode, thisClass, classResolver, methodNode) -> {
-            ArrayList<Object> captures = new ArrayList<>();
-
             Textifier textifier = new Textifier();
             methodNode.accept(new TraceMethodVisitor(textifier));
             textifier.getText().forEach(x -> System.out.print(x));
@@ -41,13 +39,16 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
                 @Override
                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                     CodeDom replacement = Util.<CodeDom>map(body, (traverser, dom) -> {
-                        //return map((BiFunction<Function<CodeDom, CodeDom>, CodeDom, CodeDom>)traverser, dom, captures);
+                        ArrayList<Object> captures = new ArrayList<>();
                         if (test(classNode, thisClass, classResolver, methodNode, dom, captures)) {
                             return element.map(classNode, thisClass, classResolver, methodNode, dom, captures);
                         } else
                             return traverser.apply(dom);
                     });
-                    replacement.toString();
+                    System.out.println("statement:");
+                    System.out.println(body);
+                    System.out.println("replacement:");
+                    System.out.println(replacement);
 
                     Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
                     List<ParameterInfo> parameters = IntStream.range(0, argumentTypes.length).mapToObj(i -> new ParameterInfo(

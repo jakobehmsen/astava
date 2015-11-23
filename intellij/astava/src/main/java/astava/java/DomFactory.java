@@ -252,6 +252,11 @@ public class DomFactory {
                     }
                 };
             };
+
+            @Override
+            public String toString() {
+                return "null";
+            }
         };
     }
 
@@ -844,7 +849,54 @@ public class DomFactory {
     }
 
     public static ExpressionDom not(ExpressionDom expression) {
-        return v -> v.visitNot(expression);
+        return new AbstractExpressionDom() {
+            @Override
+            protected ExpressionDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultExpressionDomVisitor() {
+                    @Override
+                    public void visitNot(ExpressionDom otherExpression) {
+                        r.accept(expression.equals(otherExpression));
+                    }
+                };
+            }
+
+            @Override
+            public void accept(ExpressionDomVisitor visitor) {
+                visitor.visitNot(expression);
+            }
+
+            @Override
+            public String toString() {
+                return "!" + expression;
+            }
+        };
+    }
+
+    public static StatementDom ifJump(ExpressionDom condition, Object label) {
+        return new AbstractStatementDom() {
+            @Override
+            protected StatementDomVisitor compare(CodeDomComparison context, Consumer<Boolean> r) {
+                return new DefaultStatementDomVisitor() {
+                    @Override
+                    public void visitIfJump(ExpressionDom otherCondition, Object otherLabel) {
+                        r.accept(
+                            condition.equals(otherCondition, context) &&
+                            context.isSameLabel(label, otherLabel)
+                        );
+                    }
+                };
+            }
+
+            @Override
+            public void accept(StatementDomVisitor visitor) {
+                visitor.visitIfJump(condition, label);
+            }
+
+            @Override
+            public String toString() {
+                return "if(" + condition + ") goTo " + label;
+            }
+        };
     }
 
     // If-else-statement (not expression)
@@ -867,6 +919,16 @@ public class DomFactory {
                         );
                     }
                 };
+            }
+
+            @Override
+            public List<? extends Dom> getChildren() {
+                return Arrays.asList(condition, ifTrue, ifFalse);
+            }
+
+            @Override
+            public Dom setChildren(List<? extends Dom> children) {
+                return ifElse((ExpressionDom)children.get(0), (StatementDom)children.get(1), (StatementDom)children.get(2));
             }
 
             @Override

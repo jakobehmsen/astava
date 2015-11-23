@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ParserFactory {
@@ -136,6 +137,12 @@ public class ParserFactory {
         return (classNode, thisClass, classResolver1, methodNode) ->
             predicates.stream().allMatch(p -> p.test(classNode, thisClass, classResolver1, methodNode));
     }
+
+    public DeclaringClassNodeExtenderElementMethodNodePredicate whenMethodName(Predicate<String> predicate) {
+        return (classNode, thisClass, classResolver1, methodNode) ->
+            predicate.test(methodNode.name);
+    }
+
 
     public DeclaringMethodNodeExtenderElement modMethod(String sourceCode) throws IOException {
         List<DeclaringMethodNodeExtenderElement> predicates = new Parser(sourceCode).parseMethodModifications(classResolver, classInspector);
