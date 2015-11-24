@@ -176,12 +176,12 @@ public class Main {
                         //.whenMethod("")
                         .whenMethod("public boolean someOtherMethod3")
                         .then(factory
-                            .whenBody("this.? = ?;")
+                            .whenBody("this.?name = ?value;")
                             .then(factory.modBody(captures -> new SourceCode(
-                                "java.lang.System.out.println(\"Assigning field " + captures.get(0) + "\");\n" +
-                                "this." + captures.get(0) + " = ?;\n" +
-                                "java.lang.System.out.println(\"Assigned field " + captures.get(0) + "\");\n"
-                            , captures.get(1))))
+                                "java.lang.System.out.println(\"Assigning field " + captures.get("name") + "\");\n" +
+                                "this." + captures.get("name") + " = ?value;\n" +
+                                "java.lang.System.out.println(\"Assigned field " + captures.get("name") + "\");\n"
+                            , captures)))
                         )
                     )
                 )

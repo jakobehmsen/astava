@@ -74,7 +74,7 @@ public class ParserFactory {
 
                     @Override
                     public void visitInitializer(StatementDomBuilder statement) {
-                        List<Object> captures = Collections.emptyList();
+                        Map<String, Object> captures = Collections.emptyMap();
                         setResult(MethodNodeExtenderFactory.append(methodNode -> DomFactory.block(Arrays.asList(
                             // How to add initialization after method body? Method body seems to return
                             statement.build(classResolver1, thisClass1, classInspector1, new Hashtable<>(), ASMClassDeclaration.getMethod(methodNode), captures)
@@ -171,10 +171,10 @@ public class ParserFactory {
         return null;
     }
 
-    public DeclaringBodyNodeExtenderElement modBody(Function<List<Object>, SourceCode> function) throws IOException {
+    public DeclaringBodyNodeExtenderElement modBody(Function<Map<String, Object>, SourceCode> function) throws IOException {
         return new DeclaringBodyNodeExtenderElement() {
             @Override
-            public CodeDom map(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures) {
+            public CodeDom map(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, Map<String, Object> captures) {
                 SourceCode sourceCode = function.apply(captures);
 
                 try {

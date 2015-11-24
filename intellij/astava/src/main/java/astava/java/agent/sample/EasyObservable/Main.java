@@ -46,13 +46,34 @@ public class Main {
             .then(factory
                 .whenMethodName(x -> !x.equals("<init>"))
                 .then(factory
-                        .whenBody("this.? = ?;")
-                        .then(factory.modBody(captures -> new SourceCode(
-                            "observer.changingField(this, \"" + captures.get(0) + "\");\n" +
-                                "this." + captures.get(0) + " = ?;\n" +
-                                "observer.changedField(this, \"" + captures.get(0) + "\");\n"
-                            , captures.get(1)
-                        )))
+                    .whenBody("this.?name = ?value;")
+                    .then(factory.modBody(captures -> new SourceCode(
+                        "observer.changingField(this, \"" + captures.get("name") + "\");\n" +
+                        "this." + captures.get("name") + " = ?value;\n" +
+                        "observer.changedField(this, \"" + captures.get("name") + "\");\n"
+                        , captures
+                    )))
+                )
+                .andThen(factory.modClass(
+                    "implements Observable\n" +
+                    "private Observer observer;\n" +
+                    "public void setObserver(Observer observer) {this.observer = observer;}"
+                ))),
+            classResolver, classInspector
+        );
+
+        /*
+        ClassLoaderExtender loader = new ClassLoaderExtender(factory
+            .whenClass("@Support(Observable.class)")
+            .then(factory
+                .whenMethodName(x -> !x.equals("<init>"))
+                .then(factory
+                        .whenBody("this.?name = ?value;")
+                        .then(factory.modBody(
+                            "observer.changingField(this, \"?name\");\n" +
+                                "this.?name = ?value;\n" +
+                                "observer.changedField(this, \"?name\");\n"
+                        ))
                 )
                 .andThen(factory.modClass(
                         "implements Observable\n" +
@@ -62,6 +83,16 @@ public class Main {
                 )),
             classResolver, classInspector
         );
+        */
+
+        /*
+        .whenBody("this.?name = ?value;")
+        .then(factory.modBody(
+            "observer.changingField(this, \"?name\");\n" +
+            "this.?name = ?value;\n" +
+            "observer.changedField(this, \"?name\");\n"
+        ))
+        */
 
         Object person = Class.forName("astava.java.agent.sample.EasyObservable.Person", false, loader).newInstance();
         ((Observable)person).setObserver(new Observer() {

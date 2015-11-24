@@ -656,7 +656,7 @@ public class Parser {
                     }
 
                     @Override
-                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+                    public StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures) {
                         String type = parseTypeQualifier(classResolver, ctx.type.getText());
 
                         locals.put(name, type);
@@ -840,7 +840,7 @@ public class Parser {
             public ExpressionDomBuilder visitExpression(JavaParser.ExpressionContext ctx) {
                 return ctx.anyExpression == null
                     ? parseExpressionBuilder((ParserRuleContext) ctx.getChild(0), atRoot, asStatement)
-                    : Factory.expressionCapture();
+                    : Factory.expressionCapture(ctx.anyExpression.ID().getText());
             }
 
             @Override
@@ -1004,11 +1004,12 @@ public class Parser {
 
     private StatementDomBuilder fieldAssignmentStatement(@NotNull JavaParser.FieldAssignmentContext ctx, boolean atRoot, boolean asStatement, ExpressionDomBuilder targetBuilder) {
         String name = ctx.identifier().ID() != null ? ctx.identifier().ID().getText() : null;
+        String captureName = ctx.identifier().ID() != null ? null : ctx.identifier().capture().ID().getText();
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
         return new StatementDomBuilder() {
             @Override
-            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+            public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures) {
                 ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
@@ -1020,18 +1021,18 @@ public class Parser {
 
             @Override
             public String toString() {
-                String id = name != null ? name : "?";
+                String id = name != null ? name : ("?" + captureName);
                 return targetBuilder + "." + id + " = " + valueBuilder + ";";
             }
 
             @Override
-            public boolean test(StatementDom statement, List<Object> captures) {
+            public boolean test(StatementDom statement, Map<String, Object> captures) {
                 String nameTest = name;
 
                 return Util.returnFrom(false, r -> statement.accept(new DefaultStatementDomVisitor() {
                     private boolean testName(String name) {
                         if(nameTest == null) {
-                            captures.add(name);
+                            captures.put(captureName, name);
                             return true;
                         }
 
@@ -1059,7 +1060,7 @@ public class Parser {
 
         return new ExpressionDomBuilder() {
             @Override
-            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures) {
+            public ExpressionDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures) {
                 ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
@@ -1081,7 +1082,7 @@ public class Parser {
             }
 
             @Override
-            public boolean test(ExpressionDom expression, List<Object> captures) {
+            public boolean test(ExpressionDom expression, Map<String, Object> captures) {
                 String nameTest = name;
 
                 return Util.returnFrom(false, r -> expression.accept(new DefaultExpressionDomVisitor() {
@@ -1543,7 +1544,7 @@ public class Parser {
                                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                                     Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                                         .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                                    List<Object> captures = Collections.emptyList();
+                                    Map<String, Object> captures = Collections.emptyMap();
                                     StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode), captures);
 
                                     MethodGenerator methodGenerator = new MethodGenerator(
@@ -1577,7 +1578,7 @@ public class Parser {
 
         return new DeclaringClassNodeExtenderElementBodyNodePredicate() {
             @Override
-            public boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures) {
+            public boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, Map<String, Object> captures) {
                 return bodyBuilder.test(dom, captures);
             }
         };
@@ -1605,7 +1606,7 @@ public class Parser {
         };*/
     }
 
-    public DeclaringBodyNodeExtenderElement parseBodyModifications(ClassInspector classInspector, List<Object> captures) {
+    public DeclaringBodyNodeExtenderElement parseBodyModifications(ClassInspector classInspector, Map<String, Object> captures) {
         JavaParser.StatementsOrExpressionContext body = parser.statementsOrExpression();
 
         //DomBuilder bodyBuilder;

@@ -5,11 +5,12 @@ import astava.tree.StatementDom;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 public interface DomBuilder extends Serializable {
     void accept(DomBuilderVisitor visitor);
 
-    default boolean test(CodeDom code, List<Object> captures) {
+    default boolean test(CodeDom code, Map<String, Object> captures) {
         return false;
     }
 

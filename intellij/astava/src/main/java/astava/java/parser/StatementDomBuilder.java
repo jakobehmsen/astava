@@ -7,7 +7,6 @@ import astava.tree.Util;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public interface StatementDomBuilder extends DomBuilder {
     default void accept(DomBuilderVisitor visitor) {
@@ -15,10 +14,10 @@ public interface StatementDomBuilder extends DomBuilder {
     }
 
     default void appendLocals(Map<String, String> locals) { }
-    StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, List<Object> captures);
+    StatementDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures);
 
     @Override
-    default boolean test(CodeDom code, List<Object> captures) {
+    default boolean test(CodeDom code, Map<String, Object> captures) {
         return Util.returnFrom(false, r -> code.accept(new DefaultCodeDomVisitor() {
             @Override
             public void visitStatement(StatementDom statementDom) {
@@ -27,7 +26,7 @@ public interface StatementDomBuilder extends DomBuilder {
         }));
     }
 
-    default boolean test(StatementDom statement, List<Object> captures) {
+    default boolean test(StatementDom statement, Map<String, Object> captures) {
         return false;
     }
 }

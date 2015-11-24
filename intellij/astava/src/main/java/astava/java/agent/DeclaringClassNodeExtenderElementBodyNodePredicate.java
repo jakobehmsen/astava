@@ -19,7 +19,9 @@ import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -39,7 +41,7 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
                 @Override
                 public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
                     CodeDom replacement = Util.<CodeDom>map(body, (traverser, dom) -> {
-                        ArrayList<Object> captures = new ArrayList<>();
+                        Hashtable<String, Object> captures = new Hashtable<>();
                         if (test(classNode, thisClass, classResolver, methodNode, dom, captures)) {
                             return element.map(classNode, thisClass, classResolver, methodNode, dom, captures);
                         } else
@@ -78,6 +80,6 @@ public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
             };*/
         };
     }
-    boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, List<Object> captures);
+    boolean test(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, Map<String, Object> captures);
     //CodeDom map(BiFunction<Function<CodeDom, CodeDom>, CodeDom, CodeDom> traverser, CodeDom dom, List<Object> captures);
 }

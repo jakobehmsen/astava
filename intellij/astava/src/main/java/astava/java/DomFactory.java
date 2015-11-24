@@ -588,6 +588,8 @@ public class DomFactory {
     }
 
     public static StatementDom assignField(ExpressionDom target, String name, String type, ExpressionDom expression) {
+        if(expression == null)
+            new String();
         return new AbstractStatementDom() {
             @Override
             public void accept(StatementDomVisitor visitor) {

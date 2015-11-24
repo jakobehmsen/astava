@@ -143,7 +143,7 @@ public class MethodNodeExtenderFactory {
             public DeclaringMethodNodeExtenderTransformer declare(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode) {
                 Map<String, String> locals = ASMClassDeclaration.getMethod(methodNode).getParameterTypes().stream()
                     .collect(Collectors.toMap(p -> p.getName(), p -> Descriptor.get(p.getTypeName())));
-                List<Object> captures = Collections.emptyList();
+                Map<String, Object> captures = Collections.emptyMap();
                 StatementDom statement = statementDomBuilder.build(classResolver, thisClass, classInspector, locals, ASMClassDeclaration.getMethod(methodNode), captures);
                 return MethodNodeExtenderFactory.prepend(statement);
             }
