@@ -8,6 +8,9 @@ import astava.tree.*;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -95,9 +98,28 @@ public class Factory {
 
     public static ExpressionDomBuilder literal(String value) {
         return new ExpressionDomBuilder() {
+            public String replaceMatches(Pattern pattern, String string, Function<String, String> callback) {
+                String result = "";
+                final Matcher matcher = pattern.matcher(string);
+                int lastMatch = 0;
+                while(matcher.find())
+                {
+                    final MatchResult matchResult = matcher.toMatchResult();
+                    final String replacement = callback.apply(matchResult.group());
+                    result += string.substring(lastMatch, matchResult.start()) +
+                        replacement;
+                    lastMatch = matchResult.end();
+                }
+                if (lastMatch < string.length())
+                    result += string.substring(lastMatch);
+                return result;
+            }
+
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures) {
-                return DomFactory.literal(value);
+                // Replace capturing, if any
+                String newValue = replaceMatches(Pattern.compile("\\?(\\w|\\W)(\\w|\\W|\\d)+"), value, name -> (String)captures.get(name.substring(1)));
+                return DomFactory.literal(newValue);
             }
 
             @Override

@@ -167,8 +167,26 @@ public class ParserFactory {
     }
 
     public DeclaringBodyNodeExtenderElement modBody(String sourceCode) throws IOException {
-        //return new Parser(sourceCode).parseBodyModifications(classInspector);
-        return null;
+        return new DeclaringBodyNodeExtenderElement() {
+            @Override
+            public CodeDom map(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, Map<String, Object> captures) {
+                try {
+                    return new Parser(sourceCode)
+                        .parseBodyModifications(classInspector, captures)
+                        .map(classNode, thisClass, classResolver, methodNode, dom, captures);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                /*try {
+                    return modBody(sourceCode).map(dom, captures);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }*/
+
+                return null;
+            }
+        };
     }
 
     public DeclaringBodyNodeExtenderElement modBody(Function<Map<String, Object>, SourceCode> function) throws IOException {

@@ -1008,13 +1008,18 @@ public class Parser {
         ExpressionDomBuilder valueBuilder = parseExpressionBuilder(ctx.value, atRoot, asStatement);
 
         return new StatementDomBuilder() {
+            private String buildName(Map<String, Object> captures) {
+                return name != null ? name : (String) captures.get(captureName);
+            }
+
             @Override
             public StatementDom build(ClassResolver cr, ClassDeclaration cd, ClassInspector ci, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures) {
                 ExpressionDom value = valueBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 ExpressionDom target = targetBuilder.build(cr, cd, ci, locals, methodContext, captures);
                 String targetType = expressionResultType(ci, cd, target, locals, Descriptor.get(methodContext.getReturnTypeName()));
                 ClassDeclaration targetClassDeclaration = ci.getClassDeclaration(Descriptor.getName(targetType));
-                Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(name)).findFirst();
+                String fieldName = buildName(captures);
+                Optional<FieldDeclaration> fieldDeclaration = targetClassDeclaration.getFields().stream().filter(x -> x.getName().equals(fieldName)).findFirst();
 
                 return assignField(target, fieldDeclaration.get().getName(), Descriptor.get(fieldDeclaration.get().getTypeName()), value);
             }

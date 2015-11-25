@@ -41,7 +41,7 @@ public class Main {
 
         ParserFactory factory = new ParserFactory(classResolver, classInspector);
 
-        ClassLoaderExtender loader = new ClassLoaderExtender(factory
+        /*ClassLoaderExtender loader = new ClassLoaderExtender(factory
             .whenClass("@Support(Observable.class)")
             .then(factory
                 .whenMethodName(x -> !x.equals("<init>"))
@@ -60,30 +60,28 @@ public class Main {
                     "public void setObserver(Observer observer) {this.observer = observer;}"
                 ))),
             classResolver, classInspector
-        );
+        );*/
 
-        /*
+
         ClassLoaderExtender loader = new ClassLoaderExtender(factory
             .whenClass("@Support(Observable.class)")
             .then(factory
                 .whenMethodName(x -> !x.equals("<init>"))
                 .then(factory
-                        .whenBody("this.?name = ?value;")
-                        .then(factory.modBody(
-                            "observer.changingField(this, \"?name\");\n" +
-                                "this.?name = ?value;\n" +
-                                "observer.changedField(this, \"?name\");\n"
-                        ))
-                )
-                .andThen(factory.modClass(
-                        "implements Observable\n" +
-                            "private Observer observer;\n" +
-                            "public void setObserver(Observer observer) {this.observer = observer;}"
-                    )
-                )),
+                    .whenBody("this.?name = ?value;")
+                    .then(factory.modBody(
+                        "observer.changingField(this, \"?name\");\n" +
+                        "this.?name = ?value;\n" +
+                        "observer.changedField(this, \"?name\");\n"
+                    ))
+                ).andThen(factory.modClass(
+                    "implements Observable\n" +
+                    "private Observer observer;\n" +
+                    "public void setObserver(Observer observer) {this.observer = observer;}"
+                ))),
             classResolver, classInspector
         );
-        */
+
 
         /*
         .whenBody("this.?name = ?value;")

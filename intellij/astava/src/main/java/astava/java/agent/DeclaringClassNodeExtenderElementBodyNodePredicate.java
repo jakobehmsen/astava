@@ -27,6 +27,8 @@ import java.util.stream.IntStream;
 
 public interface DeclaringClassNodeExtenderElementBodyNodePredicate {
     default DeclaringMethodNodeExtenderElement then(DeclaringBodyNodeExtenderElement element) {
+        if(element == null)
+            new String();
         return (classNode, thisClass, classResolver, methodNode) -> {
             Textifier textifier = new Textifier();
             methodNode.accept(new TraceMethodVisitor(textifier));
