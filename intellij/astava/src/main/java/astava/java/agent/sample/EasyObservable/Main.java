@@ -1,17 +1,13 @@
 package astava.java.agent.sample.EasyObservable;
 
-import astava.java.Descriptor;
 import astava.java.agent.ClassLoaderExtender;
 import astava.java.agent.Parser.ParserFactory;
-import astava.java.agent.Parser.SourceCode;
-import astava.java.agent.sample.MyClass;
 import astava.java.parser.ClassInspector;
 import astava.java.parser.ClassResolver;
 import astava.java.parser.DefaultClassInspector;
 import astava.java.parser.DefaultClassResolver;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
@@ -74,6 +70,12 @@ public class Main {
                         "this.?name = ?value;\n" +
                         "observer.changedField(this, \"?name\");\n"
                     ))
+                    .andThen(factory.modMethod(m ->
+                        "observer.enter(this, \"" + m.name + "\");\n" + // Method could be an implicit argument with a shortcut pseudo variable therefore?
+                        "...\n" +
+                        "observer.leave(this, \"" + m.name + "\");\n" + // Method could be an implicit argument with a shortcut pseudo variable therefore?
+                        "return;"
+                    ))
                 ).andThen(factory.modClass(
                     "implements Observable\n" +
                     "private Observer observer;\n" +
@@ -102,6 +104,16 @@ public class Main {
             @Override
             public void changedField(Object target, String name) {
                 System.out.println("Assigned field " + name);
+            }
+
+            @Override
+            public void enter(Object target, String methodName) {
+                System.out.println("Enter " + methodName);
+            }
+
+            @Override
+            public void leave(Object target, String methodName) {
+                System.out.println("Leave " + methodName);
             }
         });
 
