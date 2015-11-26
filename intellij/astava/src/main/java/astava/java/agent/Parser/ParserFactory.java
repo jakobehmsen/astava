@@ -125,6 +125,18 @@ public class ParserFactory {
         return predicates.stream().reduce((x, y) -> x.andThen(y)).get();
     }
 
+    public DeclaringMethodNodeExtenderElement modMethod(Function<MethodNode, String> function) {
+        return (classNode, thisClass, classResolver1, methodNode) -> {
+            try {
+                String sourceCode = function.apply(methodNode);
+                return modMethod(sourceCode).declare(classNode, thisClass, classResolver1, methodNode);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        };
+    }
+
     public DeclaringMethodNodeExtenderElement modMethod(TriFunction<ClassNode, ClassDeclaration, MethodNode, String> function) throws Exception {
         return (classNode, thisClass, classResolver1, methodNode) -> {
             try {
