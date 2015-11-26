@@ -255,14 +255,11 @@ public class Factory {
 
                     @Override
                     public MethodDom build(ClassDeclaration classDeclaration, ClassInspector classInspector) {
-                        //return astava.java.Factory.methodDeclaration(modifier, name, parameters, Descriptor.get(returnTypeName), body.build(classResolver, classDeclaration, classInspector, new HashSet<>()));
-
                         boolean isConstructor = name.equals("<init>");
 
                         Hashtable<String, String> locals = new Hashtable<>();
                         locals.putAll(parameters.stream().collect(Collectors.toMap(x -> x.name, x -> x.descriptor)));
                         //locals.addAll(parameters.stream().map(x -> x.name).collect(Collectors.toList()));
-                        //List<StatementDomBuilder> statementBuilders = ctx.statement().stream().map(x -> parseStatementBuilder(x, false)).collect(Collectors.toList());
                         Hashtable<String, Object> captures = new Hashtable<>();
                         statementBuilders.forEach(x -> x.appendLocals(locals));
                         List<StatementDom> statements = statementBuilders.stream().map(x -> x.build(classResolver, classDeclaration, classInspector, locals, this, captures)).collect(Collectors.toList());
@@ -429,14 +426,6 @@ public class Factory {
                 if (fieldDeclaration.isPresent()) {
                     String descriptor = Descriptor.get(fieldDeclaration.get().getTypeName());
 
-                    /*
-                    if (Modifier.isStatic(fieldDeclaration.get().getModifier())) {
-                        return astava.java.Factory.assignStaticField(cd.getName(), fieldDeclaration.get().getName(), descriptor, occurrences);
-                    }
-
-                    return astava.java.Factory.assignField(astava.java.Factory.self(), fieldDeclaration.get().getName(), descriptor, occurrences);
-                    */
-
                     return DomFactory.top(DomFactory.self(), (newTarget, newTargetLast) -> {
                         return DomFactory.blockExpr(Arrays.asList(
                             DomFactory.assignField(newTarget, fieldDeclaration.get().getName(), descriptor, value),
@@ -525,8 +514,6 @@ public class Factory {
                             Descriptor.get(m.getReturnTypeName())
                         );
 
-                    //Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
-
                     String declaringClassDescriptor = Descriptor.get(c.getName());
                     return DomFactory.invoke(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
                 });
@@ -536,11 +523,6 @@ public class Factory {
             public String toString() {
                 return targetBuilder + "." + methodName + "(" + argumentBuilders.stream().map(x -> x.toString()).collect(Collectors.joining(", ")) + ")";
             }
-
-            /*@Override
-            public CodeDom map(List<Object> captures) {
-                return DomFactory.invoke(invok)
-            }*/
         };
     }
 
@@ -569,8 +551,6 @@ public class Factory {
                         Descriptor.getMethodDescriptor(m.getParameterTypes().stream().map(x -> x.descriptor).collect(Collectors.toList()),
                             Descriptor.get(m.getReturnTypeName())
                         );
-
-                    //Debug.getPrintStream(Debug.LEVEL_HIGH).println("@invocationExpr: methodDescriptor=" + methodDescriptor);
 
                     String declaringClassDescriptor = Descriptor.get(c.getName());
                     return DomFactory.invokeExpr(invocation, declaringClassDescriptor, methodName, methodDescriptor, target, arguments);
@@ -756,11 +736,6 @@ public class Factory {
         return new ExpressionDomBuilder() {
             @Override
             public ExpressionDom build(ClassResolver classResolver, ClassDeclaration classDeclaration, ClassInspector classInspector, Map<String, String> locals, MethodDeclaration methodContext, Map<String, Object> captures) {
-                //throw new RuntimeException("Cannot build expression capture.");
-                /*ExpressionDom dom = (ExpressionDom)captures.get(0);
-                captures.remove(0);
-                return dom;*/
-
                 return (ExpressionDom)captures.get(name);
             }
 

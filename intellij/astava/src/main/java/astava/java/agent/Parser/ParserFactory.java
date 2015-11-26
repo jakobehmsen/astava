@@ -26,18 +26,6 @@ public class ParserFactory {
         this.classInspector = classInspector;
     }
 
-    /*public ClassNodeExtenderParser newExtender() {
-        return new ClassNodeExtenderParser(classResolver, classInspector);
-    }
-
-    public ClassNodePredicateParser newPredicate() {
-        return new ClassNodePredicateParser(classInspector);
-    }
-
-    public MethodNodePredicateParser newMethodPredicate() {
-        return new MethodNodePredicateParser();
-    }*/
-
     public DeclaringClassNodeExtenderElement modClass(String sourceCode) throws IOException {
         List<DeclaringClassNodeExtenderElement> elements = new Parser(sourceCode).parse(classResolver).stream().map(d -> new DeclaringClassNodeExtenderElement() {
             @Override
@@ -118,19 +106,6 @@ public class ParserFactory {
         };
     }
 
-    /*public DeclaringClassNodeExtenderElement modClass(BiFunctionException<ClassNode, ClassDeclaration, DeclaringClassNodeExtenderElement> function) throws Exception {
-        return (classNode, thisClass, classResolver1) -> {
-            try {
-                return function
-                    .apply(classNode, thisClass)
-                    .declare(classNode, thisClass, classResolver1);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
-        };
-    }*/
-
     public DeclaringClassNodeExtenderElementMethodNodePredicate whenMethod(String sourceCode) throws IOException {
         List<DeclaringClassNodeExtenderElementMethodNodePredicate> predicates = new Parser(sourceCode).parseMethodPredicates();
 
@@ -178,36 +153,22 @@ public class ParserFactory {
                     e.printStackTrace();
                 }
 
-                /*try {
-                    return modBody(sourceCode).map(dom, captures);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }*/
-
                 return null;
             }
         };
     }
 
-    public DeclaringBodyNodeExtenderElement modBody(Function<Map<String, Object>, SourceCode> function) throws IOException {
+    public DeclaringBodyNodeExtenderElement modBody(Function<Map<String, Object>, String> function) throws IOException {
         return new DeclaringBodyNodeExtenderElement() {
             @Override
             public CodeDom map(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, MethodNode methodNode, CodeDom dom, Map<String, Object> captures) {
-                SourceCode sourceCode = function.apply(captures);
+                String sourceCode = function.apply(captures);
 
                 try {
-                    return new Parser(sourceCode.text)
-                        .parseBodyModifications(classInspector, sourceCode.captures)
-                        .map(classNode, thisClass, classResolver, methodNode, dom, sourceCode.captures);
+                    return modBody(sourceCode).map(classNode, thisClass, classResolver, methodNode, dom, captures);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
-                /*try {
-                    return modBody(sourceCode).map(dom, captures);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }*/
 
                 return null;
             }

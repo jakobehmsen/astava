@@ -44,16 +44,6 @@ public class ClassGenerator {
     }
 
     public void populate2(ClassNode classNode) {
-        /*int modifiers = classDom.getModifiers();
-        String className = Descriptor.get(classDom.getName());
-        String superName = Descriptor.get(classDom.getSuperName());
-
-        classNode.version = Opcodes.V1_8;
-        classNode.access = modifiers;
-        classNode.name = className;
-        classNode.signature = "L" + className + ";";
-        classNode.superName = superName;*/
-
         classDom.getInterfaces().forEach(x -> classNode.interfaces.add(x));
 
         classNode.fields.stream()
@@ -61,7 +51,6 @@ public class ClassGenerator {
             .forEach(x -> classNode.fields.remove(x));
 
         List<MethodNode> classNodeMethods = (List<MethodNode>)classNode.methods.stream().collect(Collectors.toList());
-        //classNode.methods.stream()
         classNodeMethods.stream()
             .filter(x -> classDom.getMethods().stream().anyMatch(y ->
             {
@@ -100,9 +89,6 @@ public class ClassGenerator {
             }
         });
 
-        //String descriptor = Descriptor.getFieldDescriptor(fieldDom.getTypeName());
-        //FieldNode f = new FieldNode(fieldDom.getModifiers(), fieldDom.getName(), descriptor, null, null);
-
         classNode.fields.add(f);
     }
 
@@ -130,11 +116,9 @@ public class ClassGenerator {
             methodNode = new MethodNode(Opcodes.ASM5, modifiers, methodName, methodDescriptor, null, null);
 
             Method m = new Method(methodName, methodNode.desc);
-            //GeneratorAdapter generator = new GeneratorAdapter(modifiers, m, methodNode);
 
             MethodGenerator methodGenerator = new MethodGenerator(this, parameters, body);
 
-            //methodGenerator.generate(generator);
             methodGenerator.generate(methodNode);
         }
 

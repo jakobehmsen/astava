@@ -34,38 +34,19 @@ public class MethodGenerator {
         this.thisClassName = thisClassName;
         this.parameters = parameters;
         this.body = body;
-        //this.methodScope = new GenerateScope(outerScope);
     }
 
     public void generate(MethodNode methodNode) {
         generate(methodNode, methodNode.instructions);
     }
 
-    //public void generate(GeneratorAdapter generator) {
     public void generate(MethodNode methodNode, InsnList originalInstructions) {
-        /*LabelScope labelScope = new LabelScope();
-        methodNode.visitCode();
-
-        Method m = new Method(methodNode.name, methodNode.desc);
-        GeneratorAdapter generator;
-        try {
-            generator = new GeneratorAdapter(methodNode.access, m, methodNode);
-        } catch(Exception e) {
-            generator = null;
-        }
-        populateMethodStatement(methodNode, generator, body, null, labelScope);
-
-        methodNode.visitEnd();
-        methodNode.visitMaxs(0, 0);
-        labelScope.verify();*/
-
         generate(methodNode, (mn, generator) -> {
             populateMethodBody(methodNode, originalInstructions, generator);
         });
     }
 
     public static void generate(MethodNode methodNode, BiConsumer<MethodNode, GeneratorAdapter> bodyGenerator) {
-        //LabelScope labelScope = new LabelScope();
         methodNode.visitCode();
 
         Method m = new Method(methodNode.name, methodNode.desc);
@@ -84,16 +65,6 @@ public class MethodGenerator {
     }
 
     public void populateMethodBody(MethodNode methodNode, InsnList originalInstructions, GeneratorAdapter generator) {
-        /*if(originalInstructions.size() > 0) {
-            Textifier textifier = new Textifier();
-            originalInstructions.accept(new TraceMethodVisitor(textifier));
-            textifier.getText().forEach(x -> System.out.print(x));
-
-            ByteCodeToTree byteCodeToTree = new ByteCodeToTree(Type.getReturnType(methodNode.desc));
-            originalInstructions.accept(byteCodeToTree);
-            StatementDom block = byteCodeToTree.getBlock();
-        }*/
-
         LabelScope labelScope = new LabelScope();
         populateMethodStatement(methodNode, originalInstructions, generator, body, null, labelScope, new GenerateScope(), new Hashtable<>());
         labelScope.verify();
@@ -559,9 +530,6 @@ public class MethodGenerator {
 
             @Override
             public void visitCompare(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-                // Have another compare for object comparison?
-                //String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
-                //String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
                 String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, true, scope, astLabelToASMLabelMap);
                 String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, true, scope, astLabelToASMLabelMap);
 
@@ -598,7 +566,6 @@ public class MethodGenerator {
 
             @Override
             public void visitObjectEquality(int operator, ExpressionDom lhs, ExpressionDom rhs) {
-                // Have another compare for object comparison?
                 String lhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, lhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
                 String rhsResultType = populateMethodExpression(methodNode, originalInstructions, generator, rhs, ifFalseLabel, reifyCondition, scope, astLabelToASMLabelMap);
 

@@ -177,11 +177,11 @@ public class Main {
                         .whenMethod("public boolean someOtherMethod3")
                         .then(factory
                             .whenBody("this.?name = ?value;")
-                            .then(factory.modBody(captures -> new SourceCode(
+                            .then(factory.modBody(captures ->
                                 "java.lang.System.out.println(\"Assigning field " + captures.get("name") + "\");\n" +
                                 "this." + captures.get("name") + " = ?value;\n" +
                                 "java.lang.System.out.println(\"Assigned field " + captures.get("name") + "\");\n"
-                            , captures)))
+                            ))
                         )
                     )
                 )
