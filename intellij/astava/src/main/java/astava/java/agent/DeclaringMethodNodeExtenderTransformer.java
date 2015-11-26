@@ -49,9 +49,19 @@ public interface DeclaringMethodNodeExtenderTransformer {
     }
 
     default DeclaringMethodNodeExtenderTransformer andThen(DeclaringMethodNodeExtenderTransformer next) {
-        return (classNode, thisClass, classResolver, classInspector, methodNode, generator, originalInstructions) -> {
-            this.transform(classNode, thisClass, classResolver, classInspector, methodNode, generator, originalInstructions);
-            next.transform(classNode, thisClass, classResolver, classInspector, methodNode, generator, originalInstructions);
+        DeclaringMethodNodeExtenderTransformer self = this;
+
+        return new DeclaringMethodNodeExtenderTransformer() {
+            @Override
+            public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode) {
+                self.transform(classNode, thisClass, classResolver, classInspector, methodNode);
+                next.transform(classNode, thisClass, classResolver, classInspector, methodNode);
+            }
+
+            @Override
+            public void transform(ClassNode classNode, MutableClassDeclaration thisClass, ClassResolver classResolver, ClassInspector classInspector, MethodNode methodNode, GeneratorAdapter generator, InsnList originalInstructions) {
+
+            }
         };
     }
 }
